@@ -12,7 +12,7 @@ module.exports = {
    "synchronize": false,
    "logging": false,
    "entities": [
-      "dist/**/*.entity.js"
+      "**/**/*.entity.js"
    ],
    "migrations": [
       "dist/migration/*.js"
