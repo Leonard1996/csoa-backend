@@ -10,10 +10,10 @@ import { Code } from "../entities/codes.entity";
 import { AuthenticationController } from "../../authentication/controllers/authentication.controller";
 const UUID = require("uuid/v1");
 
-// const accountSid = 'ACea4210396ed1e24b0cde633cb4321631';
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-// const authToken = '4eb6f46f38848fb9a778fd40b8584e04'
-const authToken = process.env.TWILIO_ACCOUNT_AUTH_TOKEN;
+const accountSid = 'ACea4210396ed1e24b0cde633cb4321631';
+// const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = '4eb6f46f38848fb9a778fd40b8584e04'
+// const authToken = process.env.TWILIO_ACCOUNT_AUTH_TOKEN;
 
 const client = require('twilio')(accountSid, authToken);
 
@@ -153,7 +153,7 @@ export class UserService {
 
     client.messages
       .create({
-        from: process.env.TWILIO_PHONE_NUMBER,
+        from: '18507530730',
         // from: '18507530730',
         to: '+355' + phoneNumber,
         body: `Verification code for your CSOA account: ${codeExisting ?? code.value}. The code is valid for 1 hour from now.`
