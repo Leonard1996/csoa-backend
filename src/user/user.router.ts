@@ -9,6 +9,12 @@ import { UploadMiddleware } from "../attachment/middlewares/upload.middleware";
 
 export class UserRouter {
   static configRoutes = (app: express.Application) => {
+
+    // inc
+    app.post("/users/check-phone-number", [
+      UserController.checkPhoneNumber,
+    ]);
+
     app.get("/users", [
       AuthenticationMiddleware.checkJwtToken,
       PermissionMiddleware.checkAllowedPermissions([
@@ -57,11 +63,6 @@ export class UserRouter {
       PermissionMiddleware.checkAllowedPermissions([UserRole.USER]),
       UserMiddleware.validationPasswordInput,
       UserController.patchMe,
-    ]);
-
-    // inc
-    app.post("/users/check-phone-number", [
-      UserController.checkPhoneNumber,
     ]);
   };
 }
