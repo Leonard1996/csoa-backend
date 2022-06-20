@@ -99,7 +99,6 @@ export class UserController {
     }
 
     public static async checkPhoneNumber(request: Request, response: Response) {
-        console.log("111111111111111111")
         UserService.checkPhoneNumber(request.body.phoneNumber,
             () => {
                 return response.status(200).send(new SuccessResponse('Verification code sent'))
