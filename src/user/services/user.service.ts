@@ -151,6 +151,8 @@ export class UserService {
 
     }
 
+    console.log({ phoneNumber })
+
     client.messages
       .create({
         // from: process.env.TWILIO_PHONE_NUMBER,
