@@ -11,12 +11,14 @@ import { AttachmentRouter } from "./attachment/attachment.router";
 import https = require("https");
 import fs = require("fs");
 var app = express();
+import { join } from 'path'
 
 createConnection()
   .then(async (connection) => {
     app.use(cors());
     app.use(bodyParser.json({ limit: "200mb" }));
     app.use(bodyParser.urlencoded({ limit: "200mb", extended: true }));
+    app.use(express.static(join(__dirname, '..', 'public')))
     //app.use(expressFormidable());
 
     // Doc routes
