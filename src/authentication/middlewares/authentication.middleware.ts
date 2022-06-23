@@ -45,10 +45,7 @@ export class AuthenticationMiddleware {
     const token = req.header("Authorization");
     if (token) {
       try {
-        console.log({ token })
         const jwtPayload = jwt.verify(token, process.env.JWT_SECRET_KEY);
-        console.log({ jwtPayload })
-        console.log({ key: process.env.JWT_SECRET_KEY })
         res.locals.jwt = jwtPayload;
 
         next();

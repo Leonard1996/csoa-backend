@@ -3,12 +3,13 @@ import multer = require("multer");
 import { ERROR_MESSAGES } from "../../common/utilities/ErrorMessages";
 import { ErrorResponse } from "../../common/utilities/ErrorResponse";
 import { File } from "../../common/utilities/File";
+import { join } from "path";
 
 export class UploadMiddleware {
 
     public static validateFileUpload = (fileField: string, allowedFileExtensions: string[], fileCount: number,
         maxFileSizeInBytes?: number,
-        destination: string = process.env.ATTACHMENT_STORAGE) => {
+        destination: string = join(__dirname, '../../..', 'public')) => {
 
         return (request: Request, response: Response, next: NextFunction) => {
 
@@ -31,7 +32,7 @@ export class UploadMiddleware {
 
     public static configMulterValidator = (fileField: string, allowedFileExtensions: string[], fileCount: number,
         maxFileSizeInBytes?: number,
-        destination: string = process.env.ATTACHMENT_STORAGE) => {
+        destination: string = join(__dirname, '../../..', 'public')) => {
 
         const storageOptions: multer.DiskStorageOptions = {
             destination,
