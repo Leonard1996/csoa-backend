@@ -50,6 +50,7 @@ export class AuthenticationMiddleware {
 
         next();
       } catch (error) {
+        console.log({ error })
         return res
           .status(401)
           .send(new ErrorResponse(ERROR_MESSAGES.ACCESS_TOKEN_INVALID));
