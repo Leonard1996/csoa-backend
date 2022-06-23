@@ -166,7 +166,8 @@ export class UserService {
     const userRepository = getRepository(User);
     const user = await userRepository.findOneOrFail({ where: { id: response.locals.jwt.userId } });
 
-    if (request.file) user.profilePicture = request.file.path;
+
+    if (request.file) user.profilePicture = request.file.fieldname;
     else user.profilePicture = null;
 
     return userRepository.save(user);
