@@ -158,7 +158,7 @@ export class UserService {
         to: '+355' + phoneNumber,
         body: `Verification code for your CSOA account: ${codeExisting ?? code.value}. The code is valid for 1 hour from now.`
       })
-      .then(successCallback)
+      .then(() => successCallback(code))
       .catch(err => errCallback(err))
       .done()
   }

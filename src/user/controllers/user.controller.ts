@@ -100,8 +100,8 @@ export class UserController {
 
     public static async checkPhoneNumber(request: Request, response: Response) {
         UserService.checkPhoneNumber(request.body.phoneNumber,
-            () => {
-                return response.status(200).send(new SuccessResponse('Verification code sent'))
+            (code) => {
+                return response.status(200).send(new SuccessResponse({ message: "Verification code sent", code }))
             },
             (err) => {
                 console.log({ err })
