@@ -12,7 +12,7 @@ const UUID = require("uuid/v1");
 
 const accountSid = 'ACea4210396ed1e24b0cde633cb4321631';
 // const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = '4eb6f46f38848fb9a778fd40b8584e04'
+const authToken = 'ce33dbeeced58307f6abf0af3509cadd'
 // const authToken = process.env.TWILIO_ACCOUNT_AUTH_TOKEN;
 
 const client = require('twilio')(accountSid, authToken);
