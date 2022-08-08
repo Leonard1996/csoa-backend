@@ -10,16 +10,14 @@ import { Code } from "../entities/codes.entity";
 import { AuthenticationController } from "../../authentication/controllers/authentication.controller";
 const UUID = require("uuid/v1");
 
-const accountSid = 'ACea4210396ed1e24b0cde633cb4321631';
+const accountSid = "ACd684d7d904d8ca841081b583bd0eb4d9";
 // const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = 'ce33dbeeced58307f6abf0af3509cadd'
+const authToken = "225cb1eacac6ea2abc6ad799ec9f4280";
 // const authToken = process.env.TWILIO_ACCOUNT_AUTH_TOKEN;
 
-const client = require('twilio')(accountSid, authToken);
-
+const client = require("twilio")(accountSid, authToken);
 
 export class UserService {
-
   static list = async (
     queryStringProcessor: QueryStringProcessor,
     filter: any
@@ -30,28 +28,38 @@ export class UserService {
   };
 
   static insert = async (userPayload, request: Request, response: Response) => {
-    const userRepository = getRepository(User)
+    const userRepository = getRepository(User);
 
-    if (userPayload.phoneNumber.slice(0, 3) === '355') userPayload.phoneNumber = userPayload.phoneNumber.slice(3, userPayload.phoneNumber.length)
-    if (userPayload.phoneNumber[0] === '0') userPayload.phoneNumber = userPayload.phoneNumber.slice(1, userPayload.phoneNumber.length);
-    userPayload.phoneNumber = '355' + userPayload.phoneNumber
+    if (userPayload.phoneNumber.slice(0, 3) === "355")
+      userPayload.phoneNumber = userPayload.phoneNumber.slice(
+        3,
+        userPayload.phoneNumber.length
+      );
+    if (userPayload.phoneNumber[0] === "0")
+      userPayload.phoneNumber = userPayload.phoneNumber.slice(
+        1,
+        userPayload.phoneNumber.length
+      );
+    userPayload.phoneNumber = "355" + userPayload.phoneNumber;
 
-    const isExisting = await userRepository.findOne({ where: { phoneNumber: userPayload.phoneNumber } })
-    if (isExisting) throw ('User with this number already exists')
+    const isExisting = await userRepository.findOne({
+      where: { phoneNumber: userPayload.phoneNumber },
+    });
+    if (isExisting) throw "User with this number already exists";
 
-    const codeRepository = getRepository(Code)
+    const codeRepository = getRepository(Code);
 
-    const now = new Date()
+    const now = new Date();
 
-    let isValidCode = await codeRepository.createQueryBuilder("c")
+    let isValidCode = await codeRepository
+      .createQueryBuilder("c")
       .where("value = :code", { code: userPayload.code })
       .andWhere("is_used = :isUsed", { isUsed: false })
       .getMany();
 
-    const isValid = isValidCode.filter(code => code.tsExpirationDate > now)
+    const isValid = isValidCode.filter((code) => code.tsExpirationDate > now);
 
-
-    if (!isValid.length) throw ('Code not valid or expired');
+    if (!isValid.length) throw "Code not valid or expired";
 
     const user = userRepository.create({
       ...userPayload,
@@ -60,14 +68,14 @@ export class UserService {
     });
 
     await userRepository.save(user);
-    await codeRepository.save({ ...isValid[0], isUsed: true })
+    await codeRepository.save({ ...isValid[0], isUsed: true });
 
     request.body = {
       password: userPayload.password,
       ...(userPayload.phoneNumber && { phoneNumber: userPayload.phoneNumber }),
-      ...(userPayload.email && { email: userPayload.email })
-    }
-    await AuthenticationController.login(request, response)
+      ...(userPayload.email && { email: userPayload.email }),
+    };
+    await AuthenticationController.login(request, response);
   };
 
   static getById = async (userId: number) => {
@@ -79,10 +87,13 @@ export class UserService {
   static update = async (userPayload, currentUser: User) => {
     const userRepository = getCustomRepository(UserRepository);
 
-    if (userPayload.newPassword && userPayload.confirmPassword && (userPayload.newPassword === userPayload.confirmPassword)) {
+    if (
+      userPayload.newPassword &&
+      userPayload.confirmPassword &&
+      userPayload.newPassword === userPayload.confirmPassword
+    ) {
       userPayload.password = Md5.init(userPayload.newPassword);
     }
-
 
     const finalUser = userRepository.merge(currentUser, userPayload);
     await userRepository.save(finalUser);
@@ -120,57 +131,67 @@ export class UserService {
         where: {
           email: request.body.email,
           id: response.locals.jwt.userId,
-        }
+        },
       });
 
       if (isMatchingUser) {
-        const { body: { newPassword, confirmPassword } } = request;
-        if (newPassword && confirmPassword && (newPassword === confirmPassword)) {
+        const {
+          body: { newPassword, confirmPassword },
+        } = request;
+        if (newPassword && confirmPassword && newPassword === confirmPassword) {
           request.body.password = Md5.init(newPassword);
         }
 
-        const user = userRepository.merge(isMatchingUser, { ...request.body })
-        await userRepository.save(user)
+        const user = userRepository.merge(isMatchingUser, { ...request.body });
+        await userRepository.save(user);
         return [request.body, null];
       }
       throw new Error("missmatching user");
     } catch (error) {
-      return [null, error]
+      return [null, error];
     }
-  }
+  };
 
-  public static async checkPhoneNumber(phoneNumber: string, successCallback: Function, errCallback: Function, codeExisting?: string) {
-    if (phoneNumber.slice(0, 3) === '355') phoneNumber = phoneNumber.slice(3, phoneNumber.length)
-    if (phoneNumber[0] === '0') phoneNumber = phoneNumber.slice(1, phoneNumber.length);
+  public static async checkPhoneNumber(
+    phoneNumber: string,
+    successCallback: Function,
+    errCallback: Function,
+    codeExisting?: string
+  ) {
+    if (phoneNumber.slice(0, 3) === "355")
+      phoneNumber = phoneNumber.slice(3, phoneNumber.length);
+    if (phoneNumber[0] === "0")
+      phoneNumber = phoneNumber.slice(1, phoneNumber.length);
 
     let code;
     if (!codeExisting) {
       code = new Code();
       const codeRepository = getRepository(Code);
       await codeRepository.save(code);
-
     }
 
     client.messages
       .create({
-        from: '18507530730',
+        from: "18507530730",
         // from: '18507530730',
-        to: '+355' + phoneNumber,
-        body: `Verification code for your CSOA account: ${codeExisting ?? code.value}. The code is valid for 1 hour from now.`
+        to: "+355" + phoneNumber,
+        body: `Verification code for your CSOA account: ${
+          codeExisting ?? code.value
+        }. The code is valid for 1 hour from now.`,
       })
       .then(() => successCallback(code))
-      .catch(err => errCallback(err))
-      .done()
+      .catch((err) => errCallback(err))
+      .done();
   }
   static async insertProfilePicture(request: Request, response: Response) {
     const userRepository = getRepository(User);
-    const user = await userRepository.findOneOrFail({ where: { id: response.locals.jwt.userId } });
-
+    const user = await userRepository.findOneOrFail({
+      where: { id: response.locals.jwt.userId },
+    });
 
     if (request.file) user.profilePicture = request.file.filename;
     else user.profilePicture = null;
 
     return userRepository.save(user);
-
   }
 }
