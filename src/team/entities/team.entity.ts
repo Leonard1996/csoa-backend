@@ -26,7 +26,7 @@ export class Team extends Common {
 
   @ManyToOne(() => User, (user) => user.teams)
   public user: User;
-  @Column("number", { nullable: true })
+  @Column("int", { nullable: true })
   userId: number;
 
   @OneToMany(() => TeamUsers, (teamUsers) => teamUsers.player)

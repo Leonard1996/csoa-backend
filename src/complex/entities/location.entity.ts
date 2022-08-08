@@ -22,7 +22,7 @@ export class Location extends Common {
 
   @ManyToOne(() => Complex, (complex) => complex.locations)
   public complex: Complex;
-  @Column("number", { nullable: true })
+  @Column("int", { nullable: true })
   complexId: number;
 
   @OneToMany(() => Event, (event) => event.location)

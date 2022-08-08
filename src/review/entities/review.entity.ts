@@ -16,12 +16,12 @@ export class Review extends Common {
   @ManyToOne(() => User, (user) => user.receivedReviews)
   public receiver: User;
 
-  @Column("number", {
+  @Column("int", {
     nullable: true,
   })
   senderId: number;
 
-  @Column("number", {
+  @Column("int", {
     nullable: true,
   })
   receiverId: number;

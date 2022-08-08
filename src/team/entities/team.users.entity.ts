@@ -20,7 +20,7 @@ export class TeamUsers extends Common {
   @ManyToOne(() => User, (user) => user.players)
   public player: User;
 
-  @Column("number", {
+  @Column("int", {
     nullable: true,
   })
   playerId: number;
@@ -28,7 +28,7 @@ export class TeamUsers extends Common {
   @ManyToOne(() => Team, (team) => team.players)
   public team: Team;
 
-  @Column("number", {
+  @Column("int", {
     nullable: true,
   })
   teamId: number;

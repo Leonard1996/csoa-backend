@@ -20,7 +20,7 @@ export class Notification extends Common {
   @ManyToOne(() => Complex, (complex) => complex.locations)
   public complex: Complex;
 
-  @Column("number", {
+  @Column("int", {
     nullable: true,
   })
   complexId: number;
@@ -28,7 +28,7 @@ export class Notification extends Common {
   @ManyToOne(() => User, (user) => user.givenNotifications)
   public sender: User;
 
-  @Column("number", {
+  @Column("int", {
     nullable: true,
   })
   senderId: number;
@@ -36,7 +36,7 @@ export class Notification extends Common {
   @ManyToOne(() => User, (user) => user.receivedNotifications)
   public receiver: User;
 
-  @Column("number", {
+  @Column("int", {
     nullable: true,
   })
   receiverId: number;

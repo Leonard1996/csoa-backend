@@ -28,10 +28,10 @@ export class Event extends Common {
   @Column("tinyint", { nullable: true, name: "isTeam" })
   public isTeam: boolean;
 
-  @Column("number", { nullable: true, name: "level" })
+  @Column("int", { nullable: true, name: "level" })
   public level: number;
 
-  @Column("number", { nullable: true, name: "playersNumber" })
+  @Column("int", { nullable: true, name: "playersNumber" })
   public playersNumber: number;
 
   @Column("varchar", { nullable: true, name: "playersAge" })
@@ -51,26 +51,26 @@ export class Event extends Common {
 
   @ManyToOne(() => Location, (location) => location.events)
   public location: Location;
-  @Column("number", { nullable: true })
+  @Column("int", { nullable: true })
   locationId: number;
 
   @ManyToOne(() => User, (user) => user.eventReceiverTeamCaptain)
   public receiverTeamCaptain: User;
-  @Column("number", { nullable: true })
+  @Column("int", { nullable: true })
   receiverTeamCaptainId: number;
 
   @ManyToOne(() => User, (user) => user.eventOrganiserTeamCaptain)
   public organiserTeamCaptain: User;
-  @Column("number", { nullable: true })
+  @Column("int", { nullable: true })
   organiserTeamCaptainId: number;
 
   @ManyToOne(() => Team, (team) => team.eventOrganiser)
   public organiserTeam: Team;
-  @Column("number", { nullable: true })
+  @Column("int", { nullable: true })
   organiserTeamId: number;
 
   @ManyToOne(() => Team, (team) => team.eventReceiver)
   public receiverTeam: Team;
-  @Column("number", { nullable: true })
+  @Column("int", { nullable: true })
   receiverTeamId: number;
 }
