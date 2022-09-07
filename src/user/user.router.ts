@@ -4,21 +4,16 @@ import { UserController } from "./controllers/user.controller";
 import { AuthenticationMiddleware } from "../authentication/middlewares/authentication.middleware";
 import { PermissionMiddleware } from "../common/middlewares/permission.middleware";
 import { UserRole } from "./utilities/UserRole";
-import { AttachmentController } from "../attachment/controllers/attachment.controller";
 import { UploadMiddleware } from "../attachment/middlewares/upload.middleware";
 
 export class UserRouter {
   static configRoutes = (app: express.Application) => {
-
     // inc
-    app.post("/users/check-phone-number", [
-      UserController.checkPhoneNumber,
-    ]);
+    app.post("/users/check-phone-number", [UserController.checkPhoneNumber]);
 
     app.get("/users", [
       AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([
-        UserRole.ADMIN]),
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
       UserController.list,
     ]);
 
@@ -29,18 +24,14 @@ export class UserRouter {
     ]);
 
     // inc
-    app.post("/register", [
-      UserController.insert,
-    ]);
+    app.post("/register", [UserController.insert]);
 
     // inc
-    app.get("/cities", [
-      UserController.getCities,
-    ]);
+    app.get("/cities", [UserController.getCities]);
 
     app.post("/user-photo", [
       AuthenticationMiddleware.checkJwtToken,
-      UploadMiddleware.validateFileUpload('file', ["jpg", "png", "jpeg"], 1),
+      UploadMiddleware.validateFileUpload("file", ["jpg", "png", "jpeg"], 1),
       UserController.insertProfilePicture,
     ]);
 
