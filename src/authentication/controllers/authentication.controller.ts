@@ -50,6 +50,47 @@ export class AuthenticationController {
     }
   };
 
+  static loginAdmin = async (req: Request, res: Response) => {
+    let { email, password, phoneNumber } = req.body;
+    const userRepository = getRepository(User);
+
+    if (phoneNumber) {
+      if (phoneNumber.slice(0, 3) === "355")
+        phoneNumber = phoneNumber.slice(3, phoneNumber.length);
+      if (phoneNumber[0] === "0")
+        phoneNumber = phoneNumber.slice(1, phoneNumber.length);
+      phoneNumber = "355" + phoneNumber;
+    }
+
+    let user = await userRepository.findOne({
+      where: {
+        ...(phoneNumber && { phoneNumber: phoneNumber }),
+        ...(email && { email: email }),
+        password: Md5.init(password),
+        deleted: 0,
+      },
+    });
+
+    if (user) {
+      const accessToken = jwt.sign(
+        { userId: user.id, userRole: user.role },
+        process.env.JWT_SECRET_KEY,
+        { expiresIn: process.env.ACCESS_TOKEN_LIFETIME_MS }
+      );
+
+      const responseData = {
+        user,
+        accessToken: accessToken,
+      };
+
+      return res.status(200).send(new SuccessResponse(responseData));
+    } else {
+      return res
+        .status(400)
+        .send(new ErrorResponse(ERROR_MESSAGES.INVALID_USERNAME_PASSWORD));
+    }
+  };
+
   static refreshToken = async (req: Request, res: Response) => {
     const refreshToken = req.body.refresh_token;
 
