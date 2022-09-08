@@ -47,19 +47,19 @@ export class UserService {
     });
     if (isExisting) throw "User with this number already exists";
 
-    const codeRepository = getRepository(Code);
+    // const codeRepository = getRepository(Code);
 
-    const now = new Date();
+    // const now = new Date();
 
-    let isValidCode = await codeRepository
-      .createQueryBuilder("c")
-      .where("value = :code", { code: userPayload.code })
-      .andWhere("is_used = :isUsed", { isUsed: false })
-      .getMany();
+    // let isValidCode = await codeRepository
+    //   .createQueryBuilder("c")
+    //   .where("value = :code", { code: userPayload.code })
+    //   .andWhere("is_used = :isUsed", { isUsed: false })
+    //   .getMany();
 
-    const isValid = isValidCode.filter((code) => code.tsExpirationDate > now);
+    // const isValid = isValidCode.filter((code) => code.tsExpirationDate > now);
 
-    if (!isValid.length) throw "Code not valid or expired";
+    // if (!isValid.length) throw "Code not valid or expired";
 
     const user = userRepository.create({
       ...userPayload,
@@ -68,7 +68,7 @@ export class UserService {
     });
 
     await userRepository.save(user);
-    await codeRepository.save({ ...isValid[0], isUsed: true });
+    // await codeRepository.save({ ...isValid[0], isUsed: true });
 
     request.body = {
       password: userPayload.password,

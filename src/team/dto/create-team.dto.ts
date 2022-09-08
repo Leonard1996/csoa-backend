@@ -3,6 +3,9 @@ import { User } from "../../user/entities/user.entity";
 
 export class CreateTeamDto {
   @IsOptional()
+  id: number;
+
+  @IsOptional()
   banner: string;
 
   @IsOptional()

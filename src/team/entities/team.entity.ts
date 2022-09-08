@@ -37,4 +37,15 @@ export class Team extends Common {
 
   @OneToMany(() => Event, (event) => event.receiverTeam)
   eventReceiver: Event[];
+
+  toResponseObject() {
+    return {
+      name: this.name,
+      banner: this.banner,
+      avatar: this.avatar,
+      sport: this.sport,
+      ageRange: this.ageRange,
+      level: this.level,
+    };
+  }
 }

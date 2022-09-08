@@ -1,15 +1,15 @@
 import { EntityRepository } from "typeorm";
-import { User } from "../entities/user.entity";
 import { CommonRepository } from "../../common/repositories/common.repository";
-import { QueryStringProcessor } from "../../common/utilities/QueryStringProcessor";
-import { IUserFilter } from "../utilities/user-filter.interface";
-import { FilterInfo } from "../../common/utilities/QueryBuilder/FilterInfo";
-import { ConditionGroup } from "../../common/utilities/QueryBuilder/ConditionGroup";
-import { Condition } from "../../common/utilities/QueryBuilder/Condition";
 import { Helper } from "../../common/utilities/Helper";
+import { Condition } from "../../common/utilities/QueryBuilder/Condition";
+import { ConditionGroup } from "../../common/utilities/QueryBuilder/ConditionGroup";
+import { FilterInfo } from "../../common/utilities/QueryBuilder/FilterInfo";
+import { QueryStringProcessor } from "../../common/utilities/QueryStringProcessor";
+import { IUserFilter } from "../../user/utilities/user-filter.interface";
+import { Team } from "../entities/team.entity";
 
-@EntityRepository(User)
-export class UserRepository extends CommonRepository<User> {
+@EntityRepository(Team)
+export class TeamRepository extends CommonRepository<Team> {
   public list = async (
     queryStringProcessor: QueryStringProcessor,
     filter: IUserFilter
@@ -17,20 +17,20 @@ export class UserRepository extends CommonRepository<User> {
     const select = [
       "id",
       "name",
-      "surname",
-      "email",
-      "role",
-      "profile_picture",
-      "verified",
+      "banner",
+      "avatar",
+      "sport",
+      "ageRange",
+      "level",
     ];
 
     const joins = [];
 
-    const queryConditions = [new Condition("users.deleted = 0")];
+    const queryConditions = [new Condition("teams.deleted = 0")];
 
     if (queryStringProcessor.getSearch()) {
       const conditionGroup = this.getSearchConditionGroup(
-        "users",
+        "teams",
         queryStringProcessor.getSearch()
       );
 
@@ -39,7 +39,7 @@ export class UserRepository extends CommonRepository<User> {
 
     const filterInfo = new FilterInfo(new ConditionGroup(queryConditions));
 
-    const countSelect = ["COUNT(users.id) AS total"];
+    const countSelect = ["COUNT(teams.id) AS total"];
     const { total } = await this.getEntitySelect(
       countSelect,
       joins,
@@ -72,7 +72,7 @@ export class UserRepository extends CommonRepository<User> {
 
   public deleteById(id: number) {
     return this.createQueryBuilder()
-      .update(User)
+      .update(Team)
       .set({ tsDeleted: new Date() })
       .where("id = :id", { id })
       .execute();

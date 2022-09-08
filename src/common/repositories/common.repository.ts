@@ -81,7 +81,6 @@ export abstract class CommonRepository<Entity> extends Repository<Entity> {
   public findById(id: string | number): Promise<Entity | undefined> {
     return this.findOne({
       where: {
-        deleted: 0,
         id,
       },
     });
