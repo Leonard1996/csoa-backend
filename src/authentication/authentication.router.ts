@@ -9,8 +9,6 @@ export class AuthenticationRouter {
   static configRoutes = (app: express.Application) => {
     app.post("/login", [AuthenticationController.login]);
 
-    app.post("/login-admin", [AuthenticationController.loginAdmin]);
-
     //     app.post("/refresh-token", [
     //       AuthenticationMiddleware.validateRefreshTokenInput,
     //       AuthenticationController.refreshToken,

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
-import { getCustomRepository, getRepository } from "typeorm";
+import { Brackets, getCustomRepository, getRepository } from "typeorm";
+import { EventRepository } from "../../event/entities/repositories/event.repository";
 import { User } from "../../user/entities/user.entity";
 import { CreateTeamUserDto } from "../dto/create-team-user.dto";
 import { CreateTeamDto } from "../dto/create-team.dto";
@@ -8,23 +9,93 @@ import { Team } from "../entities/team.entity";
 import { TeamUsers } from "../entities/team.users.entity";
 import { TeamRepository } from "../repositories/team.repository";
 import { TeamUsersRepository } from "../repositories/team.users.repository";
+import { StatisticsService } from "./statistics.services";
 
 export class TeamService {
   static listMyTeams = async (request: Request, response: Response) => {
     const teamUsersRepository = getRepository(TeamUsers);
 
-    const results = await teamUsersRepository.find({
+    const myTeams = await teamUsersRepository.find({
       where: {
         playerId: response.locals.jwt.userId,
       },
       relations: ["team"],
     });
 
+    const teamCustomRepository = getCustomRepository(TeamRepository);
+    const eventCustomRepository = getCustomRepository(EventRepository);
+
+    const similiarTeams = await teamCustomRepository
+      .createQueryBuilder("teams")
+      .innerJoin("teams_users", "tu", "teams.id = tu.teamId")
+      .where("tu.playerId != :id", { id: response.locals.jwt.userId })
+      .limit(5)
+      .offset(+request.query.page || 0 * 5)
+      .getMany();
+
+    const myTeamsIds = myTeams.map((player) => player.team.id);
+    const similiarTeamsIds = similiarTeams.map((teams) => teams.id);
+    let myWins = [];
+    let myLoses = [];
+    let myDraws = [];
+    let similiarWins = [];
+    let similiarLoses = [];
+    let similiarDraws = [];
+    if (myTeamsIds.length) {
+      myWins = await StatisticsService.getMyWins(myTeamsIds);
+      myLoses = await StatisticsService.getMyLoses(myTeamsIds);
+      myDraws = await StatisticsService.getMyDraws(myTeamsIds);
+    }
+
+    // if (similiarTeamsIds.length) {
+    //   similiarWins = await StatisticsService.getMyWins(similiarTeamsIds);
+    // }
+
+    const myTeamsWinsMapped = {};
+    if (myWins.length) {
+      for (const win of myWins) {
+        myTeamsWinsMapped[win.winnerId] = win;
+      }
+    }
+
+    const myTeamsLosesMapped = {};
+    if (myLoses.length) {
+      for (const lose of myLoses) {
+        myTeamsLosesMapped[lose.loserId] = lose;
+      }
+    }
+
+    const myTeamsDrawsMapped = {};
+    if (myDraws.length) {
+      for (const draw of myDraws) {
+        if (!myTeamsDrawsMapped[draw.organiser])
+          myTeamsDrawsMapped[draw.organiser] = 0;
+        myTeamsDrawsMapped[draw.organiser] += 1;
+        if (!myTeamsDrawsMapped[draw.receiver])
+          myTeamsDrawsMapped[draw.receiver] = 0;
+        myTeamsDrawsMapped[draw.receiver] += 1;
+      }
+    }
+
+    const myTeamsData = myTeams.map((team) => ({
+      ...team.team,
+      wins: Object.keys(myTeamsWinsMapped).length
+        ? +myTeamsWinsMapped[team.team.id].wins
+        : 0,
+      loses: Object.keys(myTeamsLosesMapped).length
+        ? +myTeamsLosesMapped[team.team.id].loses
+        : 0,
+      draws: Object.keys(myTeamsDrawsMapped).length
+        ? myTeamsDrawsMapped[team.team.id]
+        : 0,
+    }));
+
     const responseData = {
-      results,
+      myTeamsData,
+      similiarTeams,
     };
 
-    return results;
+    return responseData;
   };
 
   static insert = async (

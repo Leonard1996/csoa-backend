@@ -38,6 +38,12 @@ export class Team extends Common {
   @OneToMany(() => Event, (event) => event.receiverTeam)
   eventReceiver: Event[];
 
+  @OneToMany(() => Event, (event) => event.winnerTeam)
+  eventWinner: Event[];
+
+  @OneToMany(() => Event, (event) => event.loserTeam)
+  eventLoser: Event[];
+
   toResponseObject() {
     return {
       name: this.name,

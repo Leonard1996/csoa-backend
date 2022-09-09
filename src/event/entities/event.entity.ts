@@ -1,6 +1,5 @@
-import { Column, Entity, ManyToOne, OneToMany } from "typeorm";
+import { Column, Entity, Index, ManyToOne, OneToMany } from "typeorm";
 import { Common } from "../../common/entities/common";
-import { Complex } from "../../complex/entities/complex.entity";
 import { Location } from "../../complex/entities/location.entity";
 import { Team } from "../../team/entities/team.entity";
 import { User } from "../../user/entities/user.entity";
@@ -43,6 +42,10 @@ export class Event extends Common {
   @Column("tinyint", { nullable: true, name: "isWeekly" })
   public isWeekly: boolean;
 
+  @Index()
+  @Column("tinyint", { nullable: true, name: "isDraw" })
+  public isDraw: boolean;
+
   @Column("varchar", { nullable: true, name: "result" })
   public result: string;
 
@@ -53,6 +56,16 @@ export class Event extends Common {
   public location: Location;
   @Column("int", { nullable: true })
   locationId: number;
+
+  @ManyToOne(() => Team, (team) => team.eventWinner)
+  public winnerTeam: Team;
+  @Column("int", { nullable: true })
+  winnerTeamId: number;
+
+  @ManyToOne(() => Team, (team) => team.eventLoser)
+  public loserTeam: Team;
+  @Column("int", { nullable: true })
+  loserTeamId: number;
 
   @ManyToOne(() => User, (user) => user.eventReceiverTeamCaptain)
   public receiverTeamCaptain: User;
