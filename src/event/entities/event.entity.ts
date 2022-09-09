@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, OneToMany } from "typeorm";
+import { Column, Entity, Index, ManyToOne, OneToMany } from "typeorm";
 import { Common } from "../../common/entities/common";
 import { Complex } from "../../complex/entities/complex.entity";
 import { Location } from "../../complex/entities/location.entity";
@@ -73,4 +73,8 @@ export class Event extends Common {
   public receiverTeam: Team;
   @Column("int", { nullable: true })
   receiverTeamId: number;
+
+  @Index()
+  @Column("tinyint")
+  isUserReservation: boolean;
 }

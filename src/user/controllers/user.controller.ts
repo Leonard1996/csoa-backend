@@ -5,20 +5,39 @@ import { ERROR_MESSAGES } from "../../common/utilities/ErrorMessages";
 import { UserService } from "../services/user.service";
 import { Helper } from "../../common/utilities/Helper";
 import { HttpStatusCode } from "../../common/utilities/HttpStatusCodes";
-import { getRepository, Not } from "typeorm";
+import { getCustomRepository, getRepository, Not } from "typeorm";
 import { User } from "../entities/user.entity";
+import { ReviewRepository } from "../../review/repositories/review.repository";
 
 export class UserController {
   static list = async (request: Request, response: Response) => {
     const userRepository = getRepository(User);
 
-    const results = await userRepository.find({
+    const users = await userRepository.find({
       where: {
         id: Not(response.locals.jwt.userId),
       },
     });
 
-    response.status(HttpStatusCode.OK).send(new SuccessResponse({ results }));
+    const ids = users.map((user) => user.id);
+    const reviewRepository = getCustomRepository(ReviewRepository);
+    let stars = [];
+    if (ids.length) {
+      stars = await reviewRepository.getStars(ids);
+    }
+
+    const starsMap = {};
+
+    for (const star of stars) {
+      starsMap[star.userId] = star;
+    }
+
+    const userData = users.map((user) => ({
+      ...user,
+      stars: starsMap[user.id].stars,
+    }));
+
+    response.status(HttpStatusCode.OK).send(new SuccessResponse({ userData }));
   };
 
   static insert = async (request: Request, response: Response) => {

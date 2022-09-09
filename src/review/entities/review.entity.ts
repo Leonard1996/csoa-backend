@@ -1,8 +1,9 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from "typeorm";
+import { Column, Entity, Index, ManyToOne } from "typeorm";
 import { Common } from "../../common/entities/common";
 import { User } from "../../user/entities/user.entity";
 
 @Entity("reviews")
+@Index(["sender", "receiver"], { unique: true })
 export class Review extends Common {
   @Column("decimal", {
     nullable: true,

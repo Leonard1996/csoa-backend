@@ -13,6 +13,7 @@ import fs = require("fs");
 var app = express();
 import { join } from "path";
 import { TeamRouter } from "./team/team.router";
+import { DashboardRouter } from "./dashboard/dashboard.router";
 
 createConnection()
   .then(async (connection) => {
@@ -36,6 +37,8 @@ createConnection()
 
     // Attachment routes
     AttachmentRouter.configRoutes(app);
+
+    DashboardRouter.configRoutes(app);
     // get api version
     app.get(process.env.URL + "/version", (req, res) => {
       res.status(200).send({
