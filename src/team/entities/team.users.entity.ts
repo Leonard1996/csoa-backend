@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from "typeorm";
+import { Column, Entity, ManyToOne } from "typeorm";
 import { Common } from "../../common/entities/common";
 import { User } from "../../user/entities/user.entity";
 import { Team } from "./team.entity";

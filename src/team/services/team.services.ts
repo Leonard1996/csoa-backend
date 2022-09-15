@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import { Brackets, getCustomRepository, getRepository } from "typeorm";
+import { Attachment } from "../../attachment/entities/attachment.entity";
+import { AtachmentRepository } from "../../attachment/repositories/attachment.repository";
 import { EventRepository } from "../../event/entities/repositories/event.repository";
 import { User } from "../../user/entities/user.entity";
 import { CreateTeamUserDto } from "../dto/create-team-user.dto";
@@ -23,18 +25,20 @@ export class TeamService {
     });
 
     const teamCustomRepository = getCustomRepository(TeamRepository);
-    const eventCustomRepository = getCustomRepository(EventRepository);
+
+    const myTeamsIds = myTeams.map((player) => player.team.id);
 
     const similiarTeams = await teamCustomRepository
       .createQueryBuilder("teams")
       .innerJoin("teams_users", "tu", "teams.id = tu.teamId")
       .where("tu.playerId != :id", { id: response.locals.jwt.userId })
+      .andWhere("tu.teamId NOT IN (:...myTeamsIds)", { myTeamsIds })
       .limit(5)
       .offset(+request.query.page || 0 * 5)
       .getMany();
 
-    const myTeamsIds = myTeams.map((player) => player.team.id);
     const similiarTeamsIds = similiarTeams.map((teams) => teams.id);
+
     let myWins = [];
     let myLoses = [];
     let myDraws = [];
@@ -42,14 +46,16 @@ export class TeamService {
     let similiarLoses = [];
     let similiarDraws = [];
     if (myTeamsIds.length) {
-      myWins = await StatisticsService.getMyWins(myTeamsIds);
-      myLoses = await StatisticsService.getMyLoses(myTeamsIds);
-      myDraws = await StatisticsService.getMyDraws(myTeamsIds);
+      myWins = await StatisticsService.getWins(myTeamsIds);
+      myLoses = await StatisticsService.getLoses(myTeamsIds);
+      myDraws = await StatisticsService.getDraws(myTeamsIds);
     }
 
-    // if (similiarTeamsIds.length) {
-    //   similiarWins = await StatisticsService.getMyWins(similiarTeamsIds);
-    // }
+    if (similiarTeamsIds.length) {
+      similiarWins = await StatisticsService.getWins(similiarTeamsIds);
+      similiarLoses = await StatisticsService.getLoses(similiarTeamsIds);
+      similiarDraws = await StatisticsService.getDraws(similiarTeamsIds);
+    }
 
     const myTeamsWinsMapped = {};
     if (myWins.length) {
@@ -77,22 +83,49 @@ export class TeamService {
       }
     }
 
+    const similiarTeamsWinsMapped = {};
+    if (similiarWins.length) {
+      for (const win of similiarWins) {
+        similiarTeamsWinsMapped[win.winnerId] = win;
+      }
+    }
+
+    const similiarTeamsLosesMapped = {};
+    if (similiarLoses.length) {
+      for (const lose of similiarLoses) {
+        similiarTeamsLosesMapped[lose.loserId] = lose;
+      }
+    }
+
+    const similiarTeamsDrawsMapped = {};
+    if (similiarDraws.length) {
+      for (const draw of similiarDraws) {
+        if (!similiarTeamsDrawsMapped[draw.organiser])
+          similiarTeamsDrawsMapped[draw.organiser] = 0;
+        similiarTeamsDrawsMapped[draw.organiser] += 1;
+        if (!similiarTeamsDrawsMapped[draw.receiver])
+          similiarTeamsDrawsMapped[draw.receiver] = 0;
+        similiarTeamsDrawsMapped[draw.receiver] += 1;
+      }
+    }
+
     const myTeamsData = myTeams.map((team) => ({
       ...team.team,
-      wins: Object.keys(myTeamsWinsMapped).length
-        ? +myTeamsWinsMapped[team.team.id].wins
-        : 0,
-      loses: Object.keys(myTeamsLosesMapped).length
-        ? +myTeamsLosesMapped[team.team.id].loses
-        : 0,
-      draws: Object.keys(myTeamsDrawsMapped).length
-        ? myTeamsDrawsMapped[team.team.id]
-        : 0,
+      wins: +(myTeamsWinsMapped[team.team.id]?.wins ?? 0),
+      loses: +(myTeamsLosesMapped[team.team.id]?.loses ?? 0),
+      draws: myTeamsDrawsMapped[team.team.id] ?? 0,
+    }));
+
+    const similiarTeamsData = similiarTeams.map((similiarTeam) => ({
+      ...similiarTeam,
+      wins: +(similiarTeamsWinsMapped[similiarTeam.id]?.wins ?? 0),
+      loses: +(similiarTeamsLosesMapped[similiarTeam.id]?.loses ?? 0),
+      draws: similiarTeamsDrawsMapped[similiarTeam.id] ?? 0,
     }));
 
     const responseData = {
       myTeamsData,
-      similiarTeams,
+      similiarTeamsData,
     };
 
     return responseData;
@@ -153,6 +186,30 @@ export class TeamService {
         .where("teamId = :teamId", { teamId })
         .getMany();
 
+      const wins = await StatisticsService.getWins([team.id]);
+      const loses = await StatisticsService.getLoses([team.id]);
+      const draws = await StatisticsService.getDraws([team.id]);
+      let lastMatches = await StatisticsService.getLastMatches(team.id);
+      lastMatches = lastMatches.map((lastMatch) => {
+        if (lastMatch.isDraw) {
+          return "draw";
+        }
+        if (lastMatch.winnerTeamId === team.id) {
+          return "win";
+        }
+        return "loss";
+      });
+      let drawsMapped = {};
+      for (const draw of draws) {
+        if (!drawsMapped[draw.organiser]) drawsMapped[draw.organiser] = 0;
+        drawsMapped[draw.organiser] += 1;
+        if (!drawsMapped[draw.receiver]) drawsMapped[draw.receiver] = 0;
+        drawsMapped[draw.receiver] += 1;
+      }
+      team["wins"] = +(wins[0]?.wins ?? 0);
+      team["loses"] = +(loses[0]?.loses ?? 0);
+      team["draws"] = drawsMapped[team.id] ?? 0;
+      team["lastMatches"] = lastMatches;
       team["players"] = players;
     }
 
@@ -216,5 +273,31 @@ export class TeamService {
       .where("teamId = :teamId", { teamId: team.id })
       .andWhere("playerId = :userId", { userId: response.locals.jwt.userId })
       .execute();
+  };
+
+  static upload = async (request: Request, response: Response) => {
+    if (request.files.length) {
+      const files = [...(request.files as any)];
+      const attachmentRepository = getCustomRepository(AtachmentRepository);
+      return attachmentRepository
+        .createQueryBuilder("attachments")
+        .insert()
+        .into(Attachment)
+        .values(
+          files.map((file) => {
+            return {
+              name: file.filename,
+              originalName: file.originalname,
+              mimeType: file.mimetype,
+              extension: file.mimetype.split("/")[1],
+              sizeInBytes: file.size,
+              path: file.path,
+              teamId: +request.params.id,
+              userId: null,
+            };
+          })
+        )
+        .execute();
+    }
   };
 }

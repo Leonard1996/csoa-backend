@@ -26,7 +26,6 @@ export class AuthenticationController {
         ...(phoneNumber && { phoneNumber: phoneNumber }),
         ...(email && { email: email }),
         password: Md5.init(password),
-        deleted: 0,
       },
     });
 

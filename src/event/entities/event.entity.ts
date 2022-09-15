@@ -4,6 +4,12 @@ import { Location } from "../../complex/entities/location.entity";
 import { Team } from "../../team/entities/team.entity";
 import { User } from "../../user/entities/user.entity";
 
+export enum EventStatus {
+  DRAFT = "draft",
+  CONFIRMED = "confirmed",
+  COMPLETED = "completed",
+}
+
 @Entity("events")
 export class Event extends Common {
   @Column("varchar", { nullable: true, name: "sport" })

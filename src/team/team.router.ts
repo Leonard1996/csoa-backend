@@ -27,6 +27,25 @@ export class TeamRouter {
       TeamController.insert,
     ]);
 
+    app.post("/teams/:id/attachments", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([
+        UserRole.USER,
+        UserRole.ADMIN,
+      ]),
+      UploadMiddleware.validateFileUpload("file", ["jpg", "png", "jpeg"], 8),
+      TeamController.upload,
+    ]);
+
+    app.delete("/teams/:teamId/attachments/:attachmentId", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([
+        UserRole.ADMIN,
+        UserRole.USER,
+      ]),
+      TeamController.deleteAttachmentById,
+    ]);
+
     app.get("/teams/:teamId", [
       AuthenticationMiddleware.checkJwtToken,
       PermissionMiddleware.checkMeOrPermissionsAllowed([

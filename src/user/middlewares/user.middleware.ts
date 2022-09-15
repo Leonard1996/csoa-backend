@@ -57,9 +57,7 @@ export class UserMiddleware {
         requestPath.split(".")
       );
 
-      const whereCondition = {
-        deleted: false,
-      };
+      const whereCondition = {};
 
       whereCondition[column] = columnValue;
 
@@ -124,7 +122,9 @@ export class UserMiddleware {
   ) => {
     const registerInput = Joi.object().keys({
       newPassword: Joi.string().allow(null, "").optional(),
-      confirmPassword: Joi.string().allow(Joi.ref("newPassword")).allow(null, ""),
+      confirmPassword: Joi.string()
+        .allow(Joi.ref("newPassword"))
+        .allow(null, ""),
       phoneNumber: Joi.string().allow(null, "").optional(),
       name: Joi.string().optional(),
       surname: Joi.string().optional(),

@@ -1,8 +1,9 @@
 import { Brackets, getCustomRepository } from "typeorm";
+import { EventStatus } from "../../event/entities/event.entity";
 import { EventRepository } from "../../event/entities/repositories/event.repository";
 
 export class StatisticsService {
-  static getMyWins = async (ids: number[]) => {
+  static getWins = async (ids: number[]) => {
     const eventCustomRepository = getCustomRepository(EventRepository);
     return await eventCustomRepository
       .createQueryBuilder("events")
@@ -21,7 +22,7 @@ export class StatisticsService {
       .getRawMany();
   };
 
-  static getMyLoses = async (ids: number[]) => {
+  static getLoses = async (ids: number[]) => {
     const eventCustomRepository = getCustomRepository(EventRepository);
     return await eventCustomRepository
       .createQueryBuilder("events")
@@ -40,7 +41,7 @@ export class StatisticsService {
       .getRawMany();
   };
 
-  static getMyDraws = async (ids: number[]) => {
+  static getDraws = async (ids: number[]) => {
     const eventCustomRepository = getCustomRepository(EventRepository);
     return await eventCustomRepository
       .createQueryBuilder("events")
@@ -58,6 +59,28 @@ export class StatisticsService {
         })
       )
       .groupBy("events.id")
+      .getRawMany();
+  };
+
+  static getLastMatches = async (id: number) => {
+    const eventCustomRepository = getCustomRepository(EventRepository);
+    return await eventCustomRepository
+      .createQueryBuilder("events")
+      .select(
+        "events.id as id, events.isDraw as isDraw, events.winnerTeamId as winnerTeamId, events.loserTeamId as loserTeamId"
+      )
+      .where("events.status = :status", { status: EventStatus.COMPLETED })
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where("events.organiserTeamId = :id", {
+            id,
+          }).orWhere("events.receiverTeamId = :id", {
+            id,
+          });
+        })
+      )
+      .orderBy("events.endDate", "DESC")
+      .limit(10)
       .getRawMany();
   };
 }

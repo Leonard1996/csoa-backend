@@ -1,4 +1,5 @@
 import { Column, Entity, OneToMany } from "typeorm";
+import { Attachment } from "../../attachment/entities/attachment.entity";
 import { Common } from "../../common/entities/common";
 import { Event } from "../../event/entities/event.entity";
 import { Notification } from "../../notifications/entities/notification.entity";
@@ -74,6 +75,9 @@ export class User extends Common {
 
   @OneToMany(() => TeamUsers, (teamUsers) => teamUsers.player)
   players: TeamUsers[];
+
+  @OneToMany(() => Attachment, (attachment) => attachment.user)
+  attachments: Attachment[];
 
   toResponseObject() {
     return {

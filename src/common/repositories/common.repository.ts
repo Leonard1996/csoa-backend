@@ -138,7 +138,6 @@ export abstract class CommonRepository<Entity> extends Repository<Entity> {
     return this.findOne({
       where: {
         id,
-        deleted: 0,
       },
     });
   }

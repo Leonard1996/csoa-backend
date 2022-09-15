@@ -1,5 +1,7 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Common } from "../../common/entities/common";
+import { Team } from "../../team/entities/team.entity";
+import { User } from "../../user/entities/user.entity";
 
 @Entity("attachments")
 export class Attachment extends Common {
@@ -49,17 +51,19 @@ export class Attachment extends Common {
   })
   public path: string;
 
-  @Column("tinyint", {
-    nullable: true,
-    width: 1,
-    default: () => "'0'",
-    name: "is_banner",
-  })
-  public isBanner: boolean;
-
+  @ManyToOne(() => Team, (team) => team.attachments)
+  public team: Team;
   @Column({
     type: "int",
-    name: "business_id",
+    nullable: true,
   })
-  public businessId: number;
+  public teamId: number;
+
+  @ManyToOne(() => User, (user) => user.attachments)
+  public user: User;
+  @Column({
+    type: "int",
+    nullable: true,
+  })
+  public userId: number;
 }
