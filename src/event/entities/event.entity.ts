@@ -92,4 +92,13 @@ export class Event extends Common {
   public receiverTeam: Team;
   @Column("int", { nullable: true })
   receiverTeamId: number;
+
+  @ManyToOne(() => User, (user) => user.eventCreator)
+  public creator: User;
+  @Column("int", { nullable: true })
+  creatorId: number;
+
+  @Index()
+  @Column("tinyint")
+  isUserReservation: boolean;
 }

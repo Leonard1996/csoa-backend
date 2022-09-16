@@ -8,7 +8,6 @@ import { ProfileController } from "./controllers/profile.controller";
 export class AuthenticationRouter {
   static configRoutes = (app: express.Application) => {
     app.post("/login", [AuthenticationController.login]);
-
     //     app.post("/refresh-token", [
     //       AuthenticationMiddleware.validateRefreshTokenInput,
     //       AuthenticationController.refreshToken,

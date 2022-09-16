@@ -70,6 +70,9 @@ export class User extends Common {
   @OneToMany(() => Event, (event) => event.receiverTeamCaptain)
   eventReceiverTeamCaptain: Event[];
 
+  @OneToMany(() => Event, (event) => event.receiverTeamCaptain)
+  eventCreator: Event[];
+
   @OneToMany(() => Team, (team) => team.user)
   teams: Team[];
 

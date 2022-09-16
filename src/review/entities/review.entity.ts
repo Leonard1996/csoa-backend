@@ -1,8 +1,9 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from "typeorm";
+import { Column, Entity, Index, ManyToOne } from "typeorm";
 import { Common } from "../../common/entities/common";
 import { User } from "../../user/entities/user.entity";
 
 @Entity("reviews")
+@Index(["sender", "receiver", "sport"], { unique: true })
 export class Review extends Common {
   @Column("decimal", {
     nullable: true,
@@ -25,4 +26,7 @@ export class Review extends Common {
     nullable: true,
   })
   receiverId: number;
+
+  @Column("varchar", { nullable: true })
+  sport: string;
 }

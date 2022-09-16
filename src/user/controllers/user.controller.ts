@@ -5,21 +5,47 @@ import { ERROR_MESSAGES } from "../../common/utilities/ErrorMessages";
 import { UserService } from "../services/user.service";
 import { Helper } from "../../common/utilities/Helper";
 import { HttpStatusCode } from "../../common/utilities/HttpStatusCodes";
-import { getRepository, Not } from "typeorm";
+import { getCustomRepository, getRepository, Not } from "typeorm";
 import { User } from "../entities/user.entity";
 import { AttachmentService } from "../../attachment/services/attachment.services";
+import { ReviewRepository } from "../../review/repositories/review.repository";
 
 export class UserController {
   static list = async (request: Request, response: Response) => {
     const userRepository = getRepository(User);
 
-    const results = await userRepository.find({
+    const users = await userRepository.find({
       where: {
         id: Not(response.locals.jwt.userId),
       },
+      withDeleted: true,
     });
 
-    response.status(HttpStatusCode.OK).send(new SuccessResponse({ results }));
+    const ids = users.map((user) => user.id);
+    const reviewRepository = getCustomRepository(ReviewRepository);
+    let stars = [];
+    if (ids.length) {
+      stars = await reviewRepository.getStars(ids);
+    }
+
+    const starsMap = {};
+
+    for (const star of stars) {
+      if (!starsMap[star.userId]) {
+        starsMap[star.userId] = {};
+      }
+      starsMap[star.userId][star.sport] = star.stars;
+    }
+
+    const userData = users.map((user) => ({
+      ...user,
+      footballStars: parseFloat(starsMap[user.id].football).toFixed(2),
+      basketballStars: parseFloat(starsMap[user.id].basketball).toFixed(2),
+      tenisStars: parseFloat(starsMap[user.id].tenis).toFixed(2),
+      baseballStars: parseFloat(starsMap[user.id].baseball).toFixed(2),
+    }));
+
+    response.status(HttpStatusCode.OK).send(new SuccessResponse({ userData }));
   };
 
   static insert = async (request: Request, response: Response) => {
@@ -264,4 +290,23 @@ export class UserController {
       return response.status(400).send(new ErrorResponse(err));
     }
   };
+
+  public static async toggleUser(request: Request, response: Response) {
+    try {
+      const userRepository = getRepository(User);
+      const user = await userRepository.findOneOrFail({
+        where: { id: +request.query.id },
+        withDeleted: true,
+      });
+      if (!user.tsDeleted) userRepository.softDelete(user.id);
+      else user.tsDeleted = null;
+      await userRepository.save(user);
+      return response.status(200).send(new SuccessResponse({ user }));
+    } catch (err) {
+      console.log({ err });
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not update profile picture"));
+    }
+  }
 }
