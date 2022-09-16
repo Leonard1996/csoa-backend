@@ -6,9 +6,9 @@ import { Review } from "../entities/review.entity";
 export class ReviewRepository extends CommonRepository<Review> {
   getStars(ids: number[]) {
     return this.createQueryBuilder("r")
-      .select("SUM(r.value)/COUNT(r.id) as stars, receiverId as userId")
+      .select("SUM(r.value)/COUNT(r.id) as stars, receiverId as userId, sport")
       .where("r.receiverId IN (:...ids)", { ids })
-      .groupBy("r.receiverId")
+      .groupBy("r.receiverId, r.sport")
       .getRawMany();
   }
 }

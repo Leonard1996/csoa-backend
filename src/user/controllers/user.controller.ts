@@ -17,6 +17,7 @@ export class UserController {
       where: {
         id: Not(response.locals.jwt.userId),
       },
+      withDeleted: true,
     });
 
     const ids = users.map((user) => user.id);
@@ -29,12 +30,18 @@ export class UserController {
     const starsMap = {};
 
     for (const star of stars) {
-      starsMap[star.userId] = star;
+      if (!starsMap[star.userId]) {
+        starsMap[star.userId] = {};
+      }
+      starsMap[star.userId][star.sport] = star.stars;
     }
 
     const userData = users.map((user) => ({
       ...user,
-      stars: starsMap[user.id].stars,
+      footballStars: parseFloat(starsMap[user.id].football).toFixed(2),
+      basketballStars: parseFloat(starsMap[user.id].basketball).toFixed(2),
+      tenisStars: parseFloat(starsMap[user.id].tenis).toFixed(2),
+      baseballStars: parseFloat(starsMap[user.id].baseball).toFixed(2),
     }));
 
     response.status(HttpStatusCode.OK).send(new SuccessResponse({ userData }));
@@ -228,6 +235,25 @@ export class UserController {
   ) {
     try {
       const user = await UserService.insertProfilePicture(request, response);
+      return response.status(200).send(new SuccessResponse({ user }));
+    } catch (err) {
+      console.log({ err });
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not update profile picture"));
+    }
+  }
+
+  public static async toggleUser(request: Request, response: Response) {
+    try {
+      const userRepository = getRepository(User);
+      const user = await userRepository.findOneOrFail({
+        where: { id: +request.query.id },
+        withDeleted: true,
+      });
+      if (!user.tsDeleted) userRepository.softDelete(user.id);
+      else user.tsDeleted = null;
+      await userRepository.save(user);
       return response.status(200).send(new SuccessResponse({ user }));
     } catch (err) {
       console.log({ err });

@@ -11,6 +11,12 @@ export class UserRouter {
     // inc
     app.post("/users/check-phone-number", [UserController.checkPhoneNumber]);
 
+    app.get("/users/toggle", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
+      UserController.toggleUser,
+    ]);
+
     app.get("/users", [
       AuthenticationMiddleware.checkJwtToken,
       PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
