@@ -27,7 +27,7 @@ export class TeamRouter {
       TeamController.insert,
     ]);
 
-    app.post("/teams/:id/attachments", [
+    app.post("/teams/:teamId/attachments", [
       AuthenticationMiddleware.checkJwtToken,
       PermissionMiddleware.checkAllowedPermissions([
         UserRole.USER,

@@ -7,6 +7,7 @@ import { Helper } from "../../common/utilities/Helper";
 import { HttpStatusCode } from "../../common/utilities/HttpStatusCodes";
 import { getRepository, Not } from "typeorm";
 import { User } from "../entities/user.entity";
+import { AttachmentService } from "../../attachment/services/attachment.services";
 
 export class UserController {
   static list = async (request: Request, response: Response) => {
@@ -35,9 +36,7 @@ export class UserController {
     try {
       const user = await UserService.getById(+request.params.userId);
       if (Helper.isDefined(user)) {
-        response
-          .status(HttpStatusCode.OK)
-          .send(new SuccessResponse(user.toResponseObject()));
+        response.status(HttpStatusCode.OK).send(new SuccessResponse(user));
       } else {
         response
           .status(HttpStatusCode.NOT_FOUND)
@@ -53,7 +52,6 @@ export class UserController {
 
   static patchById = async (request: Request, response: Response) => {
     const user = await UserService.getById(+request.params.userId);
-
     if (Helper.isDefined(user)) {
       const finalUser = await UserService.update(request.body, user);
       response
@@ -69,9 +67,22 @@ export class UserController {
   };
 
   static deleteById = async (request: Request, response: Response) => {
-    await UserService.deleteById(+request.params.userId);
-
-    response.status(HttpStatusCode.OK).send();
+    try {
+      const user = await UserService.getById(+request.params.userId);
+      if (Helper.isDefined(user)) {
+        await UserService.deleteById(user);
+        return response
+          .status(HttpStatusCode.OK)
+          .send(new SuccessResponse("Successfully deleted"));
+      } else {
+        return response
+          .status(HttpStatusCode.NOT_FOUND)
+          .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+      }
+    } catch (err) {
+      console.log(err);
+      return response.status(400).send(new ErrorResponse(err));
+    }
   };
 
   static patchPassword = async (request: Request, response: Response) => {
@@ -217,4 +228,40 @@ export class UserController {
         .send(new ErrorResponse("Could not update profile picture"));
     }
   }
+
+  static upload = async (request: Request, response: Response) => {
+    try {
+      const attachments = await UserService.upload(request, response);
+      response
+        .status(HttpStatusCode.OK)
+        .send(new SuccessResponse({ attachments }));
+    } catch (err) {
+      console.log(err);
+      return response.status(400).send(new ErrorResponse(err));
+    }
+  };
+
+  static deleteAttachmentById = async (
+    request: Request,
+    response: Response
+  ) => {
+    try {
+      const attachment = await AttachmentService.getById(
+        +request.params.attachmentId
+      );
+      if (Helper.isDefined(attachment)) {
+        await AttachmentService.deleteById(attachment);
+        return response
+          .status(HttpStatusCode.OK)
+          .send(new SuccessResponse("Successfully deleted"));
+      } else {
+        return response
+          .status(HttpStatusCode.NOT_FOUND)
+          .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+      }
+    } catch (err) {
+      console.log(err);
+      return response.status(400).send(new ErrorResponse(err));
+    }
+  };
 }

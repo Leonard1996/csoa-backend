@@ -292,7 +292,7 @@ export class TeamService {
               extension: file.mimetype.split("/")[1],
               sizeInBytes: file.size,
               path: file.path,
-              teamId: +request.params.id,
+              teamId: +request.params.teamId,
               userId: null,
             };
           })

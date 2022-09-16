@@ -8,6 +8,9 @@ import { Helper } from "../../common/utilities/Helper";
 import { Request, Response } from "express";
 import { Code } from "../entities/codes.entity";
 import { AuthenticationController } from "../../authentication/controllers/authentication.controller";
+import { TeamUsersRepository } from "../../team/repositories/team.users.repository";
+import { AtachmentRepository } from "../../attachment/repositories/attachment.repository";
+import { Attachment } from "../../attachment/entities/attachment.entity";
 const UUID = require("uuid/v1");
 
 const accountSid = "ACd684d7d904d8ca841081b583bd0eb4d9";
@@ -101,10 +104,18 @@ export class UserService {
     return finalUser;
   };
 
-  static deleteById = async (userId: number) => {
+  static deleteById = async (user: User) => {
     const userRepository = getCustomRepository(UserRepository);
 
-    await userRepository.deleteById(userId);
+    await userRepository.softDelete(user.id);
+
+    const teamUsersRepository = getCustomRepository(TeamUsersRepository);
+
+    teamUsersRepository
+      .createQueryBuilder("teamUsers")
+      .delete()
+      .where("userId = :userId", { userId: user.id })
+      .execute();
   };
 
   static updatePassword = async (
@@ -184,6 +195,7 @@ export class UserService {
     //   .done();
     successCallback(code);
   }
+
   static async insertProfilePicture(request: Request, response: Response) {
     const userRepository = getRepository(User);
     const user = await userRepository.findOneOrFail({
@@ -195,4 +207,30 @@ export class UserService {
 
     return userRepository.save(user);
   }
+
+  static upload = async (request: Request, response: Response) => {
+    if (request.files.length) {
+      const files = [...(request.files as any)];
+      const attachmentRepository = getCustomRepository(AtachmentRepository);
+      return attachmentRepository
+        .createQueryBuilder("attachments")
+        .insert()
+        .into(Attachment)
+        .values(
+          files.map((file) => {
+            return {
+              name: file.filename,
+              originalName: file.originalname,
+              mimeType: file.mimetype,
+              extension: file.mimetype.split("/")[1],
+              sizeInBytes: file.size,
+              path: file.path,
+              teamId: null,
+              userId: +request.params.userId,
+            };
+          })
+        )
+        .execute();
+    }
+  };
 }
