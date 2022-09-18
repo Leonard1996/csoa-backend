@@ -48,6 +48,16 @@ export class UserRouter {
       UserController.insertProfilePicture,
     ]);
 
+    app.patch("/users/:userId/profile-picture", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([
+        UserRole.USER,
+        UserRole.ADMIN,
+      ]),
+      UploadMiddleware.validateFileUpload("file", ["jpg", "png", "jpeg"], 1),
+      UserController.updateProfilePicture,
+    ]);
+
     app.patch("/users/:userId", [
       AuthenticationMiddleware.checkJwtToken,
       PermissionMiddleware.checkAllowedPermissions([
@@ -55,6 +65,15 @@ export class UserRouter {
         UserRole.ADMIN,
       ]),
       UserController.patchById,
+    ]);
+
+    app.patch("/users/:userId/sports", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([
+        UserRole.USER,
+        UserRole.ADMIN,
+      ]),
+      UserController.patchSport,
     ]);
 
     app.delete("/users/:userId", [
@@ -65,6 +84,15 @@ export class UserRouter {
       ]),
       UserController.deleteById,
     ]);
+
+    // app.delete("/users/:userId/sports/:sport", [
+    //   AuthenticationMiddleware.checkJwtToken,
+    //   PermissionMiddleware.checkAllowedPermissions([
+    //     UserRole.USER,
+    //     UserRole.ADMIN,
+    //   ]),
+    //   UserController.deleteSport,
+    // ]);
 
     app.patch("/me/change-me", [
       AuthenticationMiddleware.checkJwtToken,

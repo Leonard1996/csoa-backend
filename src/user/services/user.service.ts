@@ -1,6 +1,6 @@
 import { UserRepository } from "../repositories/user.repository";
 import { QueryStringProcessor } from "../../common/utilities/QueryStringProcessor";
-import { getCustomRepository, getRepository } from "typeorm";
+import { FileLogger, getCustomRepository, getRepository } from "typeorm";
 import { UserRole } from "../utilities/UserRole";
 import { Md5 } from "md5-typescript";
 import { User } from "../entities/user.entity";
@@ -11,6 +11,12 @@ import { AuthenticationController } from "../../authentication/controllers/authe
 import { TeamUsersRepository } from "../../team/repositories/team.users.repository";
 import { AtachmentRepository } from "../../attachment/repositories/attachment.repository";
 import { Attachment } from "../../attachment/entities/attachment.entity";
+import { ReviewRepository } from "../../review/repositories/review.repository";
+import { StatisticsService } from "../../team/services/statistics.services";
+import { UpdateUserDto } from "../dto/update-user.dto";
+import { File } from "../../common/utilities/File";
+import { Review } from "../../review/entities/review.entity";
+import { TeamUsers } from "../../team/entities/team.users.entity";
 const UUID = require("uuid/v1");
 
 const accountSid = "ACd684d7d904d8ca841081b583bd0eb4d9";
@@ -81,10 +87,40 @@ export class UserService {
     await AuthenticationController.login(request, response);
   };
 
-  static getById = async (userId: number) => {
+  static findOne = async (userId: number) => {
     const userRepository = getCustomRepository(UserRepository);
+    const user = await userRepository.findById(userId);
+    return user;
+  };
 
-    return await userRepository.findById(userId);
+  static getById = async (userId: number, sport: string) => {
+    const userRepository = getCustomRepository(UserRepository);
+    const teamUsersRepository = getCustomRepository(TeamUsersRepository);
+    const reviewRepository = getCustomRepository(ReviewRepository);
+
+    const user = await userRepository.findById(userId);
+    const stars = await reviewRepository.getStars([userId], sport);
+    const statistics = await StatisticsService.getUserStatistics(
+      user.id,
+      sport
+    );
+    const teams = await teamUsersRepository
+      .createQueryBuilder("tu")
+      .leftJoinAndSelect("tu.team", "t")
+      .where("tu.playerId = :userId", { userId: user.id })
+      .andWhere("tu.sport = :sport", { sport })
+      .getMany();
+
+    user.sports[sport].rating = stars;
+    user.sports[sport].statistics = statistics;
+    user.sports[sport].teams = teams.map((teamUsers) => teamUsers.team);
+
+    for (const type in user.sports as any) {
+      if (type !== sport) {
+        delete user.sports[type];
+      }
+    }
+    return user;
   };
 
   static update = async (userPayload, currentUser: User) => {
@@ -98,10 +134,98 @@ export class UserService {
       userPayload.password = Md5.init(userPayload.newPassword);
     }
 
-    const finalUser = userRepository.merge(currentUser, userPayload);
+    if (userPayload.phoneNumber.slice(0, 3) === "355")
+      userPayload.phoneNumber = userPayload.phoneNumber.slice(
+        3,
+        userPayload.phoneNumber.length
+      );
+    if (userPayload.phoneNumber[0] === "0")
+      userPayload.phoneNumber = userPayload.phoneNumber.slice(
+        1,
+        userPayload.phoneNumber.length
+      );
+    userPayload.phoneNumber = "355" + userPayload.phoneNumber;
+
+    const isExisting = await userRepository.findOne({
+      where: { phoneNumber: userPayload.phoneNumber },
+    });
+    if (isExisting) throw "User with this number already exists";
+
+    const updateUserDto = new UpdateUserDto();
+    updateUserDto.address = userPayload.address;
+    updateUserDto.birthday = userPayload.birthday;
+    updateUserDto.name = userPayload.name;
+    updateUserDto.phoneNumber = userPayload.phoneNumber;
+    updateUserDto.sex = userPayload.sex;
+
+    const finalUser = userRepository.merge(currentUser, updateUserDto);
     await userRepository.save(finalUser);
 
     return finalUser;
+  };
+
+  static updateSport = async (sportsPayload, user: User) => {
+    const userRepository = getCustomRepository(UserRepository);
+    for (const sport in user.sports as any) {
+      for (const key in user.sports[sport]) {
+        if (user.sports[sport][key] !== sportsPayload[sport][key]) {
+          user.sports[sport][key] = sportsPayload[sport][key];
+          if (key === "rating") {
+            const reviewRepository = getRepository(Review);
+            await reviewRepository.update(
+              { receiverId: user.id, senderId: user.id },
+              { value: sportsPayload[sport][key] }
+            );
+          }
+          if (key === "picked") {
+            if (sportsPayload[sport][key] === false) {
+              await UserService.deleteReviewsAndTeams(user, sport);
+            } else {
+              await UserService.writeReview(
+                user,
+                sport,
+                sportsPayload[sport]["rating"]
+              );
+            }
+          }
+        }
+      }
+    }
+    return userRepository.save(user);
+  };
+
+  static writeReview = async (user: User, sport: string, value: string) => {
+    const reviewCustomRepository = getCustomRepository(ReviewRepository);
+    await reviewCustomRepository
+      .createQueryBuilder("r")
+      .insert()
+      .values([
+        { sport: sport, value: +value, senderId: user.id, receiverId: user.id },
+      ])
+      .execute();
+  };
+
+  static deleteReviewsAndTeams = async (user: User, sport: string) => {
+    console.log(sport);
+
+    const reviewCustomRepository = getCustomRepository(ReviewRepository);
+    await reviewCustomRepository
+      .createQueryBuilder("r")
+      .delete()
+      .from(Review)
+      .where("sport = :sport", { sport })
+      .andWhere("senderId = :userId", { userId: user.id })
+      .andWhere("receiverId = :userId", { userId: user.id })
+      .execute();
+
+    const teamUsersCustomRepository = getCustomRepository(TeamUsersRepository);
+    await teamUsersCustomRepository
+      .createQueryBuilder("tu")
+      .delete()
+      .from(TeamUsers)
+      .where("sport = :sport", { sport })
+      .andWhere("playerId = :userId", { userId: user.id })
+      .execute();
   };
 
   static deleteById = async (user: User) => {
@@ -117,6 +241,40 @@ export class UserService {
       .where("userId = :userId", { userId: user.id })
       .execute();
   };
+
+  // static deleteSport = async (user: User, sport: string) => {
+  //   const userRepository = getRepository(User);
+
+  //   let deletedSports = user.sports[sport];
+
+  //   deletedSports.picked = false;
+  //   deletedSports.rating = "";
+  //   deletedSports.position = "";
+  //   deletedSports.experience = "";
+
+  //   userRepository.merge(user, deletedSports);
+
+  //   await userRepository.save(user);
+
+  //   const reviewCustomRepository = getCustomRepository(ReviewRepository);
+  //   await reviewCustomRepository
+  //     .createQueryBuilder("r")
+  //     .delete()
+  //     .from(Review)
+  //     .where("sport = :sport", { sport })
+  //     .andWhere("senderId = :userId", { userId: user.id })
+  //     .andWhere("receiverId = :userId", { userId: user.id })
+  //     .execute();
+
+  //   const teamUsersCustomRepository = getCustomRepository(TeamUsersRepository);
+  //   await teamUsersCustomRepository
+  //     .createQueryBuilder("tu")
+  //     .delete()
+  //     .from(TeamUsers)
+  //     .where("sport = :sport", { sport })
+  //     .andWhere("playerId = :userId", { userId: user.id })
+  //     .execute();
+  // };
 
   static updatePassword = async (
     passwordPayload: string,
@@ -201,6 +359,20 @@ export class UserService {
     const user = await userRepository.findOneOrFail({
       where: { id: response.locals.jwt.userId },
     });
+
+    if (request.file) user.profilePicture = request.file.filename;
+    else user.profilePicture = null;
+
+    return userRepository.save(user);
+  }
+
+  static async updateProfilePicture(request: Request, response: Response) {
+    const userRepository = getRepository(User);
+    const user = await userRepository.findOneOrFail({
+      where: { id: request.params.userId },
+    });
+
+    File.deleteMedia(user.profilePicture);
 
     if (request.file) user.profilePicture = request.file.filename;
     else user.profilePicture = null;

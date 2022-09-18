@@ -1,9 +1,7 @@
 import { Request, Response } from "express";
-import { Brackets, getCustomRepository, getRepository } from "typeorm";
+import { getCustomRepository, getRepository } from "typeorm";
 import { Attachment } from "../../attachment/entities/attachment.entity";
 import { AtachmentRepository } from "../../attachment/repositories/attachment.repository";
-import { EventRepository } from "../../event/entities/repositories/event.repository";
-import { User } from "../../user/entities/user.entity";
 import { CreateTeamUserDto } from "../dto/create-team-user.dto";
 import { CreateTeamDto } from "../dto/create-team.dto";
 import { UpdateTeamDto } from "../dto/update-team.dto";

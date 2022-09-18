@@ -1,6 +1,7 @@
 import { Brackets, getCustomRepository } from "typeorm";
 import { EventStatus } from "../../event/entities/event.entity";
-import { EventRepository } from "../../event/entities/repositories/event.repository";
+import { EventRepository } from "../../event/repositories/event.repository";
+import { TeamUsersRepository } from "../repositories/team.users.repository";
 
 export class StatisticsService {
   static getWins = async (ids: number[]) => {
@@ -82,5 +83,50 @@ export class StatisticsService {
       .orderBy("events.endDate", "DESC")
       .limit(10)
       .getRawMany();
+  };
+
+  static getUserStatistics = async (id: number, sport: string) => {
+    const teamUsersCustomRepository = getCustomRepository(TeamUsersRepository);
+    const wins = await teamUsersCustomRepository
+      .createQueryBuilder("tu")
+      .innerJoin("event_teams_users", "etu", "tu.id = etu.teamUserId")
+      .innerJoin(
+        "events",
+        "e",
+        "etu.eventId = e.id and tu.teamId = e.winnerTeamId"
+      )
+      .select("e.id as eventId, tu.teamId as teamId")
+      .where(`tu.sport = '${sport}'`)
+      .andWhere(`tu.playerId = ${id}`)
+      .getRawMany();
+
+    const loses = await teamUsersCustomRepository
+      .createQueryBuilder("tu")
+      .innerJoin("event_teams_users", "etu", "tu.id = etu.teamUserId")
+      .innerJoin(
+        "events",
+        "e",
+        "etu.eventId = e.id and tu.teamId = e.loserTeamId"
+      )
+      .select("e.id as eventId, tu.teamId as teamId")
+      .where(`tu.sport = '${sport}'`)
+      .andWhere(`tu.playerId = ${id}`)
+      .getRawMany();
+
+    const draws = await teamUsersCustomRepository
+      .createQueryBuilder("tu")
+      .innerJoin("event_teams_users", "etu", "tu.id = etu.teamUserId")
+      .innerJoin(
+        "events",
+        "e",
+        "etu.eventId = e.id and (e.organiserTeamId = tu.teamId or e.receiverTeamId = tu.teamId)"
+      )
+      .select("e.id as eventId, tu.teamId as teamId")
+      .where(`tu.sport = '${sport}'`)
+      .andWhere(`tu.playerId = ${id}`)
+      .andWhere("e.isDraw = 1")
+      .getRawMany();
+
+    return { wins: wins.length, loses: loses.length, draws: draws.length };
   };
 }

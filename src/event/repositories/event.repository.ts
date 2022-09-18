@@ -1,13 +1,13 @@
 import { EntityRepository } from "typeorm";
-import { CommonRepository } from "../../../common/repositories/common.repository";
-import { Helper } from "../../../common/utilities/Helper";
-import { Condition } from "../../../common/utilities/QueryBuilder/Condition";
-import { ConditionGroup } from "../../../common/utilities/QueryBuilder/ConditionGroup";
-import { FilterInfo } from "../../../common/utilities/QueryBuilder/FilterInfo";
-import { QueryStringProcessor } from "../../../common/utilities/QueryStringProcessor";
-import { Team } from "../../../team/entities/team.entity";
-import { IUserFilter } from "../../../user/utilities/user-filter.interface";
-import { Event } from "../event.entity";
+import { CommonRepository } from "../../common/repositories/common.repository";
+import { Helper } from "../../common/utilities/Helper";
+import { Condition } from "../../common/utilities/QueryBuilder/Condition";
+import { ConditionGroup } from "../../common/utilities/QueryBuilder/ConditionGroup";
+import { FilterInfo } from "../../common/utilities/QueryBuilder/FilterInfo";
+import { QueryStringProcessor } from "../../common/utilities/QueryStringProcessor";
+import { Team } from "../../team/entities/team.entity";
+import { IUserFilter } from "../../user/utilities/user-filter.interface";
+import { Event } from "../entities/event.entity";
 
 @EntityRepository(Event)
 export class EventRepository extends CommonRepository<Event> {

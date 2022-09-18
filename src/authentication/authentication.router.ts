@@ -1,5 +1,4 @@
 import * as express from "express";
-import { AuthenticationMiddleware } from "./middlewares/authentication.middleware";
 // import { ProfileMiddleware } from "./middlewares/profile.middleware";
 import { AuthenticationController } from "./controllers/authentication.controller";
 import { ProfileController } from "./controllers/profile.controller";

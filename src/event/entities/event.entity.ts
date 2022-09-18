@@ -1,8 +1,9 @@
 import { Column, Entity, Index, ManyToOne, OneToMany } from "typeorm";
 import { Common } from "../../common/entities/common";
-import { Location } from "../../complex/entities/location.entity";
 import { Team } from "../../team/entities/team.entity";
 import { User } from "../../user/entities/user.entity";
+import { EventTeamUsers } from "./event.team.users.entity";
+import { Location } from "../../complex/entities/location.entity";
 
 export enum EventStatus {
   DRAFT = "draft",
@@ -97,6 +98,9 @@ export class Event extends Common {
   public creator: User;
   @Column("int", { nullable: true })
   creatorId: number;
+
+  @OneToMany(() => EventTeamUsers, (eventTeamUser) => eventTeamUser.event)
+  eventsTeamUser: EventTeamUsers[];
 
   @Index()
   @Column("tinyint")
