@@ -55,7 +55,7 @@ export class Team extends Common {
   @OneToMany(() => Attachment, (attachment) => attachment.team)
   attachments: Attachment[];
 
-  toResponseObject() {
+  get toResponseObject() {
     return {
       name: this.name,
       banner: this.banner,

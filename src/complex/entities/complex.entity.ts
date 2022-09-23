@@ -36,4 +36,15 @@ export class Complex extends Common {
 
   @OneToMany(() => Location, (location) => location.complex)
   locations: Location[];
+
+  get baseComplex() {
+    return {
+      id: this.id,
+      name: this.name,
+      phone: this.phone,
+      facilities: this.facilities,
+      banner: this.banner,
+      avatar: this.avatar,
+    };
+  }
 }

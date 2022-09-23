@@ -36,11 +36,11 @@ export class Event extends Common {
   @Column("tinyint", { nullable: true, name: "isTeam" })
   public isTeam: boolean;
 
-  @Column("int", { nullable: true, name: "level" })
-  public level: number;
+  @Column("varchar", { nullable: true, name: "level" })
+  public level: string;
 
-  @Column("int", { nullable: true, name: "playersNumber" })
-  public playersNumber: number;
+  @Column("varchar", { nullable: true, name: "playersNumber" })
+  public playersNumber: string;
 
   @Column("varchar", { nullable: true, name: "playersAge" })
   public playersAge: string;
@@ -134,7 +134,9 @@ export class Event extends Common {
   get toResponse() {
     return {
       ...this.baseEvent,
-      location: this.location?.baseLocation,
+      location: this.location?.toResponse,
+      organiserTeam: this.organiserTeam?.toResponseObject,
+      receiverTeam: this.receiverTeam?.toResponseObject,
     };
   }
 }

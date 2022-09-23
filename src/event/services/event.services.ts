@@ -1,13 +1,14 @@
 import { Request, Response } from "express";
-import { getCustomRepository, getRepository } from "typeorm";
-import { Attachment } from "../../attachment/entities/attachment.entity";
-import { AtachmentRepository } from "../../attachment/repositories/attachment.repository";
+import { Brackets, getCustomRepository, getRepository } from "typeorm";
 import { Functions } from "../../common/utilities/Functions";
+import { RequestStatus } from "../../request/entities/request.entity";
 import { UserService } from "../../user/services/user.service";
-import { EventStatus } from "../entities/event.entity";
+import { Event, EventStatus } from "../entities/event.entity";
 import { EventRepository } from "../repositories/event.repository";
+import { TeamUsers } from "../../team/entities/team.users.entity";
+import { CreateEventDto } from "../dto/create-event.dto";
 
-export class TeamService {
+export class EventService {
   static listMyEvents = async (request: Request, response: Response) => {
     const eventsRepository = getCustomRepository(EventRepository);
     let todayDate = Functions.formatCurrentDate(new Date());
@@ -20,125 +21,139 @@ export class TeamService {
       }
     }
 
+    const teamUsersRepository = getRepository(TeamUsers);
+
+    const myTeams = await teamUsersRepository.find({
+      where: {
+        playerId: response.locals.jwt.userId,
+      },
+      relations: ["team"],
+    });
+
+    const myTeamsIds = myTeams.map((player) => player.team.id);
+
     const myEvents = await eventsRepository
-      .createQueryBuilder("e")
-      .innerJoinAndSelect("e.location", "l")
-      .where("e.status IN (:statuses)", {
+      .createQueryBuilder("event")
+      .innerJoin("event.eventRequests", "request", "request.eventId = event.id")
+      .innerJoinAndSelect("event.location", "location")
+      .innerJoinAndSelect("location.complex", "complex")
+      .innerJoinAndSelect("event.organiserTeam", "senderTeam")
+      .innerJoinAndSelect("event.receiverTeam", "receiverTeam")
+      .where("event.status IN (:statuses)", {
         statuses: [
           EventStatus.DRAFT,
           EventStatus.WAITING_FOR_CONFIRMATION,
           EventStatus.CONFIRMED,
         ],
       })
-      .andWhere("e.startDate > :todayStart", {
+      .andWhere("event.startDate > :todayStart", {
         todayStart: todayDate + " 00:00:00",
       })
-      .andWhere("e.startDate < :todayEnd", {
+      .andWhere("event.startDate < :todayEnd", {
         todayEnd: todayDate + " 23:59:59",
       })
+      .andWhere("request.status = :status", {
+        status: RequestStatus.CONFIRMED,
+      })
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where("request.receiverId = :id", { id: userId })
+            .orWhere("request.senderId = :id", { id: userId })
+            .orWhere("request.senderTeamId IN (:...myTeamsIds)", {
+              myTeamsIds,
+            })
+            .orWhere("request.receiverTeamId IN (:...myTeamsIds)", {
+              myTeamsIds,
+            });
+        })
+      )
       .getMany();
 
     const publicEvents = await eventsRepository
-      .createQueryBuilder("e")
-      .where("e.sport IN (:mySports)", { mySports })
-      .andWhere("e.isPublic = true")
-      .andWhere("e.status = :statuses", {
+      .createQueryBuilder("event")
+      .innerJoin("event.eventRequests", "request", "request.eventId = event.id")
+      .innerJoinAndSelect("event.location", "location")
+      .innerJoinAndSelect("location.complex", "complex")
+      .innerJoinAndSelect("event.organiserTeam", "senderTeam")
+      .innerJoinAndSelect("event.receiverTeam", "receiverTeam")
+      .where("event.sport IN (:mySports)", { mySports })
+      .andWhere("event.isPublic = true")
+      .andWhere("event.status IN (:statuses)", {
         statuses: [EventStatus.CONFIRMED, EventStatus.WAITING_FOR_CONFIRMATION],
-      });
-
-    console.log(myEvents);
+      })
+      .andWhere("request.status = :status", {
+        status: RequestStatus.CONFIRMED,
+      })
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where("request.receiverId != :id", {
+            id: userId,
+          });
+          qb.orWhere("request.receiverId IS NULL");
+        })
+      )
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where("request.senderId != :id", {
+            id: userId,
+          });
+          qb.orWhere("request.senderId IS NULL");
+        })
+      )
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where("request.senderTeamId NOT IN (:...myTeamsIds)", {
+            myTeamsIds,
+          });
+          qb.orWhere("request.senderTeamId IS NULL");
+        })
+      )
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where("request.receiverTeamId NOT IN (:...myTeamsIds)", {
+            myTeamsIds,
+          });
+          qb.orWhere("request.receiverTeamId IS NULL");
+        })
+      )
+      .getMany();
 
     const responseData = {
       myEvents: myEvents.map((event) => event.toResponse),
+      publicEvents: publicEvents.map((event) => event.toResponse),
     };
 
     return responseData;
   };
 
-  // static insert = async (
-  //   teamPayload: CreateTeamDto,
-  //   request: Request,
-  //   response: Response
-  // ) => {
-  //   const teamRepository = getRepository(Team);
+  static insert = async (
+    eventPayload: CreateEventDto,
+    request: Request,
+    response: Response
+  ) => {
+    const eventRepository = getCustomRepository(EventRepository);
 
-  //   const isExisting = await teamRepository.findOne({
-  //     where: { name: teamPayload.name, sport: teamPayload.sport },
-  //   });
-  //   if (isExisting) throw "Team with this name already exists";
+    eventPayload.creatorId = response.locals.jwt.userId;
+    const createdEvent = eventRepository.create(eventPayload);
+    const savedEvent = await eventRepository.save(createdEvent);
 
-  //   if (request.files) {
-  //     for (const file of request.files as Array<Express.Multer.File>) {
-  //       if (file.originalname === teamPayload.avatarName) {
-  //         teamPayload.avatar = file.path;
-  //       }
-  //       if (file.originalname === teamPayload.bannerName) {
-  //         teamPayload.banner = file.path;
-  //       }
-  //     }
-  //   }
+    return savedEvent;
+  };
 
-  //   teamPayload.userId = response.locals.jwt.userId;
-  //   const createdTeam = teamRepository.create(teamPayload);
-  //   const savedTeam = await teamRepository.save(createdTeam);
+  static getById = async (eventId: number) => {
+    const eventRepository = getCustomRepository(EventRepository);
 
-  //   const teamUsersRepository = getRepository(TeamUsers);
+    const event = await eventRepository
+      .createQueryBuilder("event")
+      .innerJoinAndSelect("event.location", "location")
+      .innerJoinAndSelect("location.complex", "complex")
+      .where("event.id = :eventId", { eventId })
+      .getOne();
 
-  //   const teamUserDto = new CreateTeamUserDto();
-  //   teamUserDto.sport = savedTeam.sport;
-  //   teamUserDto.isConfirmed = true;
-  //   teamUserDto.playerId = response.locals.jwt.userId;
-  //   teamUserDto.teamId = savedTeam.id;
+    // const teamUsersRepository = getCustomRepository(TeamUsersRepository);
 
-  //   const createdTeamUser = teamUsersRepository.create(teamUserDto);
-  //   await teamUsersRepository.save(createdTeamUser);
-
-  //   return savedTeam;
-  // };
-
-  // static getById = async (teamId: number) => {
-  //   const teamRepository = getCustomRepository(TeamRepository);
-
-  //   const team = await teamRepository.findById(teamId);
-
-  //   const teamUsersRepository = getCustomRepository(TeamUsersRepository);
-
-  //   if (team) {
-  //     const players = await teamUsersRepository
-  //       .createQueryBuilder("teamUsers")
-  //       .leftJoinAndSelect("teamUsers.player", "player")
-  //       .where("teamId = :teamId", { teamId })
-  //       .getMany();
-
-  //     const wins = await StatisticsService.getWins([team.id]);
-  //     const loses = await StatisticsService.getLoses([team.id]);
-  //     const draws = await StatisticsService.getDraws([team.id]);
-  //     let lastMatches = await StatisticsService.getLastMatches(team.id);
-  //     lastMatches = lastMatches.map((lastMatch) => {
-  //       if (lastMatch.isDraw) {
-  //         return "draw";
-  //       }
-  //       if (lastMatch.winnerTeamId === team.id) {
-  //         return "win";
-  //       }
-  //       return "loss";
-  //     });
-  //     let drawsMapped = {};
-  //     for (const draw of draws) {
-  //       if (!drawsMapped[draw.organiser]) drawsMapped[draw.organiser] = 0;
-  //       drawsMapped[draw.organiser] += 1;
-  //       if (!drawsMapped[draw.receiver]) drawsMapped[draw.receiver] = 0;
-  //       drawsMapped[draw.receiver] += 1;
-  //     }
-  //     team["wins"] = +(wins[0]?.wins ?? 0);
-  //     team["loses"] = +(loses[0]?.loses ?? 0);
-  //     team["draws"] = drawsMapped[team.id] ?? 0;
-  //     team["lastMatches"] = lastMatches;
-  //     team["players"] = players;
-  //   }
-
-  //   return team;
-  // };
+    return event;
+  };
 
   // static update = async (
   //   teamPayload: UpdateTeamDto,
