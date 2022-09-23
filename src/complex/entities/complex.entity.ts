@@ -36,4 +36,9 @@ export class Complex extends Common {
 
   @OneToMany(() => Location, (location) => location.complex)
   locations: Location[];
+
+  @Column("varchar", {
+    nullable: true,
+  })
+  public city: string;
 }

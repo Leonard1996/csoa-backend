@@ -1,16 +1,18 @@
 import { Request, Response } from "express";
+import { getRepository } from "typeorm";
 import { AttachmentService } from "../../attachment/services/attachment.services";
 import { ERROR_MESSAGES } from "../../common/utilities/ErrorMessages";
 import { ErrorResponse } from "../../common/utilities/ErrorResponse";
 import { Helper } from "../../common/utilities/Helper";
 import { HttpStatusCode } from "../../common/utilities/HttpStatusCodes";
 import { SuccessResponse } from "../../common/utilities/SuccessResponse";
-import { TeamService } from "../services/event.services";
+import { Event } from "../entities/event.entity";
+import { EventService } from "../services/event.services";
 
 export class EventController {
   static listMyEvents = async (request: Request, response: Response) => {
     try {
-      const results = await TeamService.listMyEvents(request, response);
+      const results = await EventService.listMyEvents(request, response);
       return response
         .status(HttpStatusCode.OK)
         .send(new SuccessResponse({ results }));
@@ -19,6 +21,61 @@ export class EventController {
       return response
         .status(404)
         .send(new ErrorResponse("Could not get my events list"));
+    }
+  };
+
+  static list = async (request: Request, response: Response) => {
+    try {
+      const events = await EventService.list(request, response);
+      return response.status(HttpStatusCode.OK).send(
+        new SuccessResponse({
+          events: events.map((event) => ({
+            ...event,
+            startDate: new Date(event.startDate)
+              .toISOString()
+              .slice(0, 19)
+              .replace("T", " "),
+          })),
+        })
+      );
+    } catch (err) {
+      console.log({ err });
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not get my events"));
+    }
+  };
+
+  public static async toggleEvent(request: Request, response: Response) {
+    try {
+      const eventRepository = getRepository(Event);
+      const event = await eventRepository.findOneOrFail({
+        where: { id: +request.params.id },
+        withDeleted: true,
+      });
+      if (!event.tsDeleted) eventRepository.softDelete(event.id);
+      else event.tsDeleted = null;
+      await eventRepository.save(event);
+      return response.status(200).send(new SuccessResponse({ event }));
+    } catch (err) {
+      console.log({ err });
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not update event status"));
+    }
+  }
+
+  static getPlayers = async (request: Request, response: Response) => {
+    try {
+      const players = await EventService.getPlayers(request, response);
+      return response
+        .status(HttpStatusCode.OK)
+        .send(new SuccessResponse({ players }));
+    } catch (err) {
+      console.log({ err });
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not get my players"));
     }
   };
 

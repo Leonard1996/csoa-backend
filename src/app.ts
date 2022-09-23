@@ -15,6 +15,7 @@ import { join } from "path";
 import { TeamRouter } from "./team/team.router";
 import { DashboardRouter } from "./dashboard/dashboard.router";
 import { EventRouter } from "./event/event.router";
+import { ComplexRouter } from "./complex/complex.router";
 
 createConnection()
   .then(async (connection) => {
@@ -43,6 +44,8 @@ createConnection()
     AttachmentRouter.configRoutes(app);
 
     DashboardRouter.configRoutes(app);
+
+    ComplexRouter.configRoutes(app);
     // get api version
     app.get(process.env.URL + "/version", (req, res) => {
       res.status(200).send({

@@ -3,37 +3,15 @@ import { UploadMiddleware } from "../attachment/middlewares/upload.middleware";
 import { AuthenticationMiddleware } from "../authentication/middlewares/authentication.middleware";
 import { PermissionMiddleware } from "../common/middlewares/permission.middleware";
 import { UserRole } from "../user/utilities/UserRole";
-import { EventController } from "./controllers/event.controller";
+import { ComplexController } from "./controllers/complex.controller";
 
-export class EventRouter {
+export class ComplexRouter {
   static configRoutes = (app: express.Application) => {
-    app.get("/my-events", [
-      AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([
-        UserRole.USER,
-        UserRole.ADMIN,
-      ]),
-      EventController.listMyEvents,
-    ]);
-
-    app.get("/events", [
+    app.get("/complexes", [
       AuthenticationMiddleware.checkJwtToken,
       PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
-      EventController.list,
+      ComplexController.list,
     ]);
-
-    app.post("/events/:id/toggle", [
-      AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
-      EventController.toggleEvent,
-    ]);
-
-    app.get("/events/:id/players", [
-      AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
-      EventController.getPlayers,
-    ]);
-
     // app.post("/teams", [
     //   AuthenticationMiddleware.checkJwtToken,
     //   PermissionMiddleware.checkAllowedPermissions([
