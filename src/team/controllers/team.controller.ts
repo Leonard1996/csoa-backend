@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { AttachmentService } from "../../attachment/services/attachment.services";
 import { ERROR_MESSAGES } from "../../common/utilities/ErrorMessages";
 import { ErrorResponse } from "../../common/utilities/ErrorResponse";
 import { Helper } from "../../common/utilities/Helper";
@@ -26,6 +27,18 @@ export class TeamController {
       const teamPayload = JSON.parse(request.body.body);
       const team = await TeamService.insert(teamPayload, request, response);
       response.status(HttpStatusCode.OK).send(new SuccessResponse({ team }));
+    } catch (err) {
+      console.log(err);
+      return response.status(400).send(new ErrorResponse(err));
+    }
+  };
+
+  static upload = async (request: Request, response: Response) => {
+    try {
+      const attachments = await TeamService.upload(request, response);
+      response
+        .status(HttpStatusCode.OK)
+        .send(new SuccessResponse({ attachments }));
     } catch (err) {
       console.log(err);
       return response.status(400).send(new ErrorResponse(err));
@@ -80,6 +93,30 @@ export class TeamController {
       const team = await TeamService.getById(+request.params.teamId);
       if (Helper.isDefined(team)) {
         await TeamService.deleteById(team);
+        return response
+          .status(HttpStatusCode.OK)
+          .send(new SuccessResponse("Successfully deleted"));
+      } else {
+        return response
+          .status(HttpStatusCode.NOT_FOUND)
+          .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+      }
+    } catch (err) {
+      console.log(err);
+      return response.status(400).send(new ErrorResponse(err));
+    }
+  };
+
+  static deleteAttachmentById = async (
+    request: Request,
+    response: Response
+  ) => {
+    try {
+      const attachment = await AttachmentService.getById(
+        +request.params.attachmentId
+      );
+      if (Helper.isDefined(attachment)) {
+        await AttachmentService.deleteById(attachment);
         return response
           .status(HttpStatusCode.OK)
           .send(new SuccessResponse("Successfully deleted"));

@@ -14,6 +14,7 @@ var app = express();
 import { join } from "path";
 import { TeamRouter } from "./team/team.router";
 import { DashboardRouter } from "./dashboard/dashboard.router";
+import { EventRouter } from "./event/event.router";
 
 createConnection()
   .then(async (connection) => {
@@ -34,6 +35,9 @@ createConnection()
 
     // Team routs
     TeamRouter.configRoutes(app);
+
+    // Event routs
+    EventRouter.configRoutes(app);
 
     // Attachment routes
     AttachmentRouter.configRoutes(app);

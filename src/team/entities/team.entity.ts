@@ -1,6 +1,8 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from "typeorm";
+import { Column, Entity, ManyToOne, OneToMany } from "typeorm";
+import { Attachment } from "../../attachment/entities/attachment.entity";
 import { Common } from "../../common/entities/common";
 import { Event } from "../../event/entities/event.entity";
+import { Request } from "../../request/entities/request.entity";
 import { User } from "../../user/entities/user.entity";
 import { TeamUsers } from "./team.users.entity";
 
@@ -37,6 +39,21 @@ export class Team extends Common {
 
   @OneToMany(() => Event, (event) => event.receiverTeam)
   eventReceiver: Event[];
+
+  @OneToMany(() => Event, (event) => event.winnerTeam)
+  eventWinner: Event[];
+
+  @OneToMany(() => Event, (event) => event.loserTeam)
+  eventLoser: Event[];
+
+  @OneToMany(() => Request, (request) => request.senderTeam)
+  sentRequests: Request[];
+
+  @OneToMany(() => Request, (request) => request.receiverTeam)
+  receivedRequests: Request[];
+
+  @OneToMany(() => Attachment, (attachment) => attachment.team)
+  attachments: Attachment[];
 
   toResponseObject() {
     return {

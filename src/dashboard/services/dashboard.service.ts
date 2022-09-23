@@ -2,7 +2,6 @@ import { Between, getCustomRepository, getRepository } from "typeorm";
 import { Complex } from "../../complex/entities/complex.entity";
 import { Event } from "../../event/entities/event.entity";
 import { User } from "../../user/entities/user.entity";
-import { UserRepository } from "../../user/repositories/user.repository";
 
 export class DashboardService {
   static async getStatistics() {

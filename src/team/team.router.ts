@@ -2,7 +2,6 @@ import * as express from "express";
 import { UploadMiddleware } from "../attachment/middlewares/upload.middleware";
 import { AuthenticationMiddleware } from "../authentication/middlewares/authentication.middleware";
 import { PermissionMiddleware } from "../common/middlewares/permission.middleware";
-import { UserMiddleware } from "../user/middlewares/user.middleware";
 import { UserRole } from "../user/utilities/UserRole";
 import { TeamController } from "./controllers/team.controller";
 
@@ -25,6 +24,25 @@ export class TeamRouter {
       ]),
       UploadMiddleware.validateFileUpload("file", ["jpg", "png", "jpeg"], 2),
       TeamController.insert,
+    ]);
+
+    app.post("/teams/:teamId/attachments", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([
+        UserRole.USER,
+        UserRole.ADMIN,
+      ]),
+      UploadMiddleware.validateFileUpload("file", ["jpg", "png", "jpeg"], 8),
+      TeamController.upload,
+    ]);
+
+    app.delete("/teams/:teamId/attachments/:attachmentId", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([
+        UserRole.ADMIN,
+        UserRole.USER,
+      ]),
+      TeamController.deleteAttachmentById,
     ]);
 
     app.get("/teams/:teamId", [

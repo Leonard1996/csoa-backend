@@ -1,9 +1,9 @@
 import { EntityRepository } from "typeorm";
 import { CommonRepository } from "../../common/repositories/common.repository";
-import { Review } from "../entities/review.entity";
+import { Request } from "../entities/request.entity";
 
-@EntityRepository(Review)
-export class ReviewRepository extends CommonRepository<Review> {
+@EntityRepository(Request)
+export class RequestRepository extends CommonRepository<Request> {
   getStars(ids: number[], sport?: string) {
     return this.createQueryBuilder("r")
       .select("SUM(r.value)/COUNT(r.id) as stars, receiverId as userId, sport")

@@ -1,7 +1,9 @@
 import { Column, Entity, OneToMany } from "typeorm";
+import { Attachment } from "../../attachment/entities/attachment.entity";
 import { Common } from "../../common/entities/common";
 import { Event } from "../../event/entities/event.entity";
 import { Notification } from "../../notifications/entities/notification.entity";
+import { Request } from "../../request/entities/request.entity";
 import { Review } from "../../review/entities/review.entity";
 import { Team } from "../../team/entities/team.entity";
 import { TeamUsers } from "../../team/entities/team.users.entity";
@@ -57,6 +59,12 @@ export class User extends Common {
   @OneToMany(() => Review, (review) => review.receiver)
   receivedReviews: Review[];
 
+  @OneToMany(() => Request, (request) => request.sender)
+  sentRequests: Request[];
+
+  @OneToMany(() => Request, (request) => request.receiver)
+  receivedRequests: Request[];
+
   @OneToMany(() => Notification, (notification) => notification.sender)
   givenNotifications: Notification[];
 
@@ -77,6 +85,9 @@ export class User extends Common {
 
   @OneToMany(() => TeamUsers, (teamUsers) => teamUsers.player)
   players: TeamUsers[];
+
+  @OneToMany(() => Attachment, (attachment) => attachment.user)
+  attachments: Attachment[];
 
   toResponseObject() {
     return {

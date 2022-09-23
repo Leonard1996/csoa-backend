@@ -7,6 +7,7 @@ import { Helper } from "../../common/utilities/Helper";
 import { HttpStatusCode } from "../../common/utilities/HttpStatusCodes";
 import { getCustomRepository, getRepository, Not } from "typeorm";
 import { User } from "../entities/user.entity";
+import { AttachmentService } from "../../attachment/services/attachment.services";
 import { ReviewRepository } from "../../review/repositories/review.repository";
 
 export class UserController {
@@ -59,11 +60,12 @@ export class UserController {
 
   static getById = async (request: Request, response: Response) => {
     try {
-      const user = await UserService.getById(+request.params.userId);
+      const user = await UserService.getById(
+        +request.params.userId,
+        request.query.sport as string
+      );
       if (Helper.isDefined(user)) {
-        response
-          .status(HttpStatusCode.OK)
-          .send(new SuccessResponse(user.toResponseObject()));
+        response.status(HttpStatusCode.OK).send(new SuccessResponse(user));
       } else {
         response
           .status(HttpStatusCode.NOT_FOUND)
@@ -78,8 +80,7 @@ export class UserController {
   };
 
   static patchById = async (request: Request, response: Response) => {
-    const user = await UserService.getById(+request.params.userId);
-
+    const user = await UserService.findOne(+request.params.userId);
     if (Helper.isDefined(user)) {
       const finalUser = await UserService.update(request.body, user);
       response
@@ -94,14 +95,61 @@ export class UserController {
     response.status(HttpStatusCode.OK).send();
   };
 
-  static deleteById = async (request: Request, response: Response) => {
-    await UserService.deleteById(+request.params.userId);
+  static patchSport = async (request: Request, response: Response) => {
+    const user = await UserService.findOne(+request.params.userId);
+    if (Helper.isDefined(user)) {
+      const updatedUser = await UserService.updateSport(request.body, user);
+      response.status(HttpStatusCode.OK).send(new SuccessResponse(updatedUser));
+    } else {
+      return response
+        .status(HttpStatusCode.NOT_FOUND)
+        .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+    }
 
     response.status(HttpStatusCode.OK).send();
   };
 
+  static deleteById = async (request: Request, response: Response) => {
+    try {
+      const user = await UserService.findOne(+request.params.userId);
+      if (Helper.isDefined(user)) {
+        await UserService.deleteById(user);
+        return response
+          .status(HttpStatusCode.OK)
+          .send(new SuccessResponse("Successfully deleted"));
+      } else {
+        return response
+          .status(HttpStatusCode.NOT_FOUND)
+          .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+      }
+    } catch (err) {
+      console.log(err);
+      return response.status(400).send(new ErrorResponse(err));
+    }
+  };
+
+  // static deleteSport = async (request: Request, response: Response) => {
+  //   try {
+  //     const user = await UserService.findOne(+request.params.userId);
+  //     if (Helper.isDefined(user)) {
+  //       const sport = request.params.sport;
+  //       await UserService.deleteSport(user, sport);
+  //       return response
+  //         .status(HttpStatusCode.OK)
+  //         .send(new SuccessResponse("Successfully deleted"));
+  //     } else {
+  //       return response
+  //         .status(HttpStatusCode.NOT_FOUND)
+  //         .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+  //     }
+  //   } catch (err) {
+  //     console.log(err);
+  //     return response.status(400).send(new ErrorResponse(err));
+  //   }
+  // };
+
   static patchPassword = async (request: Request, response: Response) => {
-    const user = await UserService.getById(+response.locals.jwt.userId);
+    const user = await UserService.findOne(+request.params.userId);
 
     if (Helper.isDefined(user)) {
       const finalUser = await UserService.updatePassword(
@@ -243,6 +291,57 @@ export class UserController {
         .send(new ErrorResponse("Could not update profile picture"));
     }
   }
+
+  public static async updateProfilePicture(
+    request: Request,
+    response: Response
+  ) {
+    try {
+      const user = await UserService.updateProfilePicture(request, response);
+      return response.status(200).send(new SuccessResponse({ user }));
+    } catch (err) {
+      console.log({ err });
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not update profile picture"));
+    }
+  }
+
+  static upload = async (request: Request, response: Response) => {
+    try {
+      const attachments = await UserService.upload(request, response);
+      response
+        .status(HttpStatusCode.OK)
+        .send(new SuccessResponse({ attachments }));
+    } catch (err) {
+      console.log(err);
+      return response.status(400).send(new ErrorResponse(err));
+    }
+  };
+
+  static deleteAttachmentById = async (
+    request: Request,
+    response: Response
+  ) => {
+    try {
+      const attachment = await AttachmentService.getById(
+        +request.params.attachmentId
+      );
+      if (Helper.isDefined(attachment)) {
+        await AttachmentService.deleteById(attachment);
+        return response
+          .status(HttpStatusCode.OK)
+          .send(new SuccessResponse("Successfully deleted"));
+      } else {
+        return response
+          .status(HttpStatusCode.NOT_FOUND)
+          .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+      }
+    } catch (err) {
+      console.log(err);
+      return response.status(400).send(new ErrorResponse(err));
+    }
+  };
 
   public static async toggleUser(request: Request, response: Response) {
     try {
