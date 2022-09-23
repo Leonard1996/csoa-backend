@@ -22,6 +22,12 @@ export class Complex extends Common {
   })
   public facilities: string;
 
+  @Column("json", {
+    nullable: true,
+    name: "sports",
+  })
+  public sports: string;
+
   @Column("varchar", {
     nullable: true,
     name: "banner",
@@ -41,4 +47,10 @@ export class Complex extends Common {
     nullable: true,
   })
   public city: string;
+
+  @Column("decimal", { nullable: true, name: "longitude" })
+  public longitude: number;
+
+  @Column("decimal", { nullable: true, name: "latitude" })
+  public latitude: number;
 }

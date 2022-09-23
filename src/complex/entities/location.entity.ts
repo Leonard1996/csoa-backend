@@ -8,12 +8,6 @@ export class Location extends Common {
   @Column("varchar", { nullable: true, name: "name" })
   public name: string;
 
-  @Column("decimal", { nullable: true, name: "longitude" })
-  public longitude: number;
-
-  @Column("decimal", { nullable: true, name: "latitude" })
-  public latitude: number;
-
   @Column("varchar", { nullable: true, name: "dimensions" })
   public dimensions: string;
 
@@ -28,11 +22,21 @@ export class Location extends Common {
   @OneToMany(() => Event, (event) => event.location)
   events: Location[];
 
+  @Column("tinyint", { nullable: true, name: "isFootball" })
+  public isFootball: boolean;
+
+  @Column("tinyint", { nullable: true, name: "isBasketball" })
+  public isBasketball: boolean;
+
+  @Column("tinyint", { nullable: true, name: "isTennis" })
+  public isTennis: boolean;
+
+  @Column("tinyint", { nullable: true, name: "isVolleyball" })
+  public isVolleyball: boolean;
+
   get baseLocation() {
     return {
       name: this.name,
-      longitude: this.longitude,
-      latitude: this.latitude,
       dimensions: this.dimensions,
       price: this.price,
     };
