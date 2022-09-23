@@ -33,7 +33,7 @@ export class EventController {
 
   static getById = async (request: Request, response: Response) => {
     try {
-      const result = await EventService.getById(+request.params.teamId);
+      const result = await EventService.getById(+request.params.eventId);
       if (Helper.isDefined(result)) {
         response.status(HttpStatusCode.OK).send(new SuccessResponse(result));
       } else {
