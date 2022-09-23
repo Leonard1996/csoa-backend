@@ -27,4 +27,14 @@ export class Location extends Common {
 
   @OneToMany(() => Event, (event) => event.location)
   events: Location[];
+
+  get baseLocation() {
+    return {
+      name: this.name,
+      longitude: this.longitude,
+      latitude: this.latitude,
+      dimensions: this.dimensions,
+      price: this.price,
+    };
+  }
 }

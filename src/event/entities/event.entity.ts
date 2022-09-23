@@ -4,9 +4,11 @@ import { Team } from "../../team/entities/team.entity";
 import { User } from "../../user/entities/user.entity";
 import { EventTeamUsers } from "./event.team.users.entity";
 import { Location } from "../../complex/entities/location.entity";
+import { Request } from "../../request/entities/request.entity";
 
 export enum EventStatus {
   DRAFT = "draft",
+  WAITING_FOR_CONFIRMATION = "waiting_for_confirmation",
   CONFIRMED = "confirmed",
   COMPLETED = "completed",
 }
@@ -102,7 +104,37 @@ export class Event extends Common {
   @OneToMany(() => EventTeamUsers, (eventTeamUser) => eventTeamUser.event)
   eventsTeamUser: EventTeamUsers[];
 
+  @OneToMany(() => Request, (request) => request.event)
+  eventRequests: Request[];
+
   @Index()
   @Column("tinyint")
   isUserReservation: boolean;
+
+  get baseEvent() {
+    return {
+      name: this.name,
+      sport: this.sport,
+      startDate: this.startDate,
+      endDate: this.endDate,
+      isDraft: this.isDraft,
+      isPublic: this.isPublic,
+      isTeam: this.isTeam,
+      level: this.level,
+      playersNumber: this.playersNumber,
+      playersAge: this.playersAge,
+      status: this.status,
+      isWeekly: this.isWeekly,
+      isDraw: this.isDraw,
+      result: this.result,
+      lineups: this.lineups,
+    };
+  }
+
+  get toResponse() {
+    return {
+      ...this.baseEvent,
+      location: this.location?.baseLocation,
+    };
+  }
 }
