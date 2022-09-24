@@ -49,90 +49,28 @@ export class EventController {
     }
   };
 
-  // static putById = async (request: Request, response: Response) => {
-  //   try {
-  //     const team = await TeamService.getById(+request.params.userId);
+  static putById = async (request: Request, response: Response) => {
+    try {
+      const event = await EventService.findById(+request.params.userId);
 
-  //     if (Helper.isDefined(team)) {
-  //       const updatedTeam = await TeamService.update(
-  //         request.body,
-  //         team,
-  //         request
-  //       );
-  //       response
-  //         .status(HttpStatusCode.OK)
-  //         .send(new SuccessResponse(updatedTeam));
-  //     } else {
-  //       return response
-  //         .status(HttpStatusCode.NOT_FOUND)
-  //         .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
-  //     }
-  //     response.status(HttpStatusCode.OK).send();
-  //   } catch (err) {
-  //     console.log(err);
-  //     return response.status(400).send(new ErrorResponse(err));
-  //   }
-  // };
-
-  // static deleteById = async (request: Request, response: Response) => {
-  //   try {
-  //     const team = await TeamService.getById(+request.params.teamId);
-  //     if (Helper.isDefined(team)) {
-  //       await TeamService.deleteById(team);
-  //       return response
-  //         .status(HttpStatusCode.OK)
-  //         .send(new SuccessResponse("Successfully deleted"));
-  //     } else {
-  //       return response
-  //         .status(HttpStatusCode.NOT_FOUND)
-  //         .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
-  //     }
-  //   } catch (err) {
-  //     console.log(err);
-  //     return response.status(400).send(new ErrorResponse(err));
-  //   }
-  // };
-
-  // static deleteAttachmentById = async (
-  //   request: Request,
-  //   response: Response
-  // ) => {
-  //   try {
-  //     const attachment = await AttachmentService.getById(
-  //       +request.params.attachmentId
-  //     );
-  //     if (Helper.isDefined(attachment)) {
-  //       await AttachmentService.deleteById(attachment);
-  //       return response
-  //         .status(HttpStatusCode.OK)
-  //         .send(new SuccessResponse("Successfully deleted"));
-  //     } else {
-  //       return response
-  //         .status(HttpStatusCode.NOT_FOUND)
-  //         .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
-  //     }
-  //   } catch (err) {
-  //     console.log(err);
-  //     return response.status(400).send(new ErrorResponse(err));
-  //   }
-  // };
-
-  // static exit = async (request: Request, response: Response) => {
-  //   try {
-  //     const team = await TeamService.getById(+request.params.teamId);
-  //     if (Helper.isDefined(team)) {
-  //       await TeamService.exit(team, response);
-  //       return response
-  //         .status(HttpStatusCode.OK)
-  //         .send(new SuccessResponse("Successfully exited the group"));
-  //     } else {
-  //       return response
-  //         .status(HttpStatusCode.NOT_FOUND)
-  //         .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
-  //     }
-  //   } catch (err) {
-  //     console.log(err);
-  //     return response.status(400).send(new ErrorResponse(err));
-  //   }
-  // };
+      if (Helper.isDefined(event)) {
+        const updatedTeam = await EventService.update(
+          request.body,
+          event,
+          request
+        );
+        response
+          .status(HttpStatusCode.OK)
+          .send(new SuccessResponse(updatedTeam));
+      } else {
+        return response
+          .status(HttpStatusCode.NOT_FOUND)
+          .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+      }
+      response.status(HttpStatusCode.OK).send();
+    } catch (err) {
+      console.log(err);
+      return response.status(400).send(new ErrorResponse(err));
+    }
+  };
 }

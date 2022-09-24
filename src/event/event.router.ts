@@ -34,32 +34,13 @@ export class EventRouter {
       EventController.getById,
     ]);
 
-    //   app.put("/teams/:teamId", [
-    //     AuthenticationMiddleware.checkJwtToken,
-    //     PermissionMiddleware.checkAllowedPermissions([
-    //       UserRole.USER,
-    //       UserRole.ADMIN,
-    //     ]),
-    //     UploadMiddleware.validateFileUpload("file", ["jpg", "png", "jpeg"], 2),
-    //     EventController.putById,
-    //   ]);
-
-    //   app.delete("/teams/:teamId", [
-    //     AuthenticationMiddleware.checkJwtToken,
-    //     PermissionMiddleware.checkAllowedPermissions([
-    //       UserRole.ADMIN,
-    //       UserRole.USER,
-    //     ]),
-    //     EventController.deleteById,
-    //   ]);
-
-    //   app.delete("/teams/:teamId/exit", [
-    //     AuthenticationMiddleware.checkJwtToken,
-    //     PermissionMiddleware.checkAllowedPermissions([
-    //       UserRole.ADMIN,
-    //       UserRole.USER,
-    //     ]),
-    //     EventController.exit,
-    //   ]);
+    app.put("/events/:eventId", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([
+        UserRole.USER,
+        UserRole.ADMIN,
+      ]),
+      EventController.putById,
+    ]);
   };
 }

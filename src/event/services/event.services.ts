@@ -7,6 +7,8 @@ import { Event, EventStatus } from "../entities/event.entity";
 import { EventRepository } from "../repositories/event.repository";
 import { TeamUsers } from "../../team/entities/team.users.entity";
 import { CreateEventDto } from "../dto/create-event.dto";
+import { UpdateEventDto } from "../dto/update-event.dto";
+import { RequestRepository } from "../../request/repositories/request.repository";
 
 export class EventService {
   static listMyEvents = async (request: Request, response: Response) => {
@@ -71,11 +73,11 @@ export class EventService {
 
     const publicEvents = await eventsRepository
       .createQueryBuilder("event")
-      .innerJoin("event.eventRequests", "request", "request.eventId = event.id")
-      .innerJoinAndSelect("event.location", "location")
-      .innerJoinAndSelect("location.complex", "complex")
-      .innerJoinAndSelect("event.organiserTeam", "senderTeam")
-      .innerJoinAndSelect("event.receiverTeam", "receiverTeam")
+      .leftJoin("event.eventRequests", "request", "request.eventId = event.id")
+      .leftJoinAndSelect("event.location", "location")
+      .leftJoinAndSelect("location.complex", "complex")
+      .leftJoinAndSelect("event.organiserTeam", "senderTeam")
+      .leftJoinAndSelect("event.receiverTeam", "receiverTeam")
       .where("event.sport IN (:mySports)", { mySports })
       .andWhere("event.isPublic = true")
       .andWhere("event.status IN (:statuses)", {
@@ -137,6 +139,23 @@ export class EventService {
     const createdEvent = eventRepository.create(eventPayload);
     const savedEvent = await eventRepository.save(createdEvent);
 
+    const requestRepository = getCustomRepository(RequestRepository);
+    if (!savedEvent.isTeam) {
+      await requestRepository
+        .createQueryBuilder("request")
+        .insert()
+        .values([
+          {
+            senderId: savedEvent.creatorId,
+            receiverId: savedEvent.creatorId,
+            eventId: savedEvent.id,
+            sport: savedEvent.sport,
+            status: RequestStatus.CONFIRMED,
+          },
+        ])
+        .execute();
+    }
+
     return savedEvent;
   };
 
@@ -145,98 +164,37 @@ export class EventService {
 
     const event = await eventRepository
       .createQueryBuilder("event")
-      .innerJoinAndSelect("event.location", "location")
-      .innerJoinAndSelect("location.complex", "complex")
-      .where("event.id = :eventId", { eventId })
+      .leftJoinAndSelect("event.location", "location")
+      .leftJoinAndSelect("location.complex", "complex")
+      .leftJoinAndSelect("event.organiserTeam", "organiserTeam")
+      .leftJoinAndSelect("event.receiverTeam", "receiverTeam")
+      .where("event.id = :id", { id: eventId })
       .getOne();
 
-    // const teamUsersRepository = getCustomRepository(TeamUsersRepository);
+    return event.toResponse;
+  };
+
+  static findById = async (eventId: number) => {
+    const eventRepository = getCustomRepository(EventRepository);
+
+    const event = await eventRepository
+      .createQueryBuilder("event")
+      .where("event.id = :id", { id: eventId })
+      .getOne();
 
     return event;
   };
 
-  // static update = async (
-  //   teamPayload: UpdateTeamDto,
-  //   currentTeam: Team,
-  //   request: Request
-  // ) => {
-  //   const teamRepository = getRepository(Team);
+  static update = async (
+    eventPayload: UpdateEventDto,
+    currentEvent: Event,
+    request: Request
+  ) => {
+    const eventRepository = getCustomRepository(EventRepository);
 
-  //   if (request.files) {
-  //     for (const file of request.files as Array<Express.Multer.File>) {
-  //       if (file.originalname === teamPayload.avatarName) {
-  //         teamPayload.avatar = file.path;
-  //       }
-  //       if (file.originalname === teamPayload.bannerName) {
-  //         teamPayload.banner = file.path;
-  //       }
-  //     }
-  //   }
+    const updatedEvent = eventRepository.merge(currentEvent, eventPayload);
+    await eventRepository.save(updatedEvent);
 
-  //   const updatedTeam = teamRepository.merge(currentTeam, teamPayload);
-  //   await teamRepository.save(updatedTeam);
-
-  //   return updatedTeam;
-  // };
-
-  // static deleteById = async (team: Team) => {
-  //   const teamRepository = getRepository(Team);
-
-  //   await teamRepository.softDelete(team.id);
-
-  //   const teamUsersRepository = getCustomRepository(TeamUsersRepository);
-
-  //   teamUsersRepository
-  //     .createQueryBuilder("teamUsers")
-  //     .delete()
-  //     .where("teamId = :teamId", { teamId: team.id })
-  //     .execute();
-  // };
-
-  // static exit = async (team: Team, response: Response) => {
-  //   const teamUsersRepository = getCustomRepository(TeamUsersRepository);
-
-  //   const teamRepository = getCustomRepository(TeamRepository);
-  //   const creator = await teamRepository
-  //     .createQueryBuilder("team")
-  //     .where("id = :teamId", { teamId: team.id })
-  //     .andWhere("userId = :userId", { userId: response.locals.jwt.userId })
-  //     .getOne();
-
-  //   if (creator)
-  //     throw "You are a creator! You can not remove yourself from the team";
-
-  //   teamUsersRepository
-  //     .createQueryBuilder("teamUsers")
-  //     .delete()
-  //     .where("teamId = :teamId", { teamId: team.id })
-  //     .andWhere("playerId = :userId", { userId: response.locals.jwt.userId })
-  //     .execute();
-  // };
-
-  // static upload = async (request: Request, response: Response) => {
-  //   if (request.files.length) {
-  //     const files = [...(request.files as any)];
-  //     const attachmentRepository = getCustomRepository(AtachmentRepository);
-  //     return attachmentRepository
-  //       .createQueryBuilder("attachments")
-  //       .insert()
-  //       .into(Attachment)
-  //       .values(
-  //         files.map((file) => {
-  //           return {
-  //             name: file.filename,
-  //             originalName: file.originalname,
-  //             mimeType: file.mimetype,
-  //             extension: file.mimetype.split("/")[1],
-  //             sizeInBytes: file.size,
-  //             path: file.path,
-  //             teamId: +request.params.teamId,
-  //             userId: null,
-  //           };
-  //         })
-  //       )
-  //       .execute();
-  //   }
-  // };
+    return updatedEvent;
+  };
 }
