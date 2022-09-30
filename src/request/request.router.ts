@@ -15,38 +15,76 @@ export class RequestRouter {
       RequestController.listPossibleUsersForEvent,
     ]);
 
-    app.get("/requests/event/:eventId", [
+    app.get("/invitations/event/:eventId", [
       AuthenticationMiddleware.checkJwtToken,
       PermissionMiddleware.checkAllowedPermissions([
         UserRole.USER,
         UserRole.ADMIN,
       ]),
-      RequestController.listRequestsorEvent,
+      RequestController.listInvitationsForEvent,
     ]);
 
-    // app.post("/events", [
-    //   AuthenticationMiddleware.checkJwtToken,
-    //   PermissionMiddleware.checkAllowedPermissions([
-    //     UserRole.USER,
-    //     UserRole.ADMIN,
-    //   ]),
-    //   EventController.insert,
-    // ]);
-    // app.get("/events/:eventId", [
-    //   AuthenticationMiddleware.checkJwtToken,
-    //   PermissionMiddleware.checkMeOrPermissionsAllowed([
-    //     UserRole.USER,
-    //     UserRole.ADMIN,
-    //   ]),
-    //   EventController.getById,
-    // ]);
-    // app.put("/events/:eventId", [
-    //   AuthenticationMiddleware.checkJwtToken,
-    //   PermissionMiddleware.checkAllowedPermissions([
-    //     UserRole.USER,
-    //     UserRole.ADMIN,
-    //   ]),
-    //   EventController.putById,
-    // ]);
+    app.post("/invitations/event/:eventId/user/:userId", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([
+        UserRole.USER,
+        UserRole.ADMIN,
+      ]),
+      RequestController.invitePlayer,
+    ]);
+
+    app.delete("/invitations/:invitationId", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([
+        UserRole.USER,
+        UserRole.ADMIN,
+      ]),
+      RequestController.deleteById,
+    ]);
+
+    app.post("/requests/event/:eventId/", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([
+        UserRole.USER,
+        UserRole.ADMIN,
+      ]),
+      RequestController.requestToEnter,
+    ]);
+
+    app.put("/requests/:requestId", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([
+        UserRole.USER,
+        UserRole.ADMIN,
+      ]),
+      RequestController.updateRequest,
+    ]);
+
+    app.get("/possible-teams/event/:eventId", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([
+        UserRole.USER,
+        UserRole.ADMIN,
+      ]),
+      RequestController.listPossibleTeamsForEvent,
+    ]);
+
+    app.get("/team-invitations/event/:eventId", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([
+        UserRole.USER,
+        UserRole.ADMIN,
+      ]),
+      RequestController.listTeamsInvitationsForEvent,
+    ]);
+
+    app.post("/team-invitations/event/:eventId/team/:teamId", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([
+        UserRole.USER,
+        UserRole.ADMIN,
+      ]),
+      RequestController.inviteTeam,
+    ]);
   };
 }

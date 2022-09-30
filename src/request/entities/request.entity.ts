@@ -43,4 +43,10 @@ export class Request extends Common {
 
   @Column("varchar", { nullable: true })
   status: string;
+
+  @Column("tinyint", {
+    nullable: true,
+    name: "isRequest",
+  })
+  public isRequest: boolean;
 }

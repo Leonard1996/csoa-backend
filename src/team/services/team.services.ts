@@ -170,6 +170,17 @@ export class TeamService {
     return savedTeam;
   };
 
+  static findOne = async (teamId: number) => {
+    const teamRepository = getCustomRepository(TeamRepository);
+
+    const team = await teamRepository
+      .createQueryBuilder("team")
+      .where("team.id = :id", { id: teamId })
+      .getOne();
+
+    return team;
+  };
+
   static getById = async (teamId: number) => {
     const teamRepository = getCustomRepository(TeamRepository);
 
