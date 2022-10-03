@@ -10,6 +10,7 @@ import { RequestRepository } from "../repositories/request.repository";
 import { User } from "../../user/entities/user.entity";
 import { TeamRepository } from "../../team/repositories/team.repository";
 import { Team } from "../../team/entities/team.entity";
+import { StatisticsService } from "../../team/services/statistics.services";
 
 export class RequestService {
   static listPossibleUsersForEvent = async (
@@ -173,7 +174,51 @@ export class RequestService {
 
     //TODO: Implement playedBeforeFilter
 
-    return possibleTeams.getMany();
+    const results = await possibleTeams.getMany();
+
+    const possibleTeamsIds = results.map((team) => team.id);
+
+    let possibleTeamWins = [];
+    let possibleTeamLoses = [];
+    let possibleTeamDraws = [];
+    if (results.length) {
+      possibleTeamWins = await StatisticsService.getWins(possibleTeamsIds);
+      possibleTeamLoses = await StatisticsService.getLoses(possibleTeamsIds);
+      possibleTeamDraws = await StatisticsService.getDraws(possibleTeamsIds);
+    }
+
+    const possibleTeamsWinsMapped = {};
+    if (possibleTeamWins.length) {
+      for (const win of possibleTeamWins) {
+        possibleTeamsWinsMapped[win.winnerId] = win;
+      }
+    }
+
+    const possibleTeamsLosesMapped = {};
+    if (possibleTeamLoses.length) {
+      for (const lose of possibleTeamLoses) {
+        possibleTeamsLosesMapped[lose.loserId] = lose;
+      }
+    }
+
+    const possibleTeamsDrawsMapped = {};
+    if (possibleTeamDraws.length) {
+      for (const draw of possibleTeamDraws) {
+        if (!possibleTeamsDrawsMapped[draw.organiser])
+          possibleTeamsDrawsMapped[draw.organiser] = 0;
+        possibleTeamsDrawsMapped[draw.organiser] += 1;
+        if (!possibleTeamsDrawsMapped[draw.receiver])
+          possibleTeamsDrawsMapped[draw.receiver] = 0;
+        possibleTeamsDrawsMapped[draw.receiver] += 1;
+      }
+    }
+
+    return results.map((possibleTeam) => ({
+      ...possibleTeam,
+      wins: +(possibleTeamsWinsMapped[possibleTeam.id]?.wins ?? 0),
+      loses: +(possibleTeamsLosesMapped[possibleTeam.id]?.wins ?? 0),
+      draws: possibleTeamsDrawsMapped[possibleTeam.id] ?? 0,
+    }));
   };
 
   static listTeamsInvitationsForEvent = async (
@@ -182,13 +227,60 @@ export class RequestService {
     response: Response
   ) => {
     const requestRepository = getCustomRepository(RequestRepository);
-    const requests = requestRepository
+    const requests = await requestRepository
       .createQueryBuilder("request")
       .innerJoinAndSelect("request.receiverTeam", "receiverTeam")
       .where("request.eventId = :eventId", { eventId: event.id })
       .getMany();
 
-    return requests;
+    const invitedTeamIds = requests.map(
+      (invitedTeam) => invitedTeam.receiverTeam.id
+    );
+
+    let invitedTeamsWins = [];
+    let invitedTeamsLoses = [];
+    let invitedTeamsDraws = [];
+    if (requests.length) {
+      invitedTeamsWins = await StatisticsService.getWins(invitedTeamIds);
+      invitedTeamsLoses = await StatisticsService.getLoses(invitedTeamIds);
+      invitedTeamsDraws = await StatisticsService.getDraws(invitedTeamIds);
+    }
+
+    const invitedTeamsWinsMapped = {};
+    if (invitedTeamsWins.length) {
+      for (const win of invitedTeamsWins) {
+        invitedTeamsWinsMapped[win.winnerId] = win;
+      }
+    }
+
+    const invitedTeamsLosesMapped = {};
+    if (invitedTeamsLoses.length) {
+      for (const lose of invitedTeamsLoses) {
+        invitedTeamsLosesMapped[lose.loserId] = lose;
+      }
+    }
+
+    const invitedTeamsDrawsMapped = {};
+    if (invitedTeamsDraws.length) {
+      for (const draw of invitedTeamsDraws) {
+        if (!invitedTeamsDrawsMapped[draw.organiser])
+          invitedTeamsDrawsMapped[draw.organiser] = 0;
+        invitedTeamsDrawsMapped[draw.organiser] += 1;
+        if (!invitedTeamsDrawsMapped[draw.receiver])
+          invitedTeamsDrawsMapped[draw.receiver] = 0;
+        invitedTeamsDrawsMapped[draw.receiver] += 1;
+      }
+    }
+
+    return requests.map((request) => ({
+      ...request,
+      receiverTeam: {
+        ...request.receiverTeam,
+        wins: +(invitedTeamsWinsMapped[request.receiverTeam.id]?.wins ?? 0),
+        loses: +(invitedTeamsLosesMapped[request.receiverTeam.id]?.wins ?? 0),
+        draws: invitedTeamsDrawsMapped[request.receiverTeam.id] ?? 0,
+      },
+    }));
   };
 
   static inviteTeam = async (
