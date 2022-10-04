@@ -16,6 +16,7 @@ import { TeamRouter } from "./team/team.router";
 import { DashboardRouter } from "./dashboard/dashboard.router";
 import { EventRouter } from "./event/event.router";
 import { RequestRouter } from "./request/request.router";
+import { ReviewRouter } from "./review/review.router";
 
 createConnection()
   .then(async (connection) => {
@@ -40,8 +41,11 @@ createConnection()
     // Event routes
     EventRouter.configRoutes(app);
 
-    // Event routes
+    // Request routes
     RequestRouter.configRoutes(app);
+
+    // Review routes
+    ReviewRouter.configRoutes(app);
 
     // Attachment routes
     AttachmentRouter.configRoutes(app);

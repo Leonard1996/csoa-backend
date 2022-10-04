@@ -7,7 +7,8 @@ import { User } from "../../user/entities/user.entity";
 export class Review extends Common {
   @Column("decimal", {
     nullable: true,
-    name: "value",
+    precision: 3,
+    scale: 2,
   })
   public value: number;
 
