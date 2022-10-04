@@ -1,12 +1,7 @@
 import { Request, Response } from "express";
-import { getCustomRepository, getRepository } from "typeorm";
+import { getCustomRepository } from "typeorm";
 import { Event } from "../../event/entities/event.entity";
-import { UserRepository } from "../../user/repositories/user.repository";
-import { User } from "../../user/entities/user.entity";
-import { TeamRepository } from "../../team/repositories/team.repository";
-import { Team } from "../../team/entities/team.entity";
-import { StatisticsService } from "../../team/services/statistics.services";
-import { EventTeamUsersRepository } from "../../event/repositories/event.team.users.repository copy";
+import { EventTeamUsersRepository } from "../../event/repositories/event.team.users.repository";
 import { ReviewRepository } from "../repositories/review.repository";
 
 export class ReviewService {
