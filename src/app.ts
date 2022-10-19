@@ -16,12 +16,11 @@ import { TeamRouter } from "./team/team.router";
 import { DashboardRouter } from "./dashboard/dashboard.router";
 import { EventRouter } from "./event/event.router";
 import { ComplexRouter } from "./complex/complex.router";
-import { performance } from "perf_hooks";
 
 createConnection()
   .then(async (connection) => {
-    await connection.query(`SET GLOBAL time_zone = '+00:00';`);
-    await connection.query(`SET time_zone = '+00:00';`);
+    // await connection.query(`SET GLOBAL time_zone = '+00:00';`);
+    // await connection.query(`SET time_zone = '+00:00';`);
     app.use(cors());
     app.use(bodyParser.json({ limit: "200mb" }));
     app.use(bodyParser.urlencoded({ limit: "200mb", extended: true }));
