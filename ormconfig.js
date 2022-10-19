@@ -10,6 +10,7 @@ module.exports = {
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   synchronize: false,
+  timezone: 'Z',
   logging: false,
   entities: ["**/**/*.entity.js"],
   migrations: ["dist/migration/*.js"],

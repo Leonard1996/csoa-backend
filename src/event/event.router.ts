@@ -34,6 +34,12 @@ export class EventRouter {
       EventController.getPlayers,
     ]);
 
+    app.post("/admin/events", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
+      EventController.createAdminEvent,
+    ]);
+
     // app.post("/teams", [
     //   AuthenticationMiddleware.checkJwtToken,
     //   PermissionMiddleware.checkAllowedPermissions([

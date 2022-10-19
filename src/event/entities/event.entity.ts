@@ -39,6 +39,9 @@ export class Event extends Common {
   @Column("tinyint", { nullable: true, name: "isTeam" })
   public isTeam: boolean;
 
+  @Column("text", { nullable: true })
+  public notes: string;
+
   @Column("int", { nullable: true, name: "level" })
   public level: number;
 

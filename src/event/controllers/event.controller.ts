@@ -29,13 +29,7 @@ export class EventController {
       const events = await EventService.list(request, response);
       return response.status(HttpStatusCode.OK).send(
         new SuccessResponse({
-          events: events.map((event) => ({
-            ...event,
-            startDate: new Date(event.startDate)
-              .toISOString()
-              .slice(0, 19)
-              .replace("T", " "),
-          })),
+          events,
         })
       );
     } catch (err) {
@@ -53,9 +47,11 @@ export class EventController {
         where: { id: +request.params.id },
         withDeleted: true,
       });
-      if (!event.tsDeleted) eventRepository.softDelete(event.id);
-      else event.tsDeleted = null;
-      await eventRepository.save(event);
+      if (!event.tsDeleted) await eventRepository.softDelete(event.id);
+      else {
+        event.tsDeleted = null;
+        await eventRepository.save(event);
+      }
       return response.status(200).send(new SuccessResponse({ event }));
     } catch (err) {
       console.log({ err });
@@ -76,6 +72,21 @@ export class EventController {
       return response
         .status(404)
         .send(new ErrorResponse("Could not get my players"));
+    }
+  };
+
+  static createAdminEvent = async (request: Request, response: Response) => {
+    try {
+      const event = await EventService.createAdminEvent(request, response);
+      if (!event) throw Error();
+      return response
+        .status(HttpStatusCode.OK)
+        .send(new SuccessResponse({ event }));
+    } catch (err) {
+      console.log({ err });
+      return response
+        .status(404)
+        .send(new ErrorResponse("Eventi nuk u krijua"));
     }
   };
 

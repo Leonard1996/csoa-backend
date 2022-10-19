@@ -11,8 +11,9 @@ export class DashboardService {
 
     const userStatistics = await userRepository.count({
       where: { role: "user" },
+      withDeleted: true,
     });
-    const complexCount = await complexRepository.count();
+    const complexCount = await complexRepository.count({ withDeleted: true });
 
     const today = new Date();
     const year = today.getFullYear();
@@ -27,6 +28,7 @@ export class DashboardService {
           new Date(year, month, daysInMonth)
         ),
       },
+      withDeleted: true,
     });
 
     const userReservations = events.filter(

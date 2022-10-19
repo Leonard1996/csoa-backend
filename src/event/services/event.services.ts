@@ -1,7 +1,12 @@
 import { Request, Response } from "express";
-import { getCustomRepository, getRepository } from "typeorm";
-import { Attachment } from "../../attachment/entities/attachment.entity";
-import { AtachmentRepository } from "../../attachment/repositories/attachment.repository";
+import { LogContext } from "twilio/lib/rest/serverless/v1/service/environment/log";
+import {
+  Brackets,
+  getConnection,
+  getCustomRepository,
+  getManager,
+  getRepository,
+} from "typeorm";
 import { Functions } from "../../common/utilities/Functions";
 import { RequestRepository } from "../../request/repositories/request.repository";
 import { UserService } from "../../user/services/user.service";
@@ -89,6 +94,63 @@ export class EventService {
       .where("r.eventId = :id", { id: request.params.id })
       .getRawMany();
   };
+
+  static async createAdminEvent(request: Request, response: Response) {
+    const {
+      body: { startDate, endDate, notes, name, locationId, sport },
+    } = request;
+    if (new Date(startDate) < new Date()) {
+      throw new Error();
+    }
+
+    const queryRunner = getManager().connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      console.log({ locationId });
+      console.log({ sport });
+      const overlappingEvent = await queryRunner.manager
+        .createQueryBuilder()
+        .from("events", "e")
+        .where(`e.locationId = '${locationId}' AND e.sport = '${sport}'`)
+        .andWhere(
+          new Brackets((qb) => {
+            qb.where(
+              `(e.startDate < '${endDate}' AND e.endDate > '${startDate}')`
+            );
+            qb.orWhere(
+              `(e.startDate = '${startDate}' AND e.endDate = '${endDate}')`
+            );
+          })
+        )
+        .setLock("pessimistic_read")
+        .getRawOne();
+
+      console.log({ overlappingEvent });
+
+      let createdEvent: any = false;
+      if (!overlappingEvent) {
+        const event = new Event();
+        event.startDate = startDate;
+        event.endDate = endDate;
+        event.isUserReservation = false;
+        event.creatorId = response.locals.jwt.userId;
+        event.notes = notes;
+        event.name = name;
+        event.locationId = locationId;
+        event.sport = sport;
+        createdEvent = await queryRunner.manager.save(event);
+      }
+
+      await queryRunner.commitTransaction();
+      return createdEvent;
+    } catch (error) {
+      console.log({ error });
+      await queryRunner.rollbackTransaction();
+    } finally {
+      await queryRunner.release();
+    }
+  }
 
   // static insert = async (
   //   teamPayload: CreateTeamDto,

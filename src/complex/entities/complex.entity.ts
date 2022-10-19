@@ -28,13 +28,13 @@ export class Complex extends Common {
   })
   public sports: string;
 
-  @Column("varchar", {
+  @Column("longtext", {
     nullable: true,
     name: "banner",
   })
   public banner: string;
 
-  @Column("varchar", {
+  @Column("longtext", {
     nullable: true,
     name: "avatar",
   })
@@ -48,9 +48,24 @@ export class Complex extends Common {
   })
   public city: string;
 
-  @Column("decimal", { nullable: true, name: "longitude" })
+  @Column("json", {
+    nullable: true,
+  })
+  public workingHours: string;
+
+  @Column("decimal", {
+    nullable: true,
+    name: "longitude",
+    scale: 7,
+    precision: 10,
+  })
   public longitude: number;
 
-  @Column("decimal", { nullable: true, name: "latitude" })
+  @Column("decimal", {
+    nullable: true,
+    name: "latitude",
+    scale: 7,
+    precision: 10,
+  })
   public latitude: number;
 }

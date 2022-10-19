@@ -13,39 +13,47 @@ import { ReviewRepository } from "../../review/repositories/review.repository";
 export class UserController {
   static list = async (request: Request, response: Response) => {
     const userRepository = getRepository(User);
+    try {
+      const users = await userRepository.find({
+        where: {
+          id: Not(response.locals.jwt.userId),
+        },
+        withDeleted: true,
+      });
 
-    const users = await userRepository.find({
-      where: {
-        id: Not(response.locals.jwt.userId),
-      },
-      withDeleted: true,
-    });
-
-    const ids = users.map((user) => user.id);
-    const reviewRepository = getCustomRepository(ReviewRepository);
-    let stars = [];
-    if (ids.length) {
-      stars = await reviewRepository.getStars(ids);
-    }
-
-    const starsMap = {};
-
-    for (const star of stars) {
-      if (!starsMap[star.userId]) {
-        starsMap[star.userId] = {};
+      const ids = users.map((user) => user.id);
+      const reviewRepository = getCustomRepository(ReviewRepository);
+      let stars = [];
+      if (ids.length) {
+        stars = await reviewRepository.getStars(ids);
       }
-      starsMap[star.userId][star.sport] = star.stars;
+
+      const starsMap = {};
+
+      for (const star of stars) {
+        if (!starsMap[star.userId]) {
+          starsMap[star.userId] = {};
+        }
+        starsMap[star.userId][star.sport] = star.stars;
+      }
+
+      const userData = users.map((user) => ({
+        ...user,
+        footballStars: parseFloat(starsMap[user.id]?.football ?? 0).toFixed(2),
+        basketballStars: parseFloat(starsMap[user.id]?.basketball ?? 0).toFixed(
+          2
+        ),
+        tenisStars: parseFloat(starsMap[user.id]?.tenis ?? 0).toFixed(2),
+        voleyballStars: parseFloat(starsMap[user.id]?.voleyball ?? 0).toFixed(
+          2
+        ),
+      }));
+      response
+        .status(HttpStatusCode.OK)
+        .send(new SuccessResponse({ userData }));
+    } catch (error) {
+      console.log({ error });
     }
-
-    const userData = users.map((user) => ({
-      ...user,
-      footballStars: parseFloat(starsMap[user.id].football ?? 0).toFixed(2),
-      basketballStars: parseFloat(starsMap[user.id].basketball ?? 0).toFixed(2),
-      tenisStars: parseFloat(starsMap[user.id].tenis ?? 0).toFixed(2),
-      baseballStars: parseFloat(starsMap[user.id].baseball ?? 0).toFixed(2),
-    }));
-
-    response.status(HttpStatusCode.OK).send(new SuccessResponse({ userData }));
   };
 
   static insert = async (request: Request, response: Response) => {
@@ -350,9 +358,11 @@ export class UserController {
         where: { id: +request.query.id },
         withDeleted: true,
       });
-      if (!user.tsDeleted) userRepository.softDelete(user.id);
-      else user.tsDeleted = null;
-      await userRepository.save(user);
+      if (!user.tsDeleted) await userRepository.softDelete(user.id);
+      else {
+        user.tsDeleted = null;
+        await userRepository.save(user);
+      }
       return response.status(200).send(new SuccessResponse({ user }));
     } catch (err) {
       console.log({ err });
