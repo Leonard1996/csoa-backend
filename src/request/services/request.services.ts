@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { getCustomRepository, getRepository } from "typeorm";
+import { Brackets, getCustomRepository } from "typeorm";
 import {
   Request as Invitation,
   RequestStatus,
@@ -11,6 +11,10 @@ import { User } from "../../user/entities/user.entity";
 import { TeamRepository } from "../../team/repositories/team.repository";
 import { Team } from "../../team/entities/team.entity";
 import { StatisticsService } from "../../team/services/statistics.services";
+import { TeamUsersRepository } from "../../team/repositories/team.users.repository";
+import { EventRepository } from "../../event/repositories/event.repository";
+import { NotificationType } from "../../notifications/entities/notification.entity";
+import { NotificationService } from "../../notifications/services/notification.services";
 
 export class RequestService {
   static listPossibleUsersForEvent = async (
@@ -19,9 +23,12 @@ export class RequestService {
     response: Response
   ) => {
     const usersRepository = getCustomRepository(UserRepository);
+    const teamsUsersRepository = getCustomRepository(TeamUsersRepository);
+    const eventRepository = getCustomRepository(EventRepository);
     const sport = event.sport;
     const possibleUsers = usersRepository
       .createQueryBuilder("user")
+      .leftJoinAndSelect("user.receivedReviews", "review")
       .where(`user.sports LIKE '%"${sport}": {"picked": true%'`)
       .andWhere(
         `user.id NOT IN (select receiverId from requests where eventId = ${event.id} )`
@@ -44,7 +51,46 @@ export class RequestService {
       possibleUsers.andWhere(`user.sports LIKE '%${level}%'`);
     }
 
-    //TODO: Implement reviewFilter and playedBeforeFilter
+    if (request.body.rating) {
+      possibleUsers.andWhere(
+        `(SELECT SUM(review.value)/COUNT(review.id) AS averageRating group by review.receiverId, review.sport having averageRating >= ${request.body.rating.minRating} and averageRating <= ${request.body.rating.maxRating})`
+      );
+    }
+
+    if (request.body.playedBefore === true) {
+      const myTeams = await teamsUsersRepository
+        .createQueryBuilder("tu")
+        .select("tu.teamId")
+        .where("tu.playerId = :userId", { userId: response.locals.jwt.userId })
+        .getMany();
+
+      const myTeamsMapped = myTeams.map((el) => el.teamId);
+
+      const usersPlayedBefore = await eventRepository
+        .createQueryBuilder("e")
+        .select("DISTINCT u.id")
+        .innerJoin(
+          "teams_users",
+          "tu",
+          "e.organiserTeamId = tu.teamId OR e.receiverTeamId = tu.teamId"
+        )
+        .innerJoin(
+          "event_teams_users",
+          "etu",
+          "tu.id = etu.teamUserId and e.id = etu.eventId"
+        )
+        .innerJoin("users", "u", "u.id = tu.playerId")
+        .where(`e.status = 'completed'`)
+        .andWhere(`tu.teamId NOT IN (${myTeamsMapped})`)
+        .andWhere(
+          `(e.receiverTeamId IN (${myTeamsMapped}) or e.organiserTeamId IN (${myTeamsMapped}))`
+        )
+        .getRawMany();
+
+      const usersPlayedBeforeMapped = usersPlayedBefore.map((el) => el.id);
+
+      possibleUsers.andWhere(`user.id IN (${usersPlayedBeforeMapped})`);
+    }
 
     return possibleUsers.getMany();
   };
@@ -117,6 +163,8 @@ export class RequestService {
     const requestRepository = getCustomRepository(RequestRepository);
     const request = await requestRepository
       .createQueryBuilder("request")
+      .leftJoinAndSelect("request.event", "e")
+      .leftJoinAndSelect("request.receiver", "r")
       .where("request.id = :id", { id: requestId })
       .getOne();
     return request;
@@ -133,11 +181,60 @@ export class RequestService {
     request: Request
   ) => {
     const requestRepository = getCustomRepository(RequestRepository);
-    const updatedRequest = requestRepository.merge(
+    let requestToBeConfirmed = false;
+    let requestToBeRefused = false;
+    if (
+      originalRequest.status === RequestStatus.WAITING_FOR_CONFIRMATION &&
+      requestPayload.status === RequestStatus.CONFIRMED
+    ) {
+      requestToBeConfirmed = true;
+    }
+    if (
+      originalRequest.status === RequestStatus.WAITING_FOR_CONFIRMATION &&
+      requestPayload.status === RequestStatus.REFUSED
+    ) {
+      requestToBeRefused = true;
+    }
+    const mergedRequest = requestRepository.merge(
       originalRequest,
       requestPayload
     );
-    return await requestRepository.save(updatedRequest);
+    const updatedRequest = await requestRepository.save(mergedRequest);
+    if (
+      requestToBeConfirmed === true &&
+      updatedRequest.status === RequestStatus.CONFIRMED
+    ) {
+      let notifications = [];
+      const notificationBody = {
+        receiverId: originalRequest.event.creatorId,
+        type: NotificationType.REQUEST_CONFIRMED,
+        payload: {
+          eventName: updatedRequest.event.name,
+          playerName: updatedRequest.receiver.name,
+          requestId: updatedRequest.id,
+        },
+      };
+      notifications.push(notificationBody);
+      await NotificationService.storeNotification(notifications);
+    }
+    if (
+      requestToBeRefused === true &&
+      updatedRequest.status === RequestStatus.REFUSED
+    ) {
+      let notifications = [];
+      const notificationBody = {
+        receiverId: originalRequest.event.creatorId,
+        type: NotificationType.REQUEST_REFUSED,
+        payload: {
+          eventName: updatedRequest.event.name,
+          playerName: updatedRequest.receiver.name,
+          requestId: updatedRequest.id,
+        },
+      };
+      notifications.push(notificationBody);
+      await NotificationService.storeNotification(notifications);
+    }
+    return "Request successfully updated!";
   };
 
   static listPossibleTeamsForEvent = async (
@@ -146,10 +243,12 @@ export class RequestService {
     response: Response
   ) => {
     const teamsRepository = getCustomRepository(TeamRepository);
+    const eventRepository = getCustomRepository(EventRepository);
     const sport = event.sport;
     const possibleTeams = teamsRepository
       .createQueryBuilder("team")
       .where("team.sport = :sport", { sport })
+      .andWhere("team.isDummy = false")
       .andWhere("team.id != :organiserTeamId", {
         organiserTeamId: event.organiserTeamId,
       });
@@ -166,11 +265,32 @@ export class RequestService {
       });
     }
 
-    // if (request.body.playedBefore = true) {
-    //   possibleTeams.leftJoinAndSelect('events', 'event')
-    //   possibleTeams.andWhere('event.organiserTeamId ')
+    if (request.body.playedBefore === true) {
+      const playedBeforeTeams = await eventRepository
+        .createQueryBuilder("event")
+        .select("event.organiserTeamId, event.receiverTeamId")
+        .where("event.isTeam = true")
+        .andWhere("event.status = :status", { status: "completed" })
+        .andWhere(
+          new Brackets((qb) => {
+            qb.where("event.organiserTeamId = :organiserTeamId", {
+              organiserTeamId: event.organiserTeamId,
+            }).orWhere("event.receiverTeamId = :receiverTeamId", {
+              receiverTeamId: event.organiserTeamId,
+            });
+          })
+        )
+        .getRawMany();
 
-    // }
+      const playedBeforeTeamsMapped = playedBeforeTeams.map((el) =>
+        el.organiserTeamId === event.organiserTeamId
+          ? el.receiverTeamId
+          : el.organiserTeamId
+      );
+      possibleTeams.andWhere("team.id IN (:playedBeforeTeamsMapped)", {
+        playedBeforeTeamsMapped,
+      });
+    }
 
     //TODO: Implement playedBeforeFilter
 

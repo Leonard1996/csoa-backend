@@ -15,8 +15,6 @@ export class ReviewService {
     );
     const userId = response.locals.jwt.userId;
 
-    const sport = event.sport;
-
     const oppositeTeamPlayers = await eventTeamUsersRepository
       .createQueryBuilder("eventTeamUser")
       .leftJoinAndSelect(

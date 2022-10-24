@@ -11,7 +11,6 @@ export enum RequestStatus {
 }
 
 @Entity("requests")
-@Index(["sender", "receiver", "sport", "status"], { unique: true })
 export class Request extends Common {
   @ManyToOne(() => User, (user) => user.sentRequests)
   public sender: User;

@@ -5,8 +5,6 @@ import { Helper } from "../../common/utilities/Helper";
 import { HttpStatusCode } from "../../common/utilities/HttpStatusCodes";
 import { SuccessResponse } from "../../common/utilities/SuccessResponse";
 import { EventService } from "../../event/services/event.services";
-import { TeamService } from "../../team/services/team.services";
-import { UserService } from "../../user/services/user.service";
 import { ReviewService } from "../services/review.services";
 
 export class ReviewController {

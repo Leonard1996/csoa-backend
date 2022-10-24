@@ -1,5 +1,6 @@
 import { Column, Entity, OneToMany } from "typeorm";
 import { Common } from "../../common/entities/common";
+import { Notification } from "../../notifications/entities/notification.entity";
 import { Location } from "./location.entity";
 
 @Entity("complexes")
@@ -36,6 +37,9 @@ export class Complex extends Common {
 
   @OneToMany(() => Location, (location) => location.complex)
   locations: Location[];
+
+  @OneToMany(() => Notification, (notification) => notification.complex)
+  notifications: Notification[];
 
   get baseComplex() {
     return {

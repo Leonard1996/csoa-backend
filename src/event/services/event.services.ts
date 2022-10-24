@@ -9,6 +9,11 @@ import { TeamUsers } from "../../team/entities/team.users.entity";
 import { CreateEventDto } from "../dto/create-event.dto";
 import { UpdateEventDto } from "../dto/update-event.dto";
 import { RequestRepository } from "../../request/repositories/request.repository";
+import { TeamRepository } from "../../team/repositories/team.repository";
+import { EventTeamUsers } from "../entities/event.team.users.entity";
+import { EventTeamUsersRepository } from "../repositories/event.team.users.repository";
+import { NotificationService } from "../../notifications/services/notification.services";
+import { NotificationType } from "../../notifications/entities/notification.entity";
 
 export class EventService {
   static listMyEvents = async (request: Request, response: Response) => {
@@ -140,7 +145,21 @@ export class EventService {
     const savedEvent = await eventRepository.save(createdEvent);
 
     const requestRepository = getCustomRepository(RequestRepository);
+    const teamRepository = getCustomRepository(TeamRepository);
     if (!savedEvent.isTeam) {
+      const dummyTeams = await teamRepository
+        .createQueryBuilder("team")
+        .insert()
+        .values([
+          { name: "Ekipi blu", sport: savedEvent.sport, isDummy: true },
+          { name: "Ekipi kuq", sport: savedEvent.sport, isDummy: true },
+        ])
+        .execute();
+
+      savedEvent.organiserTeamId = dummyTeams.generatedMaps[0].id;
+      savedEvent.receiverTeamId = dummyTeams.generatedMaps[1].id;
+      await eventRepository.save(savedEvent);
+
       await requestRepository
         .createQueryBuilder("request")
         .insert()
@@ -186,14 +205,106 @@ export class EventService {
   };
 
   static update = async (
-    eventPayload: UpdateEventDto,
+    eventPayload,
     currentEvent: Event,
     request: Request
   ) => {
     const eventRepository = getCustomRepository(EventRepository);
+    const eventTeamsUsersRepository = getCustomRepository(
+      EventTeamUsersRepository
+    );
 
-    const updatedEvent = eventRepository.merge(currentEvent, eventPayload);
-    await eventRepository.save(updatedEvent);
+    let eventForConfirmation = false;
+    let eventToBeCompleted = false;
+    if (currentEvent.status === EventStatus.WAITING_FOR_CONFIRMATION) {
+      eventForConfirmation = true;
+    }
+    if (currentEvent.status == EventStatus.CONFIRMED) {
+      eventToBeCompleted = true;
+    }
+    const mergedEvent = eventRepository.merge(currentEvent, eventPayload);
+    const updatedEvent = await eventRepository.save(mergedEvent);
+
+    if (
+      eventForConfirmation === true &&
+      updatedEvent.status === EventStatus.CONFIRMED
+    ) {
+      const eventPlayers = await eventTeamsUsersRepository
+        .createQueryBuilder("etu")
+        .leftJoinAndSelect("etu.teamUser", "tu", "tu.id = etu.teamUserId")
+        .leftJoinAndSelect("tu.player", "p", "p.id = tu.playerId")
+        .where("etu.eventId = :eventId", { eventId: updatedEvent.id })
+        .getMany();
+
+      const mappedPlayersIds = eventPlayers.map(
+        (eventPlayers) => eventPlayers.teamUser.player.id
+      );
+      let notifications = [];
+      for (const player of mappedPlayersIds) {
+        const notificationBody = {
+          receiverId: player,
+          type: NotificationType.EVENT_CONFIRMED,
+          payload: { eventId: updatedEvent.id, eventName: updatedEvent.name },
+        };
+        notifications.push(notificationBody);
+      }
+      await NotificationService.storeNotification(notifications);
+    }
+
+    if (
+      eventToBeCompleted === true &&
+      updatedEvent.status === EventStatus.COMPLETED
+    ) {
+      const eventPlayers = await eventTeamsUsersRepository
+        .createQueryBuilder("etu")
+        .leftJoinAndSelect("etu.teamUser", "tu", "tu.id = etu.teamUserId")
+        .leftJoinAndSelect("tu.player", "p", "p.id = tu.playerId")
+        .leftJoinAndSelect("tu.team", "t", "t.id = tu.teamId")
+        .where("etu.eventId = :eventId", { eventId: updatedEvent.id })
+        .getMany();
+
+      const mappedPlayersIds = eventPlayers.map((eventPlayers) => {
+        return {
+          id: eventPlayers.teamUser.player.id,
+          teamId: eventPlayers.teamUser.team.id,
+        };
+      });
+      const organiserTeamPlayersIds = mappedPlayersIds
+        .filter(
+          (teamPlayers) => teamPlayers.teamId === updatedEvent.organiserTeamId
+        )
+        .map((player) => player.id);
+      const receiverTeamPlayersIds = mappedPlayersIds
+        .filter(
+          (teamPlayers) => teamPlayers.teamId === updatedEvent.receiverTeamId
+        )
+        .map((player) => player.id);
+      let notifications = [];
+      for (const player of mappedPlayersIds) {
+        const resultNotificationBody = {
+          receiverId: player.id,
+          type: NotificationType.EVENT_COMPLETED_RESULT,
+          payload: { eventId: updatedEvent.id, eventName: updatedEvent.name },
+        };
+        const reviewNotificationBody = {
+          receiverId: player.id,
+          type: NotificationType.EVENT_COMPLETED_REVIEW,
+          // TODO: Find opposite players
+          payload: {
+            eventId: updatedEvent.id,
+            eventName: updatedEvent.name,
+            oppositePlayersIds:
+              player.teamId === updatedEvent.organiserTeamId
+                ? receiverTeamPlayersIds
+                : organiserTeamPlayersIds,
+          },
+        };
+        notifications.push(resultNotificationBody);
+        notifications.push(reviewNotificationBody);
+      }
+
+      await NotificationService.storeNotification(notifications);
+    }
 
     return updatedEvent;
   };

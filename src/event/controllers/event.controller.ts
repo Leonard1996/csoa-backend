@@ -51,8 +51,7 @@ export class EventController {
 
   static putById = async (request: Request, response: Response) => {
     try {
-      const event = await EventService.findById(+request.params.userId);
-
+      const event = await EventService.findById(+request.params.eventId);
       if (Helper.isDefined(event)) {
         const updatedTeam = await EventService.update(
           request.body,

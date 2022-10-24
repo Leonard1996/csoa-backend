@@ -26,6 +26,9 @@ export class Team extends Common {
   @Column("varchar", { nullable: true, name: "level" })
   public level: string;
 
+  @Column("tinyint", { nullable: true, name: "isDummy", default: false })
+  public isDummy: boolean;
+
   @ManyToOne(() => User, (user) => user.teams)
   public user: User;
   @Column("int", { nullable: true })

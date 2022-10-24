@@ -17,6 +17,7 @@ import { DashboardRouter } from "./dashboard/dashboard.router";
 import { EventRouter } from "./event/event.router";
 import { RequestRouter } from "./request/request.router";
 import { ReviewRouter } from "./review/review.router";
+import { NotificationRouter } from "./notifications/notification.router";
 
 createConnection()
   .then(async (connection) => {
@@ -46,6 +47,9 @@ createConnection()
 
     // Review routes
     ReviewRouter.configRoutes(app);
+
+    // Notification routes
+    NotificationRouter.configRoutes(app);
 
     // Attachment routes
     AttachmentRouter.configRoutes(app);
