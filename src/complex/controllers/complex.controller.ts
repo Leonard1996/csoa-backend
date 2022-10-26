@@ -21,6 +21,19 @@ export class ComplexController {
         .send(new ErrorResponse("Could not get complexes"));
     }
   };
+  static listMinified = async (request: Request, response: Response) => {
+    try {
+      const complexes = await ComplexService.listMinified();
+      return response
+        .status(HttpStatusCode.OK)
+        .send(new SuccessResponse(complexes));
+    } catch (err) {
+      console.log({ err });
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not get complexes"));
+    }
+  };
   static insert = async (request: Request, response: Response) => {
     try {
       const complex = await ComplexService.create(request.body);
@@ -99,7 +112,6 @@ export class ComplexController {
   static getFilteredEvents = async (request: Request, response: Response) => {
     try {
       const events = await ComplexService.getFilteredEvents(request);
-      console.log({ events });
       return response
         .status(HttpStatusCode.OK)
         .send(new SuccessResponse({ events }));

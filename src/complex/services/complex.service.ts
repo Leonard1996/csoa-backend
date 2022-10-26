@@ -5,7 +5,30 @@ import { Complex } from "../entities/complex.entity";
 export class ComplexService {
   public static list() {
     const complexRepository = getRepository(Complex);
+    // return complexRepository
+    //   .createQueryBuilder("c")
+    //   .select([
+    //     "name",
+    //     "phone",
+    //     "facilities",
+    //     "city",
+    //     "sports",
+    //     "longitude",
+    //     "latitude",
+    //     "workingHours",
+    //     "banner",
+    //     "avatar",
+    //   ])
+    //   .withDeleted()
+    //   .getRawMany();
     return complexRepository.find({ withDeleted: true });
+  }
+  public static listMinified() {
+    const complexRepository = getRepository(Complex);
+    return complexRepository
+      .createQueryBuilder("c")
+      .select(["c.name", "c.id"])
+      .getMany();
   }
   public static create(payload) {
     const complexRepository = getRepository(Complex);
@@ -109,7 +132,7 @@ export class ComplexService {
       .createQueryBuilder("e")
       .withDeleted()
       .select(
-        "e.id, e.name as name, e.startDate, e.endDate,l.id as locationId, l.name as locationName, l.price, e.status, c.workingHours, e.sport"
+        "e.id, e.name as name, e.startDate, e.endDate,l.id as locationId, l.name as locationName, l.price, e.status, c.workingHours, e.sport, e.notes"
       )
       .innerJoin("locations", "l", "l.id = e.locationId")
       .innerJoin("complexes", "c", "c.id = l.complexId")

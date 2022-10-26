@@ -1,12 +1,11 @@
 import { Request, Response } from "express";
-import { LogContext } from "twilio/lib/rest/serverless/v1/service/environment/log";
 import {
   Brackets,
-  getConnection,
   getCustomRepository,
   getManager,
   getRepository,
 } from "typeorm";
+import { eventEmitter } from "../../app";
 import { Functions } from "../../common/utilities/Functions";
 import { RequestRepository } from "../../request/repositories/request.repository";
 import { UserService } from "../../user/services/user.service";
@@ -63,11 +62,33 @@ export class EventService {
 
   static list = async (request: Request, response: Response) => {
     const eventRepository = getRepository(Event);
-    return eventRepository.find({
-      relations: ["location", "location.complex", "creator"],
-      withDeleted: true,
-      order: { startDate: "DESC" },
-    });
+    const count = await eventRepository.count({ withDeleted: true });
+    const events = await eventRepository
+      .createQueryBuilder("e")
+      .select([
+        "u.name as creator",
+        "startDate",
+        "sport",
+        "c.name as name",
+        "e.id as id",
+        "e.tsDeleted as tsDeleted",
+        "e.status as status",
+        "l.name as location",
+        "e.ts_Created as tsCreated",
+      ])
+      .innerJoin("locations", "l", "l.id = e.locationId")
+      .innerJoin("complexes", "c", "c.id = l.complexId")
+      .leftJoin("users", "u", "u.id = e.creatorId")
+      .where("(e.isDraft is null OR e.isDraft = 0)")
+      .orderBy("e.ts_Created", "DESC")
+      .withDeleted()
+      .limit(15)
+      .offset(+request.query.page * 15)
+      .getRawMany();
+    return {
+      count,
+      events,
+    };
   };
 
   static getPlayers = async (request: Request, response: Response) => {
@@ -107,8 +128,6 @@ export class EventService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      console.log({ locationId });
-      console.log({ sport });
       const overlappingEvent = await queryRunner.manager
         .createQueryBuilder()
         .from("events", "e")
@@ -125,8 +144,6 @@ export class EventService {
         )
         .setLock("pessimistic_read")
         .getRawOne();
-
-      console.log({ overlappingEvent });
 
       let createdEvent: any = false;
       if (!overlappingEvent) {

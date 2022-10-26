@@ -9,6 +9,7 @@ import { getCustomRepository, getRepository, Not } from "typeorm";
 import { User } from "../entities/user.entity";
 import { AttachmentService } from "../../attachment/services/attachment.services";
 import { ReviewRepository } from "../../review/repositories/review.repository";
+import { Md5 } from "md5-typescript";
 
 export class UserController {
   static list = async (request: Request, response: Response) => {
@@ -17,6 +18,7 @@ export class UserController {
       const users = await userRepository.find({
         where: {
           id: Not(response.locals.jwt.userId),
+          role: "user",
         },
         withDeleted: true,
       });
@@ -130,6 +132,27 @@ export class UserController {
           .status(HttpStatusCode.NOT_FOUND)
           .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
       }
+    } catch (err) {
+      console.log(err);
+      return response.status(400).send(new ErrorResponse(err));
+    }
+  };
+
+  static listBusinessAccounts = async (
+    request: Request,
+    response: Response
+  ) => {
+    const userRepository = getRepository(User);
+    try {
+      const users = await userRepository.find({
+        where: {
+          role: "company",
+        },
+        withDeleted: true,
+      });
+      return response
+        .status(HttpStatusCode.OK)
+        .send(new SuccessResponse(users));
     } catch (err) {
       console.log(err);
       return response.status(400).send(new ErrorResponse(err));
@@ -371,4 +394,27 @@ export class UserController {
         .send(new ErrorResponse("Could not update profile picture"));
     }
   }
+
+  static createBusinessUser = async (request: Request, response: Response) => {
+    try {
+      const userRepository = getRepository(User);
+      let user = new User();
+      user.sex = "male";
+      user.sports = "{}";
+      user.phoneNumber = "0";
+      user.address = "no address";
+      user.birthday = new Date();
+      user.name = request.body.name;
+      user.email = request.body.email;
+      user.password = Md5.init(request.body.password);
+      user.role = "company";
+      user.complexId = request.body.complexId;
+      await userRepository.save(user);
+
+      response.status(HttpStatusCode.OK).send(new SuccessResponse(user));
+    } catch (err) {
+      console.log(err);
+      return response.status(400).send(new ErrorResponse(err));
+    }
+  };
 }

@@ -1,13 +1,17 @@
 import { Request, Response } from "express";
 import { getRepository } from "typeorm";
+import { eventEmitter } from "../../app";
 import { AttachmentService } from "../../attachment/services/attachment.services";
 import { ERROR_MESSAGES } from "../../common/utilities/ErrorMessages";
 import { ErrorResponse } from "../../common/utilities/ErrorResponse";
 import { Helper } from "../../common/utilities/Helper";
 import { HttpStatusCode } from "../../common/utilities/HttpStatusCodes";
 import { SuccessResponse } from "../../common/utilities/SuccessResponse";
+import { Location } from "../../complex/entities/location.entity";
+import { User } from "../../user/entities/user.entity";
 import { Event } from "../entities/event.entity";
 import { EventService } from "../services/event.services";
+const events = require("events");
 
 export class EventController {
   static listMyEvents = async (request: Request, response: Response) => {
@@ -26,12 +30,10 @@ export class EventController {
 
   static list = async (request: Request, response: Response) => {
     try {
-      const events = await EventService.list(request, response);
-      return response.status(HttpStatusCode.OK).send(
-        new SuccessResponse({
-          events,
-        })
-      );
+      const { events, count } = await EventService.list(request, response);
+      return response
+        .status(HttpStatusCode.OK)
+        .send(new SuccessResponse({ events, count }));
     } catch (err) {
       console.log({ err });
       return response
@@ -78,15 +80,46 @@ export class EventController {
   static createAdminEvent = async (request: Request, response: Response) => {
     try {
       const event = await EventService.createAdminEvent(request, response);
+      eventEmitter.emit("new-event", event);
       if (!event) throw Error();
       return response
         .status(HttpStatusCode.OK)
         .send(new SuccessResponse({ event }));
     } catch (err) {
-      console.log({ err });
+      console.log(err);
       return response
         .status(404)
         .send(new ErrorResponse("Eventi nuk u krijua"));
+    }
+  };
+
+  static newEventsEmitter = async (request: Request, response: any) => {
+    try {
+      eventEmitter.once("new-event", async (payload) => {
+        if (!payload) return;
+        const user = await getRepository(User).findOne({
+          where: { id: request.params.userId },
+        });
+        if (user.role === "admin") {
+          response.sse("new-event", {
+            welcomeMsg: "Connection established!",
+          });
+        } else if (user.role === "company") {
+          const { complexId } = await getRepository(Location).findOne({
+            where: { id: payload.locationId },
+          });
+          if (complexId === user.complexId) {
+            response.sse("new-event", {
+              welcomeMsg: "Connection established!",
+            });
+          }
+        }
+      });
+    } catch (err) {
+      console.log({ err });
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not get my events list"));
     }
   };
 

@@ -1,9 +1,9 @@
 import * as express from "express";
-import { UploadMiddleware } from "../attachment/middlewares/upload.middleware";
 import { AuthenticationMiddleware } from "../authentication/middlewares/authentication.middleware";
 import { PermissionMiddleware } from "../common/middlewares/permission.middleware";
 import { UserRole } from "../user/utilities/UserRole";
 import { EventController } from "./controllers/event.controller";
+const sseExpress = require("sse-express");
 
 export class EventRouter {
   static configRoutes = (app: express.Application) => {
@@ -38,6 +38,10 @@ export class EventRouter {
       AuthenticationMiddleware.checkJwtToken,
       PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
       EventController.createAdminEvent,
+    ]);
+
+    app.get("/new-events/:userId", sseExpress, [
+      EventController.newEventsEmitter,
     ]);
 
     // app.post("/teams", [

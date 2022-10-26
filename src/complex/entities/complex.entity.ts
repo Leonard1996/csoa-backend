@@ -1,5 +1,6 @@
 import { Column, Entity, OneToMany } from "typeorm";
 import { Common } from "../../common/entities/common";
+import { User } from "../../user/entities/user.entity";
 import { Location } from "./location.entity";
 
 @Entity("complexes")
@@ -68,4 +69,7 @@ export class Complex extends Common {
     precision: 10,
   })
   public latitude: number;
+
+  @OneToMany(() => User, (user) => user.complex)
+  users: User[];
 }
