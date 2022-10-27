@@ -133,6 +133,40 @@ export class EventService {
     return responseData;
   };
 
+  static list = async (request: Request, response: Response) => {
+    const eventRepository = getRepository(Event);
+    return eventRepository.find({
+      relations: ["location", "location.complex", "creator"],
+      withDeleted: true,
+      order: { startDate: "DESC" },
+    });
+  };
+
+  static getPlayers = async (request: Request, response: Response) => {
+    const requestRepository = getCustomRepository(RequestRepository);
+    const teamPlayers = await requestRepository
+      .createQueryBuilder("r")
+      .select("u.name, u.profile_picture, t.name as team, r.status")
+      .innerJoin(
+        "teams",
+        "t",
+        "t.id = r.senderTeamId OR t.id = r.receiverTeamId"
+      )
+      .innerJoin("teams_users", "tu", "tu.teamId = t.id")
+      .innerJoin("users", "u", "u.id = tu.playerId")
+      .where("r.eventId = :id", { id: request.params.id })
+      .getRawMany();
+
+    if (teamPlayers.length) return teamPlayers;
+
+    return requestRepository
+      .createQueryBuilder("r")
+      .select("u.name, u.profile_picture")
+      .innerJoin("users", "u", "u.id = r.receiverId OR u.id = r.senderId")
+      .where("r.eventId = :id", { id: request.params.id })
+      .getRawMany();
+  };
+
   static insert = async (
     eventPayload: CreateEventDto,
     request: Request,

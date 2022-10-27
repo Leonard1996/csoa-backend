@@ -39,10 +39,10 @@ export class UserController {
 
     const userData = users.map((user) => ({
       ...user,
-      footballStars: parseFloat(starsMap[user.id].football).toFixed(2),
-      basketballStars: parseFloat(starsMap[user.id].basketball).toFixed(2),
-      tenisStars: parseFloat(starsMap[user.id].tenis).toFixed(2),
-      baseballStars: parseFloat(starsMap[user.id].baseball).toFixed(2),
+      footballStars: parseFloat(starsMap[user.id].football ?? 0).toFixed(2),
+      basketballStars: parseFloat(starsMap[user.id].basketball ?? 0).toFixed(2),
+      tenisStars: parseFloat(starsMap[user.id].tenis ?? 0).toFixed(2),
+      baseballStars: parseFloat(starsMap[user.id].baseball ?? 0).toFixed(2),
     }));
 
     response.status(HttpStatusCode.OK).send(new SuccessResponse({ userData }));
@@ -51,7 +51,7 @@ export class UserController {
   static insert = async (request: Request, response: Response) => {
     try {
       const user = await UserService.insert(request.body, request, response);
-      // response.status(HttpStatusCode.OK).send(new SuccessResponse({ user }));
+      response.status(HttpStatusCode.OK).send(new SuccessResponse({ user }));
     } catch (err) {
       console.log(err);
       return response.status(400).send(new ErrorResponse(err));

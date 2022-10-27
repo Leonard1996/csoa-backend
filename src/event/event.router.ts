@@ -25,6 +25,34 @@ export class EventRouter {
       EventController.insert,
     ]);
 
+    app.get("/events", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
+      EventController.list,
+    ]);
+
+    app.post("/events/:id/toggle", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
+      EventController.toggleEvent,
+    ]);
+
+    app.get("/events/:id/players", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
+      EventController.getPlayers,
+    ]);
+
+    // app.post("/teams", [
+    //   AuthenticationMiddleware.checkJwtToken,
+    //   PermissionMiddleware.checkAllowedPermissions([
+    //     UserRole.USER,
+    //     UserRole.ADMIN,
+    //   ]),
+    //   UploadMiddleware.validateFileUpload("file", ["jpg", "png", "jpeg"], 2),
+    //   EventController.insert,
+    // ]);
+
     app.get("/events/:eventId", [
       AuthenticationMiddleware.checkJwtToken,
       PermissionMiddleware.checkMeOrPermissionsAllowed([

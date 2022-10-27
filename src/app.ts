@@ -18,6 +18,7 @@ import { EventRouter } from "./event/event.router";
 import { RequestRouter } from "./request/request.router";
 import { ReviewRouter } from "./review/review.router";
 import { NotificationRouter } from "./notifications/notification.router";
+import { ComplexRouter } from "./complex/complex.router";
 
 createConnection()
   .then(async (connection) => {
@@ -55,6 +56,8 @@ createConnection()
     AttachmentRouter.configRoutes(app);
 
     DashboardRouter.configRoutes(app);
+
+    ComplexRouter.configRoutes(app);
     // get api version
     app.get(process.env.URL + "/version", (req, res) => {
       res.status(200).send({
