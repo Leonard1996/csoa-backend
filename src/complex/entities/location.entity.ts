@@ -23,16 +23,16 @@ export class Location extends Common {
   events: Location[];
 
   @Column("json", { nullable: true, name: "isFootball" })
-  public isFootball: boolean;
+  public isFootball: string;
 
   @Column("json", { nullable: true, name: "isBasketball" })
-  public isBasketball: boolean;
+  public isBasketball: string;
 
   @Column("json", { nullable: true, name: "isTennis" })
-  public isTennis: boolean;
+  public isTennis: string;
 
   @Column("json", { nullable: true, name: "isVolleyball" })
-  public isVolleyball: boolean;
+  public isVolleyball: string;
 
   get baseLocation() {
     return {

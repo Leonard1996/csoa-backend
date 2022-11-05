@@ -58,6 +58,35 @@ export class ComplexRouter {
       ComplexController.getLocations,
     ]);
 
+    app.post("/v2/complexes", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.COMPNAY]),
+      UploadMiddleware.validateFileUpload(
+        "files",
+        ["jpg", "jpeg", "png", "gif", "svg"],
+        10
+      ),
+      ComplexController.upsert,
+    ]);
+
+    app.get("/v2/complexes/:userId/locations", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.COMPNAY]),
+      ComplexController.getLocationsByComplexOwner,
+    ]);
+
+    app.get("/activity/locations/toggle", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.COMPNAY]),
+      ComplexController.toggleStatusLocations,
+    ]);
+
+    app.get("/v2/complexes/:id/events", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.COMPNAY]),
+      ComplexController.getEventsByComplexOwner,
+    ]);
+
     // /complexes/${business?.id}/locations?type=${type}/events
 
     //   app.post("/teams/:teamId/attachments", [

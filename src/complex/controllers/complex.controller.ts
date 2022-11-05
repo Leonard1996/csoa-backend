@@ -154,4 +154,81 @@ export class ComplexController {
         .send(new ErrorResponse("Could not get locations"));
     }
   };
+  static upsert = async (request: Request, response: Response) => {
+    try {
+      const complex = await ComplexService.upsert(request);
+
+      return response
+        .status(HttpStatusCode.OK)
+        .send(new SuccessResponse(complex));
+    } catch (err) {
+      console.log({ err });
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not get locations"));
+    }
+  };
+
+  static getLocationsByComplexOwner = async (
+    request: Request,
+    response: Response
+  ) => {
+    try {
+      const locations = await ComplexService.getLocationsByComplexOwner(
+        +request.params.userId
+      );
+
+      return response
+        .status(HttpStatusCode.OK)
+        .send(new SuccessResponse(locations));
+    } catch (err) {
+      console.log({ err });
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not get locations"));
+    }
+  };
+
+  public static async toggleStatusLocations(
+    request: Request,
+    response: Response
+  ) {
+    try {
+      const locationRepository = getRepository(Location);
+      const location = await locationRepository.findOneOrFail({
+        where: { id: +request.query.id },
+        withDeleted: true,
+      });
+      if (!location.tsDeleted) await locationRepository.softDelete(location.id);
+      else {
+        location.tsDeleted = null;
+        await locationRepository.save(location);
+      }
+      return response.status(200).send(new SuccessResponse({ location }));
+    } catch (err) {
+      console.log({ err });
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not deactive location"));
+    }
+  }
+
+  static getEventsByComplexOwner = async (
+    request: Request,
+    response: Response
+  ) => {
+    try {
+      const events = await ComplexService.getEventsByComplexOwner(
+        +request.params.id
+      );
+      return response
+        .status(HttpStatusCode.OK)
+        .send(new SuccessResponse({ events }));
+    } catch (err) {
+      console.log({ err });
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not get events for this complex"));
+    }
+  };
 }

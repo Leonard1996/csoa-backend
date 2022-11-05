@@ -1,5 +1,6 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Common } from "../../common/entities/common";
+import { Complex } from "../../complex/entities/complex.entity";
 import { Team } from "../../team/entities/team.entity";
 import { User } from "../../user/entities/user.entity";
 
@@ -66,4 +67,12 @@ export class Attachment extends Common {
     nullable: true,
   })
   public userId: number;
+
+  @ManyToOne(() => Complex, (complex) => complex.attachments)
+  public complex: Complex;
+  @Column({
+    type: "int",
+    nullable: true,
+  })
+  public complexId: number;
 }

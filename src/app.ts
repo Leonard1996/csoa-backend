@@ -16,8 +16,6 @@ import { TeamRouter } from "./team/team.router";
 import { DashboardRouter } from "./dashboard/dashboard.router";
 import { EventRouter } from "./event/event.router";
 import { ComplexRouter } from "./complex/complex.router";
-const events = require("events");
-export const eventEmitter = new events.EventEmitter();
 
 createConnection()
   .then(async (connection) => {

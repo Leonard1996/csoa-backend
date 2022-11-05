@@ -5,7 +5,6 @@ import {
   getManager,
   getRepository,
 } from "typeorm";
-import { eventEmitter } from "../../app";
 import { Functions } from "../../common/utilities/Functions";
 import { RequestRepository } from "../../request/repositories/request.repository";
 import { UserService } from "../../user/services/user.service";
@@ -156,6 +155,7 @@ export class EventService {
         event.name = name;
         event.locationId = locationId;
         event.sport = sport;
+        event.status = EventStatus.DRAFT;
         createdEvent = await queryRunner.manager.save(event);
       }
 

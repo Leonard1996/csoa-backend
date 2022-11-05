@@ -40,10 +40,6 @@ export class EventRouter {
       EventController.createAdminEvent,
     ]);
 
-    app.get("/new-events/:userId", sseExpress, [
-      EventController.newEventsEmitter,
-    ]);
-
     // app.post("/teams", [
     //   AuthenticationMiddleware.checkJwtToken,
     //   PermissionMiddleware.checkAllowedPermissions([

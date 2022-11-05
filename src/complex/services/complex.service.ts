@@ -1,6 +1,12 @@
+import { Request } from "express";
 import { getCustomRepository, getRepository } from "typeorm";
+import { Attachment } from "../../attachment/entities/attachment.entity";
+import { File } from "../../common/utilities/File";
+import { EventStatus } from "../../event/entities/event.entity";
 import { EventRepository } from "../../event/repositories/event.repository";
+import { User } from "../../user/entities/user.entity";
 import { Complex } from "../entities/complex.entity";
+import { Location } from "../entities/location.entity";
 
 export class ComplexService {
   public static list() {
@@ -84,7 +90,9 @@ export class ComplexService {
       .innerJoin("complexes", "c", "c.id = l.complexId")
       .innerJoin("users", "u", "u.id = e.creatorId")
       .where("c.id = :id", { id })
+      .andWhere(`e.status != '${EventStatus.DRAFT}'`)
       .orderBy("e.id", "DESC")
+      .limit(350)
       .getRawMany();
   }
 
@@ -143,6 +151,158 @@ export class ComplexService {
       .andWhere("e.endDate <= :endDate", { endDate: request.body.to })
       .andWhere("l.id = :locationId", { locationId: request.params.locationId })
       .orderBy("e.id", "DESC")
+      .getRawMany();
+  }
+
+  static async upsert(request: Request) {
+    const fields = JSON.parse(request.body.fields);
+
+    let complex;
+    if (fields.id) {
+      // complex = await getRepository(Complex).update()
+    }
+    if (!fields.id) {
+      complex = new Complex();
+      complex.name = fields.name;
+      complex.phone = fields.phone;
+      complex.facilities = JSON.stringify({
+        Bar: fields.Bar || false,
+        Dushe: fields.Dushe || false,
+        Parkim: fields.Parkim || false,
+        "Kënd Lojrash": fields["Kënd Lojrash"] || false,
+        "Fushë e mbyllur": fields["Fushë e mbyllur"] || false,
+      });
+      complex.sports = JSON.stringify({
+        Tenis: fields.Tenis || false,
+        Futboll: fields.Futboll || false,
+        Volejboll: fields.Volejboll || false,
+        Basketboll: fields.Basketboll || false,
+      });
+      complex.longitude = fields.longitude ? +fields.longitude : null;
+      complex.latitude = fields.latitude ? +fields.latitude : null;
+      complex.banner = fields?.fileBanner?.base64;
+      complex.avatar = fields?.fileAvatar?.base64;
+      let from: any = new Date(fields.from);
+      let hours = from.getHours();
+      let minutes = from.getMinutes();
+      minutes = minutes > 30 ? 1.0 : 0.0;
+      hours = hours + minutes;
+      from = hours;
+
+      let to: any = new Date(fields.to);
+      hours = to.getHours();
+      minutes = to.getMinutes();
+      minutes = minutes > 30 ? 1.0 : 0.0;
+      hours = hours + minutes;
+      to = hours;
+
+      complex.workingHours = JSON.stringify({
+        from,
+        to,
+      });
+      complex.city = fields.city;
+
+      complex = await getRepository(Complex).save(complex);
+
+      if (request.files) {
+        let attachments: Attachment[] = [];
+        for (const file of request.files as Express.Multer.File[]) {
+          attachments.push(
+            ComplexService.createAttachmentForComplex(file, complex.id)
+          );
+        }
+        if (attachments.length) {
+          await getRepository(Attachment)
+            .createQueryBuilder()
+            .insert()
+            .values(attachments)
+            .execute();
+        }
+      }
+    }
+
+    let locations: Location[] = [];
+    for (const field of fields.locations) {
+      const location = new Location();
+      location.name = field.location;
+      location.complexId = complex.id;
+      location.price = field.price;
+      location.dimensions = `${field.length} x ${fields.width}`;
+      if (field.isFootball)
+        location.isFootball = JSON.stringify({
+          name: "futboll",
+          slotRange: field?.isFootball?.time,
+        });
+      if (field.isBasketball)
+        location.isBasketball = JSON.stringify({
+          name: "basketboll",
+          slotRange: field?.isBasketball?.time,
+        });
+      if (field.isTennis)
+        location.isTennis = JSON.stringify({
+          name: "tenis",
+          slotRange: field?.isTennis?.time,
+        });
+      if (field.isVolleyball)
+        location.isVolleyball = JSON.stringify({
+          name: "volejboll",
+          slotRange: field?.isVolleyball?.time,
+        });
+      locations.push(location);
+    }
+
+    if (locations.length) {
+      await getRepository(Location)
+        .createQueryBuilder()
+        .insert()
+        .values(locations)
+        .execute();
+    }
+
+    return complex;
+  }
+
+  static createAttachmentForComplex = (
+    file: Express.Multer.File,
+    complexId: number
+  ) => {
+    const attachment = new Attachment();
+    attachment.name = file.filename;
+    attachment.originalName = file.originalname;
+    attachment.mimeType = file.mimetype;
+    attachment.sizeInBytes = file.size;
+    attachment.extension = File.getFileExtension(file.originalname);
+    attachment.path = file.path;
+    attachment.complexId = complexId;
+    return attachment;
+  };
+
+  static getLocationsByComplexOwner(id: number) {
+    return getRepository(Location)
+      .createQueryBuilder("l")
+      .select(["l.*"])
+      .innerJoin("complexes", "c", "c.id = l.complexId")
+      .innerJoin("users", "u", "c.id = u.complexId")
+      .where("u.id = :id", { id })
+      .withDeleted()
+      .getRawMany();
+  }
+
+  static getEventsByComplexOwner(id: number) {
+    const eventRepository = getCustomRepository(EventRepository);
+    return eventRepository
+      .createQueryBuilder("e")
+      .withDeleted()
+      .select(
+        "e.id, u.name, e.startDate, e.endDate, l.name as locationName, l.price, e.status, e.isUserReservation"
+      )
+      .innerJoin("locations", "l", "l.id = e.locationId")
+      .innerJoin("complexes", "c", "c.id = l.complexId")
+      .innerJoin("users", "u", "u.complexId = c.id")
+      .where("u.id = :id", { id })
+      .andWhere(`e.status != '${EventStatus.DRAFT}'`)
+      .orderBy("e.id", "DESC")
+      .limit(200)
       .getRawMany();
   }
 }
