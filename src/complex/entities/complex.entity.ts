@@ -1,4 +1,5 @@
 import { Column, Entity, OneToMany } from "typeorm";
+import { Attachment } from "../../attachment/entities/attachment.entity";
 import { Common } from "../../common/entities/common";
 import { Notification } from "../../notifications/entities/notification.entity";
 import { User } from "../../user/entities/user.entity";
@@ -76,6 +77,9 @@ export class Complex extends Common {
 
   @OneToMany(() => User, (user) => user.complex)
   users: User[];
+
+  @OneToMany(() => Attachment, (attachment) => attachment.complex)
+  attachments: Attachment[];
 
   get baseComplex() {
     return {

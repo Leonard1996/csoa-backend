@@ -4,6 +4,7 @@ import { ERROR_MESSAGES } from "../../common/utilities/ErrorMessages";
 import { ErrorResponse } from "../../common/utilities/ErrorResponse";
 import { File } from "../../common/utilities/File";
 import { join } from "path";
+const crypto = require("crypto");
 
 export class UploadMiddleware {
   public static validateFileUpload = (
@@ -50,11 +51,7 @@ export class UploadMiddleware {
       filename: (request: Express.Request, file: Express.Multer.File, cb) => {
         const extension = File.getFileExtension(file.originalname);
         const filename =
-          new Date().getTime().toString() +
-          "_" +
-          file.fieldname +
-          "." +
-          extension;
+          crypto.randomUUID() + "_" + file.fieldname + "." + extension;
         cb(null, filename);
       },
     };

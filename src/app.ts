@@ -19,8 +19,6 @@ import { RequestRouter } from "./request/request.router";
 import { ReviewRouter } from "./review/review.router";
 import { NotificationRouter } from "./notifications/notification.router";
 import { ComplexRouter } from "./complex/complex.router";
-const events = require("events");
-export const eventEmitter = new events.EventEmitter();
 
 createConnection()
   .then(async (connection) => {
