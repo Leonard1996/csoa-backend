@@ -9,43 +9,53 @@ import { getCustomRepository, getRepository, Not } from "typeorm";
 import { User } from "../entities/user.entity";
 import { AttachmentService } from "../../attachment/services/attachment.services";
 import { ReviewRepository } from "../../review/repositories/review.repository";
+import { Md5 } from "md5-typescript";
 
 export class UserController {
   static list = async (request: Request, response: Response) => {
     const userRepository = getRepository(User);
+    try {
+      const users = await userRepository.find({
+        where: {
+          id: Not(response.locals.jwt.userId),
+          role: "user",
+        },
+        withDeleted: true,
+      });
 
-    const users = await userRepository.find({
-      where: {
-        id: Not(response.locals.jwt.userId),
-      },
-      withDeleted: true,
-    });
-
-    const ids = users.map((user) => user.id);
-    const reviewRepository = getCustomRepository(ReviewRepository);
-    let stars = [];
-    if (ids.length) {
-      stars = await reviewRepository.getStars(ids);
-    }
-
-    const starsMap = {};
-
-    for (const star of stars) {
-      if (!starsMap[star.userId]) {
-        starsMap[star.userId] = {};
+      const ids = users.map((user) => user.id);
+      const reviewRepository = getCustomRepository(ReviewRepository);
+      let stars = [];
+      if (ids.length) {
+        stars = await reviewRepository.getStars(ids);
       }
-      starsMap[star.userId][star.sport] = star.stars;
+
+      const starsMap = {};
+
+      for (const star of stars) {
+        if (!starsMap[star.userId]) {
+          starsMap[star.userId] = {};
+        }
+        starsMap[star.userId][star.sport] = star.stars;
+      }
+
+      const userData = users.map((user) => ({
+        ...user,
+        footballStars: parseFloat(starsMap[user.id]?.football ?? 0).toFixed(2),
+        basketballStars: parseFloat(starsMap[user.id]?.basketball ?? 0).toFixed(
+          2
+        ),
+        tenisStars: parseFloat(starsMap[user.id]?.tenis ?? 0).toFixed(2),
+        voleyballStars: parseFloat(starsMap[user.id]?.voleyball ?? 0).toFixed(
+          2
+        ),
+      }));
+      response
+        .status(HttpStatusCode.OK)
+        .send(new SuccessResponse({ userData }));
+    } catch (error) {
+      console.log({ error });
     }
-
-    const userData = users.map((user) => ({
-      ...user,
-      footballStars: parseFloat(starsMap[user.id].football ?? 0).toFixed(2),
-      basketballStars: parseFloat(starsMap[user.id].basketball ?? 0).toFixed(2),
-      tenisStars: parseFloat(starsMap[user.id].tenis ?? 0).toFixed(2),
-      baseballStars: parseFloat(starsMap[user.id].baseball ?? 0).toFixed(2),
-    }));
-
-    response.status(HttpStatusCode.OK).send(new SuccessResponse({ userData }));
   };
 
   static insert = async (request: Request, response: Response) => {
@@ -122,6 +132,27 @@ export class UserController {
           .status(HttpStatusCode.NOT_FOUND)
           .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
       }
+    } catch (err) {
+      console.log(err);
+      return response.status(400).send(new ErrorResponse(err));
+    }
+  };
+
+  static listBusinessAccounts = async (
+    request: Request,
+    response: Response
+  ) => {
+    const userRepository = getRepository(User);
+    try {
+      const users = await userRepository.find({
+        where: {
+          role: "company",
+        },
+        withDeleted: true,
+      });
+      return response
+        .status(HttpStatusCode.OK)
+        .send(new SuccessResponse(users));
     } catch (err) {
       console.log(err);
       return response.status(400).send(new ErrorResponse(err));
@@ -350,9 +381,11 @@ export class UserController {
         where: { id: +request.query.id },
         withDeleted: true,
       });
-      if (!user.tsDeleted) userRepository.softDelete(user.id);
-      else user.tsDeleted = null;
-      await userRepository.save(user);
+      if (!user.tsDeleted) await userRepository.softDelete(user.id);
+      else {
+        user.tsDeleted = null;
+        await userRepository.save(user);
+      }
       return response.status(200).send(new SuccessResponse({ user }));
     } catch (err) {
       console.log({ err });
@@ -361,4 +394,27 @@ export class UserController {
         .send(new ErrorResponse("Could not update profile picture"));
     }
   }
+
+  static createBusinessUser = async (request: Request, response: Response) => {
+    try {
+      const userRepository = getRepository(User);
+      let user = new User();
+      user.sex = "male";
+      user.sports = "{}";
+      user.phoneNumber = "0";
+      user.address = "no address";
+      user.birthday = new Date();
+      user.name = request.body.name;
+      user.email = request.body.email;
+      user.password = Md5.init(request.body.password);
+      user.role = "company";
+      user.complexId = request.body.complexId;
+      await userRepository.save(user);
+
+      response.status(HttpStatusCode.OK).send(new SuccessResponse(user));
+    } catch (err) {
+      console.log(err);
+      return response.status(400).send(new ErrorResponse(err));
+    }
+  };
 }

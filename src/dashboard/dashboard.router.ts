@@ -7,9 +7,15 @@ import { AuthenticationMiddleware } from "../authentication/middlewares/authenti
 export class DashboardRouter {
   static configRoutes = (app: express.Application) => {
     app.get("/dashboard-statistics", [
-      //   AuthenticationMiddleware.checkJwtToken,
-      //   PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
       DashboardController.getStatistics,
+    ]);
+
+    app.get("/dashboard-statistics/:complexId", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.COMPNAY]),
+      DashboardController.getStatisticsByComplexId,
     ]);
   };
 }

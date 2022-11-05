@@ -1,6 +1,7 @@
 import { Column, Entity, OneToMany } from "typeorm";
 import { Common } from "../../common/entities/common";
 import { Notification } from "../../notifications/entities/notification.entity";
+import { User } from "../../user/entities/user.entity";
 import { Location } from "./location.entity";
 
 @Entity("complexes")
@@ -29,13 +30,13 @@ export class Complex extends Common {
   })
   public sports: string;
 
-  @Column("varchar", {
+  @Column("longtext", {
     nullable: true,
     name: "banner",
   })
   public banner: string;
 
-  @Column("varchar", {
+  @Column("longtext", {
     nullable: true,
     name: "avatar",
   })
@@ -52,11 +53,29 @@ export class Complex extends Common {
   })
   public city: string;
 
-  @Column("decimal", { nullable: true, name: "longitude" })
+  @Column("json", {
+    nullable: true,
+  })
+  public workingHours: string;
+
+  @Column("decimal", {
+    nullable: true,
+    name: "longitude",
+    scale: 7,
+    precision: 10,
+  })
   public longitude: number;
 
-  @Column("decimal", { nullable: true, name: "latitude" })
+  @Column("decimal", {
+    nullable: true,
+    name: "latitude",
+    scale: 7,
+    precision: 10,
+  })
   public latitude: number;
+
+  @OneToMany(() => User, (user) => user.complex)
+  users: User[];
 
   get baseComplex() {
     return {

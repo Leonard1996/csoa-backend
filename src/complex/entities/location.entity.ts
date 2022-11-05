@@ -22,16 +22,16 @@ export class Location extends Common {
   @OneToMany(() => Event, (event) => event.location)
   events: Location[];
 
-  @Column("tinyint", { nullable: true, name: "isFootball" })
+  @Column("json", { nullable: true, name: "isFootball" })
   public isFootball: boolean;
 
-  @Column("tinyint", { nullable: true, name: "isBasketball" })
+  @Column("json", { nullable: true, name: "isBasketball" })
   public isBasketball: boolean;
 
-  @Column("tinyint", { nullable: true, name: "isTennis" })
+  @Column("json", { nullable: true, name: "isTennis" })
   public isTennis: boolean;
 
-  @Column("tinyint", { nullable: true, name: "isVolleyball" })
+  @Column("json", { nullable: true, name: "isVolleyball" })
   public isVolleyball: boolean;
 
   get baseLocation() {

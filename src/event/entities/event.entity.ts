@@ -41,6 +41,8 @@ export class Event extends Common {
 
   @Column("varchar", { nullable: true, name: "level" })
   public level: string;
+  @Column("text", { nullable: true })
+  public notes: string;
 
   @Column("varchar", { nullable: true, name: "playersNumber" })
   public playersNumber: string;

@@ -12,15 +12,53 @@ export class ComplexRouter {
       PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
       ComplexController.list,
     ]);
-    // app.post("/teams", [
-    //   AuthenticationMiddleware.checkJwtToken,
-    //   PermissionMiddleware.checkAllowedPermissions([
-    //     UserRole.USER,
-    //     UserRole.ADMIN,
-    //   ]),
-    //   UploadMiddleware.validateFileUpload("file", ["jpg", "png", "jpeg"], 2),
-    //   EventController.insert,
-    // ]);
+    app.get("/complexes-minified", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
+      ComplexController.listMinified,
+    ]);
+    app.post("/complexes", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
+      ComplexController.insert,
+    ]);
+    app.patch("/complexes", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
+      ComplexController.update,
+    ]);
+    app.patch("/complexes/:id", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
+      ComplexController.toggleStatus,
+    ]);
+    app.get("/complexes/:id", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
+      ComplexController.getById,
+    ]);
+    app.get("/complexes/:id/events", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
+      ComplexController.getEvents,
+    ]);
+    app.post("/complexes/:id/events", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
+      ComplexController.getFilteredEvents,
+    ]);
+    app.post("/complexes/:id/locations/:locationId/events", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
+      ComplexController.fetchEventsByLocationdId,
+    ]);
+    app.get("/complexes/:id/locations", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
+      ComplexController.getLocations,
+    ]);
+
+    // /complexes/${business?.id}/locations?type=${type}/events
 
     //   app.post("/teams/:teamId/attachments", [
     //     AuthenticationMiddleware.checkJwtToken,

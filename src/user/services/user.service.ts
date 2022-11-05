@@ -206,8 +206,6 @@ export class UserService {
   };
 
   static deleteReviewsAndTeams = async (user: User, sport: string) => {
-    console.log(sport);
-
     const reviewCustomRepository = getCustomRepository(ReviewRepository);
     await reviewCustomRepository
       .createQueryBuilder("r")

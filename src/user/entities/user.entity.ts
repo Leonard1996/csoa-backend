@@ -1,6 +1,14 @@
-import { Column, Entity, OneToMany } from "typeorm";
+import {
+  Column,
+  Entity,
+  ManyToMany,
+  ManyToOne,
+  OneToMany,
+  Unique,
+} from "typeorm";
 import { Attachment } from "../../attachment/entities/attachment.entity";
 import { Common } from "../../common/entities/common";
+import { Complex } from "../../complex/entities/complex.entity";
 import { Event } from "../../event/entities/event.entity";
 import { Notification } from "../../notifications/entities/notification.entity";
 import { Request } from "../../request/entities/request.entity";
@@ -9,6 +17,7 @@ import { Team } from "../../team/entities/team.entity";
 import { TeamUsers } from "../../team/entities/team.users.entity";
 
 @Entity("users")
+@Unique(["email"])
 export class User extends Common {
   @Column("varchar", { nullable: true, length: 256, name: "password" })
   public password: string | null;
@@ -52,6 +61,12 @@ export class User extends Common {
 
   @Column("json", { nullable: false, name: "sports" })
   public sports: string;
+
+  @Column("int", { nullable: true })
+  public complexId: number;
+
+  @ManyToOne(() => Complex, (complex) => complex.users)
+  complex: Complex;
 
   @OneToMany(() => Review, (review) => review.sender)
   givenReviews: Review[];

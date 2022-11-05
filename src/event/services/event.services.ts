@@ -1,5 +1,11 @@
 import { Request, Response } from "express";
-import { Brackets, getCustomRepository, getRepository } from "typeorm";
+import {
+  Brackets,
+  getCustomRepository,
+  getManager,
+  getRepository,
+} from "typeorm";
+import { eventEmitter } from "../../app";
 import { Functions } from "../../common/utilities/Functions";
 import { RequestStatus } from "../../request/entities/request.entity";
 import { UserService } from "../../user/services/user.service";
@@ -135,11 +141,33 @@ export class EventService {
 
   static list = async (request: Request, response: Response) => {
     const eventRepository = getRepository(Event);
-    return eventRepository.find({
-      relations: ["location", "location.complex", "creator"],
-      withDeleted: true,
-      order: { startDate: "DESC" },
-    });
+    const count = await eventRepository.count({ withDeleted: true });
+    const events = await eventRepository
+      .createQueryBuilder("e")
+      .select([
+        "u.name as creator",
+        "startDate",
+        "sport",
+        "c.name as name",
+        "e.id as id",
+        "e.tsDeleted as tsDeleted",
+        "e.status as status",
+        "l.name as location",
+        "e.ts_Created as tsCreated",
+      ])
+      .innerJoin("locations", "l", "l.id = e.locationId")
+      .innerJoin("complexes", "c", "c.id = l.complexId")
+      .leftJoin("users", "u", "u.id = e.creatorId")
+      .where("(e.isDraft is null OR e.isDraft = 0)")
+      .orderBy("e.ts_Created", "DESC")
+      .withDeleted()
+      .limit(15)
+      .offset(+request.query.page * 15)
+      .getRawMany();
+    return {
+      count,
+      events,
+    };
   };
 
   static getPlayers = async (request: Request, response: Response) => {
@@ -166,6 +194,59 @@ export class EventService {
       .where("r.eventId = :id", { id: request.params.id })
       .getRawMany();
   };
+
+  static async createAdminEvent(request: Request, response: Response) {
+    const {
+      body: { startDate, endDate, notes, name, locationId, sport },
+    } = request;
+    if (new Date(startDate) < new Date()) {
+      throw new Error();
+    }
+
+    const queryRunner = getManager().connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const overlappingEvent = await queryRunner.manager
+        .createQueryBuilder()
+        .from("events", "e")
+        .where(`e.locationId = '${locationId}' AND e.sport = '${sport}'`)
+        .andWhere(
+          new Brackets((qb) => {
+            qb.where(
+              `(e.startDate < '${endDate}' AND e.endDate > '${startDate}')`
+            );
+            qb.orWhere(
+              `(e.startDate = '${startDate}' AND e.endDate = '${endDate}')`
+            );
+          })
+        )
+        .setLock("pessimistic_read")
+        .getRawOne();
+
+      let createdEvent: any = false;
+      if (!overlappingEvent) {
+        const event = new Event();
+        event.startDate = startDate;
+        event.endDate = endDate;
+        event.isUserReservation = false;
+        event.creatorId = response.locals.jwt.userId;
+        event.notes = notes;
+        event.name = name;
+        event.locationId = locationId;
+        event.sport = sport;
+        createdEvent = await queryRunner.manager.save(event);
+      }
+
+      await queryRunner.commitTransaction();
+      return createdEvent;
+    } catch (error) {
+      console.log({ error });
+      await queryRunner.rollbackTransaction();
+    } finally {
+      await queryRunner.release();
+    }
+  }
 
   static insert = async (
     eventPayload: CreateEventDto,

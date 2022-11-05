@@ -85,6 +85,18 @@ export class UserRouter {
       UserController.deleteById,
     ]);
 
+    app.get("/users-complexes", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkMeOrPermissionsAllowed([UserRole.ADMIN]),
+      UserController.listBusinessAccounts,
+    ]);
+
+    app.post("/users-complexes", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkMeOrPermissionsAllowed([UserRole.ADMIN]),
+      UserController.createBusinessUser,
+    ]);
+
     // app.delete("/users/:userId/sports/:sport", [
     //   AuthenticationMiddleware.checkJwtToken,
     //   PermissionMiddleware.checkAllowedPermissions([

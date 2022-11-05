@@ -14,4 +14,20 @@ export class DashboardController {
       return response.status(404).send(new ErrorResponse(error));
     }
   };
+
+  static getStatisticsByComplexId = async (
+    request: Request,
+    response: Response
+  ) => {
+    try {
+      const results = await DashboardService.getStatisticsByComplexId(
+        +request.params.complexId
+      );
+
+      response.status(HttpStatusCode.OK).send(new SuccessResponse(results));
+    } catch (error) {
+      console.log({ error });
+      return response.status(404).send(new ErrorResponse(error));
+    }
+  };
 }
