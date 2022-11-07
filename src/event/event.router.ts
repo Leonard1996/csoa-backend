@@ -3,7 +3,6 @@ import { AuthenticationMiddleware } from "../authentication/middlewares/authenti
 import { PermissionMiddleware } from "../common/middlewares/permission.middleware";
 import { UserRole } from "../user/utilities/UserRole";
 import { EventController } from "./controllers/event.controller";
-const sseExpress = require("sse-express");
 
 export class EventRouter {
   static configRoutes = (app: express.Application) => {

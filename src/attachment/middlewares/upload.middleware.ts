@@ -76,11 +76,11 @@ export class UploadMiddleware {
       },
     };
 
-    if (maxFileSizeInBytes) {
-      multerOptions.limits = {
-        fileSize: maxFileSizeInBytes,
-      };
-    }
+    // if (maxFileSizeInBytes) {
+    multerOptions.limits = {
+      fieldSize: 1024 * 1024 * 10,
+    };
+    // }
 
     const upload: ReturnType<typeof multer> = multer(multerOptions);
 

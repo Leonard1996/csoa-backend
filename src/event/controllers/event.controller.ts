@@ -2,7 +2,9 @@ import { Request, Response } from "express";
 import { getRepository } from "typeorm";
 import { ErrorResponse } from "../../common/utilities/ErrorResponse";
 import { HttpStatusCode } from "../../common/utilities/HttpStatusCodes";
+import { Mailer } from "../../common/utilities/Mailer";
 import { SuccessResponse } from "../../common/utilities/SuccessResponse";
+import { Complex } from "../../complex/entities/complex.entity";
 import { Location } from "../../complex/entities/location.entity";
 import { User } from "../../user/entities/user.entity";
 import { Event } from "../entities/event.entity";
@@ -75,6 +77,20 @@ export class EventController {
   static createAdminEvent = async (request: Request, response: Response) => {
     try {
       const event = await EventService.createAdminEvent(request, response);
+      const location = await getRepository(Location).findOne(event.locationId);
+      const user = await getRepository(User).findOne({
+        where: { complexId: location.complexId },
+      });
+      const mailer = new Mailer();
+      mailer.sendMail(
+        user.email,
+        "Rezervim i ri",
+        `
+      <div>
+      Pershendetje, ju keni nje rezervim te ri, vizitoni aplikacionin ose panelin per me shume detaje.
+      </div>
+      `
+      );
       if (!event) throw Error();
       return response
         .status(HttpStatusCode.OK)

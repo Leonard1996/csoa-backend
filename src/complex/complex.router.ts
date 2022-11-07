@@ -34,7 +34,10 @@ export class ComplexRouter {
     ]);
     app.get("/complexes/:id", [
       AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
+      PermissionMiddleware.checkAllowedPermissions([
+        UserRole.ADMIN,
+        UserRole.COMPNAY,
+      ]),
       ComplexController.getById,
     ]);
     app.get("/complexes/:id/events", [
@@ -85,6 +88,18 @@ export class ComplexRouter {
       AuthenticationMiddleware.checkJwtToken,
       PermissionMiddleware.checkAllowedPermissions([UserRole.COMPNAY]),
       ComplexController.getEventsByComplexOwner,
+    ]);
+
+    app.get("/locations/:id", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.COMPNAY]),
+      ComplexController.getLocation,
+    ]);
+
+    app.patch("/locations/:id", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.COMPNAY]),
+      ComplexController.updateLocation,
     ]);
 
     // /complexes/${business?.id}/locations?type=${type}/events

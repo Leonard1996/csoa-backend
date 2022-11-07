@@ -1,4 +1,7 @@
-import { Request } from "express";
+import { Request, Response, response } from "express";
+import { userInfo } from "os";
+import { join } from "path";
+const fs = require("fs");
 import { getCustomRepository, getRepository } from "typeorm";
 import { Attachment } from "../../attachment/entities/attachment.entity";
 import { File } from "../../common/utilities/File";
@@ -74,6 +77,7 @@ export class ComplexService {
     const complexRepository = getRepository(Complex);
     return complexRepository.find({
       withDeleted: true,
+      relations: ["attachments"],
       where: { id: request.params.id },
     });
   }
@@ -154,100 +158,70 @@ export class ComplexService {
       .getRawMany();
   }
 
-  static async upsert(request: Request) {
+  static async upsert(request: Request, response: Response) {
     const fields = JSON.parse(request.body.fields);
 
     let complex;
-    if (fields.id) {
-      // complex = await getRepository(Complex).update()
+    const path = join(__dirname, "../../..", "public");
+    if (fields.complexId) {
+      const attachmentRepository = getRepository(Attachment);
+      const attachments = await attachmentRepository.find({
+        where: { complexId: +fields.complexId },
+      });
+      for (const attachment of attachments) {
+        fs.unlink(path + "/" + attachment.name, async (error) => {
+          if (!error) attachmentRepository.delete({ id: attachment.id });
+        });
+      }
+      const newComplex = new Complex();
+      ComplexService.getFields(newComplex, fields);
+      complex = await getRepository(Complex).update(
+        { id: +fields.complexId },
+        { ...newComplex }
+      );
     }
-    if (!fields.id) {
+    if (!fields.complexId) {
       complex = new Complex();
-      complex.name = fields.name;
-      complex.phone = fields.phone;
-      complex.facilities = JSON.stringify({
-        Bar: fields.Bar || false,
-        Dushe: fields.Dushe || false,
-        Parkim: fields.Parkim || false,
-        "Kënd Lojrash": fields["Kënd Lojrash"] || false,
-        "Fushë e mbyllur": fields["Fushë e mbyllur"] || false,
-      });
-      complex.sports = JSON.stringify({
-        Tenis: fields.Tenis || false,
-        Futboll: fields.Futboll || false,
-        Volejboll: fields.Volejboll || false,
-        Basketboll: fields.Basketboll || false,
-      });
-      complex.longitude = fields.longitude ? +fields.longitude : null;
-      complex.latitude = fields.latitude ? +fields.latitude : null;
-      complex.banner = fields?.fileBanner?.base64;
-      complex.avatar = fields?.fileAvatar?.base64;
-      let from: any = new Date(fields.from);
-      let hours = from.getHours();
-      let minutes = from.getMinutes();
-      minutes = minutes > 30 ? 1.0 : 0.0;
-      hours = hours + minutes;
-      from = hours;
-
-      let to: any = new Date(fields.to);
-      hours = to.getHours();
-      minutes = to.getMinutes();
-      minutes = minutes > 30 ? 1.0 : 0.0;
-      hours = hours + minutes;
-      to = hours;
-
-      complex.workingHours = JSON.stringify({
-        from,
-        to,
-      });
-      complex.city = fields.city;
-
+      ComplexService.getFields(complex, fields);
       complex = await getRepository(Complex).save(complex);
+      await getRepository(User).update(
+        { id: +response.locals.jwt.userId },
+        { complexId: complex.id }
+      );
+    }
 
-      if (request.files) {
-        let attachments: Attachment[] = [];
-        for (const file of request.files as Express.Multer.File[]) {
-          attachments.push(
-            ComplexService.createAttachmentForComplex(file, complex.id)
-          );
-        }
-        if (attachments.length) {
-          await getRepository(Attachment)
-            .createQueryBuilder()
-            .insert()
-            .values(attachments)
-            .execute();
-        }
+    if (request.files) {
+      let attachments: Attachment[] = [];
+      for (const file of request.files as Express.Multer.File[]) {
+        attachments.push(
+          ComplexService.createAttachmentForComplex(
+            file,
+            complex.id ?? +fields.complexId
+          )
+        );
+      }
+      if (attachments.length) {
+        await getRepository(Attachment)
+          .createQueryBuilder()
+          .insert()
+          .values(attachments)
+          .execute();
       }
     }
 
     let locations: Location[] = [];
     for (const field of fields.locations) {
       const location = new Location();
-      location.name = field.location;
-      location.complexId = complex.id;
+      location.name = field.name;
+      location.complexId = complex.id ?? fields.complexId;
       location.price = field.price;
-      location.dimensions = `${field.length} x ${fields.width}`;
-      if (field.isFootball)
-        location.isFootball = JSON.stringify({
-          name: "futboll",
-          slotRange: field?.isFootball?.time,
-        });
-      if (field.isBasketball)
-        location.isBasketball = JSON.stringify({
-          name: "basketboll",
-          slotRange: field?.isBasketball?.time,
-        });
-      if (field.isTennis)
-        location.isTennis = JSON.stringify({
-          name: "tenis",
-          slotRange: field?.isTennis?.time,
-        });
-      if (field.isVolleyball)
-        location.isVolleyball = JSON.stringify({
-          name: "volejboll",
-          slotRange: field?.isVolleyball?.time,
-        });
+      location.dimensions = `${field.length} x ${field.width}`;
+      location.isFootball = field.isFootball;
+      location.isTennis = field.isTennis;
+      location.isBasketball = field.isBasketball;
+      location.isVolleyball = field.isVolleyball;
+      location.slotRange = field.slotRange;
+
       locations.push(location);
     }
 
@@ -259,7 +233,7 @@ export class ComplexService {
         .execute();
     }
 
-    return complex;
+    return complex.id ?? +fields.complexId;
   }
 
   static createAttachmentForComplex = (
@@ -304,5 +278,46 @@ export class ComplexService {
       .orderBy("e.id", "DESC")
       .limit(200)
       .getRawMany();
+  }
+
+  private static getFields(complex, fields) {
+    complex.name = fields.name;
+    complex.phone = fields.phone;
+    complex.facilities = JSON.stringify({
+      Bar: fields.Bar || false,
+      Dushe: fields.Dushe || false,
+      Parkim: fields.Parkim || false,
+      "Kënd Lojrash": fields["Kënd Lojrash"] || false,
+      "Fushë e mbyllur": fields["Fushë e mbyllur"] || false,
+    });
+    complex.sports = JSON.stringify({
+      Tenis: fields.Tenis || false,
+      Futboll: fields.Futboll || false,
+      Volejboll: fields.Volejboll || false,
+      Basketboll: fields.Basketboll || false,
+    });
+    complex.longitude = fields.longitude ? +fields.longitude : null;
+    complex.latitude = fields.latitude ? +fields.latitude : null;
+    complex.banner = fields?.fileBanner?.base64;
+    complex.avatar = fields?.fileAvatar?.base64;
+    let from: any = new Date(fields.from);
+    let hours = from.getHours();
+    let minutes = from.getMinutes();
+    minutes = minutes > 30 ? 1.0 : 0.0;
+    hours = hours + minutes;
+    from = hours;
+
+    let to: any = new Date(fields.to);
+    hours = to.getHours();
+    minutes = to.getMinutes();
+    minutes = minutes > 30 ? 1.0 : 0.0;
+    hours = hours + minutes;
+    to = hours;
+
+    complex.workingHours = JSON.stringify({
+      from,
+      to,
+    });
+    complex.city = fields.city;
   }
 }

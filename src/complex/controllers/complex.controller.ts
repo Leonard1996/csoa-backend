@@ -156,11 +156,11 @@ export class ComplexController {
   };
   static upsert = async (request: Request, response: Response) => {
     try {
-      const complex = await ComplexService.upsert(request);
+      const complexId = await ComplexService.upsert(request, response);
 
       return response
         .status(HttpStatusCode.OK)
-        .send(new SuccessResponse(complex));
+        .send(new SuccessResponse(complexId));
     } catch (err) {
       console.log({ err });
       return response
@@ -229,6 +229,43 @@ export class ComplexController {
       return response
         .status(404)
         .send(new ErrorResponse("Could not get events for this complex"));
+    }
+  };
+
+  static getLocation = async (request: Request, response: Response) => {
+    try {
+      const location = await getRepository(Location).findOne(request.params.id);
+      const [length, width] = location.dimensions.split("x");
+      location["width"] = width;
+      location["length"] = length;
+      return response
+        .status(HttpStatusCode.OK)
+        .send(new SuccessResponse(location));
+    } catch (err) {
+      console.log({ err });
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not get complexes"));
+    }
+  };
+
+  static updateLocation = async (request: Request, response: Response) => {
+    try {
+      const dimensions = `${request.body.length}x${request.body.width}`;
+      delete request.body.width;
+      delete request.body.length;
+      const location = await getRepository(Location).update(
+        { id: +request.params.id },
+        { ...request.body, dimensions }
+      );
+      return response
+        .status(HttpStatusCode.OK)
+        .send(new SuccessResponse(location));
+    } catch (err) {
+      console.log({ err });
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not get complexes"));
     }
   };
 }
