@@ -52,12 +52,19 @@ export class ComplexRouter {
     ]);
     app.post("/complexes/:id/locations/:locationId/events", [
       AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
+      PermissionMiddleware.checkAllowedPermissions([
+        UserRole.ADMIN,
+        UserRole.COMPNAY,
+      ]),
       ComplexController.fetchEventsByLocationdId,
     ]);
     app.get("/complexes/:id/locations", [
       AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
+      PermissionMiddleware.checkAllowedPermissions([
+        UserRole.ADMIN,
+        UserRole.COMPNAY,
+      ]),
+      PermissionMiddleware.checkIfOwner,
       ComplexController.getLocations,
     ]);
 

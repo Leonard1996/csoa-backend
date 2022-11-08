@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import { ErrorResponse } from "../utilities/ErrorResponse";
 import { ERROR_MESSAGES } from "../utilities/ErrorMessages";
+import { UserRole } from "../../user/utilities/UserRole";
+import { getRepository } from "typeorm";
+import { Complex } from "../../complex/entities/complex.entity";
 
 export class PermissionMiddleware {
   static checkAllowedPermissions = (roles: Array<string>) => {
@@ -43,5 +46,34 @@ export class PermissionMiddleware {
     }
 
     next();
+  };
+
+  static checkIfOwner = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    const { userId, userRole } = res.locals.jwt;
+    console.log(userId, userRole);
+    if (userRole === UserRole.ADMIN) {
+      console.log("there");
+      next();
+    } else if (userRole === UserRole.COMPNAY) {
+      console.log("here");
+      const complex = await getRepository(Complex)
+        .createQueryBuilder("c")
+        .innerJoin("users", "u", "u.complexId = c.id")
+        .where("u.id = :id", { id: userId })
+        .andWhere("u.complexId = :complexId", { complexId: req.params.id })
+        .getRawOne();
+
+      console.log({ complex });
+      if (complex) {
+        console.log({ complex });
+        next();
+      } else {
+        res.status(403).send(new ErrorResponse(ERROR_MESSAGES.NOT_AUTHORIZED));
+      }
+    }
   };
 }

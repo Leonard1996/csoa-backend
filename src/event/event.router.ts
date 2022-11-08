@@ -35,8 +35,17 @@ export class EventRouter {
 
     app.post("/admin/events", [
       AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
+      PermissionMiddleware.checkAllowedPermissions([
+        UserRole.ADMIN,
+        UserRole.COMPNAY,
+      ]),
       EventController.createAdminEvent,
+    ]);
+
+    app.patch("/v2/events/:eventId/confirm", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.COMPNAY]),
+      EventController.confirm,
     ]);
 
     // app.post("/teams", [

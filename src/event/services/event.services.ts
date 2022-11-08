@@ -84,7 +84,6 @@ export class EventService {
       .limit(15)
       .offset(+request.query.page * 15)
       .getRawMany();
-    console.log({ count, events });
     return {
       count,
       events,

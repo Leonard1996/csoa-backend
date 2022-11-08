@@ -7,7 +7,7 @@ import { SuccessResponse } from "../../common/utilities/SuccessResponse";
 import { Complex } from "../../complex/entities/complex.entity";
 import { Location } from "../../complex/entities/location.entity";
 import { User } from "../../user/entities/user.entity";
-import { Event } from "../entities/event.entity";
+import { Event, EventStatus } from "../entities/event.entity";
 import { EventService } from "../services/event.services";
 
 export class EventController {
@@ -100,6 +100,23 @@ export class EventController {
       return response
         .status(404)
         .send(new ErrorResponse("Eventi nuk u krijua"));
+    }
+  };
+
+  static confirm = async (request: Request, response: Response) => {
+    try {
+      const event = await getRepository(Event).update(
+        { id: +request.params.eventId },
+        { status: EventStatus.CONFIRMED }
+      );
+      return response
+        .status(HttpStatusCode.OK)
+        .send(new SuccessResponse(event));
+    } catch (err) {
+      console.log({ err });
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not get my events"));
     }
   };
 
