@@ -19,8 +19,8 @@ import { ComplexRouter } from "./complex/complex.router";
 
 createConnection()
   .then(async (connection) => {
-    await connection.query(`SET GLOBAL time_zone = '+00:00';`);
-    await connection.query(`SET time_zone = '+00:00';`);
+    // await connection.query(`SET GLOBAL time_zone = '+00:00';`);
+    // await connection.query(`SET time_zone = '+00:00';`);
     app.use(cors());
     app.use(bodyParser.json({ limit: "200mb" }));
     app.use(bodyParser.urlencoded({ limit: "200mb", extended: true }));
