@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { getRepository } from "typeorm";
+import { ERROR_MESSAGES } from "../../common/utilities/ErrorMessages";
 import { ErrorResponse } from "../../common/utilities/ErrorResponse";
+import { Helper } from "../../common/utilities/Helper";
 import { HttpStatusCode } from "../../common/utilities/HttpStatusCodes";
 import { SuccessResponse } from "../../common/utilities/SuccessResponse";
 import { Location } from "../../complex/entities/location.entity";
@@ -12,28 +14,20 @@ export class EventController {
   static listMyEvents = async (request: Request, response: Response) => {
     try {
       const results = await EventService.listMyEvents(request, response);
-      return response
-        .status(HttpStatusCode.OK)
-        .send(new SuccessResponse({ results }));
+      return response.status(HttpStatusCode.OK).send(new SuccessResponse({ results }));
     } catch (err) {
       console.log({ err });
-      return response
-        .status(404)
-        .send(new ErrorResponse("Could not get my events list"));
+      return response.status(404).send(new ErrorResponse("Could not get my events list"));
     }
   };
 
   static list = async (request: Request, response: Response) => {
     try {
       const { events, count } = await EventService.list(request, response);
-      return response
-        .status(HttpStatusCode.OK)
-        .send(new SuccessResponse({ events, count }));
+      return response.status(HttpStatusCode.OK).send(new SuccessResponse({ events, count }));
     } catch (err) {
       console.log({ err });
-      return response
-        .status(404)
-        .send(new ErrorResponse("Could not get my events"));
+      return response.status(404).send(new ErrorResponse("Could not get my events"));
     }
   };
 
@@ -52,23 +46,17 @@ export class EventController {
       return response.status(200).send(new SuccessResponse({ event }));
     } catch (err) {
       console.log({ err });
-      return response
-        .status(404)
-        .send(new ErrorResponse("Could not update event status"));
+      return response.status(404).send(new ErrorResponse("Could not update event status"));
     }
   }
 
   static getPlayers = async (request: Request, response: Response) => {
     try {
       const players = await EventService.getPlayers(request, response);
-      return response
-        .status(HttpStatusCode.OK)
-        .send(new SuccessResponse({ players }));
+      return response.status(HttpStatusCode.OK).send(new SuccessResponse({ players }));
     } catch (err) {
       console.log({ err });
-      return response
-        .status(404)
-        .send(new ErrorResponse("Could not get my players"));
+      return response.status(404).send(new ErrorResponse("Could not get my players"));
     }
   };
 
@@ -86,14 +74,10 @@ export class EventController {
     try {
       const event = await EventService.createAdminEvent(request, response);
       if (!event) throw Error();
-      return response
-        .status(HttpStatusCode.OK)
-        .send(new SuccessResponse({ event }));
+      return response.status(HttpStatusCode.OK).send(new SuccessResponse({ event }));
     } catch (err) {
       console.log(err);
-      return response
-        .status(404)
-        .send(new ErrorResponse("Eventi nuk u krijua"));
+      return response.status(404).send(new ErrorResponse("Eventi nuk u krijua"));
     }
   };
 
@@ -114,15 +98,11 @@ export class EventController {
       if (Helper.isDefined(result)) {
         response.status(HttpStatusCode.OK).send(new SuccessResponse(result));
       } else {
-        response
-          .status(HttpStatusCode.NOT_FOUND)
-          .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+        response.status(HttpStatusCode.NOT_FOUND).send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
       }
     } catch (err) {
       console.log(err);
-      response
-        .status(HttpStatusCode.NOT_FOUND)
-        .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+      response.status(HttpStatusCode.NOT_FOUND).send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
     }
   };
 
@@ -130,18 +110,10 @@ export class EventController {
     try {
       const event = await EventService.findById(+request.params.eventId);
       if (Helper.isDefined(event)) {
-        const updatedTeam = await EventService.update(
-          request.body,
-          event,
-          request
-        );
-        response
-          .status(HttpStatusCode.OK)
-          .send(new SuccessResponse(updatedTeam));
+        const updatedTeam = await EventService.update(request.body, event, request);
+        response.status(HttpStatusCode.OK).send(new SuccessResponse(updatedTeam));
       } else {
-        return response
-          .status(HttpStatusCode.NOT_FOUND)
-          .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+        return response.status(HttpStatusCode.NOT_FOUND).send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
       }
       response.status(HttpStatusCode.OK).send();
     } catch (err) {
