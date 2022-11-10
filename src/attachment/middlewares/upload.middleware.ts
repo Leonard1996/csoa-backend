@@ -51,7 +51,11 @@ export class UploadMiddleware {
       filename: (request: Express.Request, file: Express.Multer.File, cb) => {
         const extension = File.getFileExtension(file.originalname);
         const filename =
-          crypto.randomUUID() + "_" + file.fieldname + "." + extension;
+          crypto.randomBytes(20).toString("hex") +
+          "_" +
+          file.fieldname +
+          "." +
+          extension;
         cb(null, filename);
       },
     };
