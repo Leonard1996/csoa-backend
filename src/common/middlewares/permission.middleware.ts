@@ -67,9 +67,7 @@ export class PermissionMiddleware {
         .andWhere("u.complexId = :complexId", { complexId: req.params.id })
         .getRawOne();
 
-      console.log({ complex });
       if (complex) {
-        console.log({ complex });
         next();
       } else {
         res.status(403).send(new ErrorResponse(ERROR_MESSAGES.NOT_AUTHORIZED));

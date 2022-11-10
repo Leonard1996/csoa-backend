@@ -50,8 +50,6 @@ export class EventService {
         statuses: [EventStatus.CONFIRMED, EventStatus.WAITING_FOR_CONFIRMATION],
       });
 
-    console.log(myEvents);
-
     const responseData = {
       myEvents: myEvents.map((event) => event.toResponse),
     };
