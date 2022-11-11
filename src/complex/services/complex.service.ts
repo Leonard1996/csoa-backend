@@ -60,6 +60,11 @@ export class ComplexService {
     if (complex["latitude"] === "") complex["latitude"] = null;
     if (complex["longitude"] === "") complex["longitude"] = null;
 
+    complex["workingHours"] = JSON.stringify({
+      from: 15,
+      to: 11,
+    });
+
     return complexRepository.save(complex as any);
   }
 
