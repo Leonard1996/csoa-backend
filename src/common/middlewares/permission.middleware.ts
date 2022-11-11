@@ -54,12 +54,9 @@ export class PermissionMiddleware {
     next: NextFunction
   ) => {
     const { userId, userRole } = res.locals.jwt;
-    console.log(userId, userRole);
     if (userRole === UserRole.ADMIN) {
-      console.log("there");
       next();
     } else if (userRole === UserRole.COMPNAY) {
-      console.log("here");
       const complex = await getRepository(Complex)
         .createQueryBuilder("c")
         .innerJoin("users", "u", "u.complexId = c.id")

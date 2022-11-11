@@ -43,19 +43,19 @@ export class ComplexService {
     const complexRepository = getRepository(Complex);
 
     let complex = complexRepository.create(payload as any);
-    complex["facilities"] = {
+    complex["facilities"] = JSON.stringify({
       "Fushë e mbyllur": payload["Fushë e mbyllur"],
       Dushe: payload["Dushe"],
       "Kend Lojrash": payload["Kend Lojrash"],
       Bar: payload["Bar"],
       Parkim: payload["Parkim"],
-    };
-    complex["sports"] = {
+    });
+    complex["sports"] = JSON.stringify({
       Futboll: payload.Futboll,
       Basketboll: payload.Basketboll,
       Tenis: payload.Tenis,
       Volejboll: payload.Volejboll,
-    };
+    });
 
     if (complex["latitude"] === "") complex["latitude"] = null;
     if (complex["longitude"] === "") complex["longitude"] = null;
