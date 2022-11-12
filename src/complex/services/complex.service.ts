@@ -1,5 +1,4 @@
-import { Request, Response, response } from "express";
-import { userInfo } from "os";
+import { Request, Response } from "express";
 import { join } from "path";
 const fs = require("fs");
 import { getCustomRepository, getRepository } from "typeorm";
