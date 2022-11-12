@@ -61,7 +61,7 @@ export class ComplexService {
 
     complex["workingHours"] = {
       from: 15,
-      to: 11,
+      to: 24,
     };
 
     return complexRepository.save(complex as any);
