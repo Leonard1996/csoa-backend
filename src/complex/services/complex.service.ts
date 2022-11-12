@@ -14,23 +14,22 @@ import { Location } from "../entities/location.entity";
 export class ComplexService {
   public static list() {
     const complexRepository = getRepository(Complex);
-    // return complexRepository
-    //   .createQueryBuilder("c")
-    //   .select([
-    //     "name",
-    //     "phone",
-    //     "facilities",
-    //     "city",
-    //     "sports",
-    //     "longitude",
-    //     "latitude",
-    //     "workingHours",
-    //     "banner",
-    //     "avatar",
-    //   ])
-    //   .withDeleted()
-    //   .getRawMany();
-    return complexRepository.find({ withDeleted: true });
+    return complexRepository
+      .createQueryBuilder("c")
+      .select([
+        "id",
+        "name",
+        "phone",
+        "facilities",
+        "city",
+        "sports",
+        "longitude",
+        "latitude",
+        "workingHours",
+      ])
+      .withDeleted()
+      .getRawMany();
+    // return complexRepository.find({ withDeleted: true });
   }
   public static listMinified() {
     const complexRepository = getRepository(Complex);

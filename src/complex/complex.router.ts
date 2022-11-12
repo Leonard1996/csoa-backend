@@ -109,6 +109,12 @@ export class ComplexRouter {
       ComplexController.updateLocation,
     ]);
 
+    app.get("/complexes/:id/images", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
+      ComplexController.getBannerAndAvatar,
+    ]);
+
     // /complexes/${business?.id}/locations?type=${type}/events
 
     //   app.post("/teams/:teamId/attachments", [

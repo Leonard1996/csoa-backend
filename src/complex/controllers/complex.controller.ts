@@ -268,4 +268,18 @@ export class ComplexController {
         .send(new ErrorResponse("Could not get complexes"));
     }
   };
+
+  static getBannerAndAvatar = async (request: Request, response: Response) => {
+    try {
+      const complex = await getRepository(Complex).findOne(request.params.id);
+      return response
+        .status(HttpStatusCode.OK)
+        .send(new SuccessResponse(complex));
+    } catch (err) {
+      console.log({ err });
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not get complexes"));
+    }
+  };
 }
