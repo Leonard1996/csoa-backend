@@ -11,9 +11,15 @@ export class ComplexController {
   static list = async (request: Request, response: Response) => {
     try {
       const complexes = await ComplexService.list();
-      return response
-        .status(HttpStatusCode.OK)
-        .send(new SuccessResponse({ complexes }));
+      return response.status(HttpStatusCode.OK).send(
+        new SuccessResponse({
+          complexes: complexes.map((c: Complex) => ({
+            ...c,
+            sports: JSON.parse(c.sports),
+            facilities: JSON.parse(c.facilities),
+          })),
+        })
+      );
     } catch (err) {
       console.log({ err });
       return response
