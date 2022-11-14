@@ -287,19 +287,19 @@ export class ComplexService {
   private static getFields(complex, fields) {
     complex.name = fields.name;
     complex.phone = fields.phone;
-    complex.facilities = JSON.stringify({
+    complex.facilities = {
       Bar: fields.Bar || false,
       Dushe: fields.Dushe || false,
       Parkim: fields.Parkim || false,
       "Kënd Lojrash": fields["Kënd Lojrash"] || false,
       "Fushë e mbyllur": fields["Fushë e mbyllur"] || false,
-    });
-    complex.sports = JSON.stringify({
+    };
+    complex.sports = {
       Tenis: fields.Tenis || false,
       Futboll: fields.Futboll || false,
       Volejboll: fields.Volejboll || false,
       Basketboll: fields.Basketboll || false,
-    });
+    };
     complex.longitude = fields.longitude ? +fields.longitude : null;
     complex.latitude = fields.latitude ? +fields.latitude : null;
     complex.banner = fields?.fileBanner?.base64;
@@ -318,10 +318,10 @@ export class ComplexService {
     hours = hours + minutes;
     to = hours;
 
-    complex.workingHours = JSON.stringify({
+    complex.workingHours = {
       from,
       to,
-    });
+    };
     complex.city = fields.city;
   }
 }
