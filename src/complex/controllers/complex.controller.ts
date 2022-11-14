@@ -13,11 +13,7 @@ export class ComplexController {
       const complexes = await ComplexService.list();
       return response.status(HttpStatusCode.OK).send(
         new SuccessResponse({
-          complexes: complexes.map((c: Complex) => ({
-            ...c,
-            sports: JSON.parse(c.sports),
-            facilities: JSON.parse(c.facilities),
-          })),
+          complexes,
         })
       );
     } catch (err) {
