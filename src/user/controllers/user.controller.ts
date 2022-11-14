@@ -417,4 +417,17 @@ export class UserController {
       return response.status(400).send(new ErrorResponse(err));
     }
   };
+
+  static changePassword = async (request: Request, response: Response) => {
+    try {
+      await getRepository(User).update(
+        { id: +request.params.id },
+        { password: Md5.init(request.body.password) }
+      );
+      response.sendStatus(204);
+    } catch (err) {
+      console.log(err);
+      return response.status(400).send(new ErrorResponse(err));
+    }
+  };
 }
