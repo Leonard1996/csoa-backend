@@ -120,6 +120,21 @@ export class EventController {
     }
   };
 
+  static delete = (request: Request, response: Response) => {
+    try {
+      getRepository(Event).delete({
+        id: +request.params.eventId,
+        status: EventStatus.WAITING_FOR_CONFIRMATION,
+      });
+      return response.sendStatus(204);
+    } catch (err) {
+      console.log({ err });
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not get my events"));
+    }
+  };
+
   // static insert = async (request: Request, response: Response) => {
   //   try {
   //     const teamPayload = JSON.parse(request.body.body);

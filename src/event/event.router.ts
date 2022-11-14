@@ -48,6 +48,12 @@ export class EventRouter {
       EventController.confirm,
     ]);
 
+    app.delete("/events/:eventId", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.COMPNAY]),
+      EventController.delete,
+    ]);
+
     // app.post("/teams", [
     //   AuthenticationMiddleware.checkJwtToken,
     //   PermissionMiddleware.checkAllowedPermissions([

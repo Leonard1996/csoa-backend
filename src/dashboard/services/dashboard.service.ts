@@ -52,7 +52,7 @@ export class DashboardService {
       .select(["e.id", "e.isUserReservation"])
       .innerJoin("locations", "l", "l.id = e.locationId")
       .innerJoin("complexes", "c", "c.id = l.complexId")
-      .where("l.complexId = complexId", { complexId })
+      .where("l.complexId = :complexId", { complexId })
       .andWhere("e.isDraft IS NULL")
       .andWhere("e.startDate > :startDate", {
         startDate: new Date(year, month, 1),
