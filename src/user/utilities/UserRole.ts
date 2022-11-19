@@ -1,6 +1,6 @@
 export const UserRole = {
   ADMIN: "admin",
-  USER: "member",
+  USER: "user",
   QUALIFIED: "qualified",
   HC: "hc",
   COMPNAY: "company",
@@ -312,8 +312,7 @@ export const permissionsMapped = {
   location: [
     "city",
     (query) => {
-      if (query)
-        return `LIKE '%${query}%' OR area LIKE '%${query}%' OR address LIKE '%${query}%'`;
+      if (query) return `LIKE '%${query}%' OR area LIKE '%${query}%' OR address LIKE '%${query}%'`;
     },
   ],
   ownerName: [

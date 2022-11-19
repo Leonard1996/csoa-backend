@@ -30,7 +30,7 @@ export class TeamService {
       .createQueryBuilder("teams")
       .innerJoin("teams_users", "tu", "teams.id = tu.teamId")
       .where("tu.playerId != :id", { id: response.locals.jwt.userId })
-      .andWhere("tu.teamId NOT IN (:...myTeamsIds)", { myTeamsIds })
+      .andWhere("tu.teamId NOT IN (:...myTeamsIds)", { myTeamsIds: myTeamsIds.length ? myTeamsIds : [-1] })
       .limit(5)
       .offset(+request.query.page || 0 * 5)
       .getMany();
@@ -72,11 +72,9 @@ export class TeamService {
     const myTeamsDrawsMapped = {};
     if (myDraws.length) {
       for (const draw of myDraws) {
-        if (!myTeamsDrawsMapped[draw.organiser])
-          myTeamsDrawsMapped[draw.organiser] = 0;
+        if (!myTeamsDrawsMapped[draw.organiser]) myTeamsDrawsMapped[draw.organiser] = 0;
         myTeamsDrawsMapped[draw.organiser] += 1;
-        if (!myTeamsDrawsMapped[draw.receiver])
-          myTeamsDrawsMapped[draw.receiver] = 0;
+        if (!myTeamsDrawsMapped[draw.receiver]) myTeamsDrawsMapped[draw.receiver] = 0;
         myTeamsDrawsMapped[draw.receiver] += 1;
       }
     }
@@ -98,11 +96,9 @@ export class TeamService {
     const similiarTeamsDrawsMapped = {};
     if (similiarDraws.length) {
       for (const draw of similiarDraws) {
-        if (!similiarTeamsDrawsMapped[draw.organiser])
-          similiarTeamsDrawsMapped[draw.organiser] = 0;
+        if (!similiarTeamsDrawsMapped[draw.organiser]) similiarTeamsDrawsMapped[draw.organiser] = 0;
         similiarTeamsDrawsMapped[draw.organiser] += 1;
-        if (!similiarTeamsDrawsMapped[draw.receiver])
-          similiarTeamsDrawsMapped[draw.receiver] = 0;
+        if (!similiarTeamsDrawsMapped[draw.receiver]) similiarTeamsDrawsMapped[draw.receiver] = 0;
         similiarTeamsDrawsMapped[draw.receiver] += 1;
       }
     }
@@ -129,11 +125,7 @@ export class TeamService {
     return responseData;
   };
 
-  static insert = async (
-    teamPayload: CreateTeamDto,
-    request: Request,
-    response: Response
-  ) => {
+  static insert = async (teamPayload: CreateTeamDto, request: Request, response: Response) => {
     const teamRepository = getRepository(Team);
 
     const isExisting = await teamRepository.findOne({
@@ -173,10 +165,7 @@ export class TeamService {
   static findOne = async (teamId: number) => {
     const teamRepository = getCustomRepository(TeamRepository);
 
-    const team = await teamRepository
-      .createQueryBuilder("team")
-      .where("team.id = :id", { id: teamId })
-      .getOne();
+    const team = await teamRepository.createQueryBuilder("team").where("team.id = :id", { id: teamId }).getOne();
 
     return team;
   };
@@ -225,11 +214,7 @@ export class TeamService {
     return team;
   };
 
-  static update = async (
-    teamPayload: UpdateTeamDto,
-    currentTeam: Team,
-    request: Request
-  ) => {
+  static update = async (teamPayload: UpdateTeamDto, currentTeam: Team, request: Request) => {
     const teamRepository = getRepository(Team);
 
     if (request.files) {
@@ -273,8 +258,7 @@ export class TeamService {
       .andWhere("userId = :userId", { userId: response.locals.jwt.userId })
       .getOne();
 
-    if (creator)
-      throw "You are a creator! You can not remove yourself from the team";
+    if (creator) throw "You are a creator! You can not remove yourself from the team";
 
     teamUsersRepository
       .createQueryBuilder("teamUsers")

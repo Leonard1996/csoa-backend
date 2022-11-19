@@ -7,10 +7,8 @@ import { Event, EventStatus } from "../entities/event.entity";
 import { EventRepository } from "../repositories/event.repository";
 import { TeamUsers } from "../../team/entities/team.users.entity";
 import { CreateEventDto } from "../dto/create-event.dto";
-import { UpdateEventDto } from "../dto/update-event.dto";
 import { RequestRepository } from "../../request/repositories/request.repository";
 import { TeamRepository } from "../../team/repositories/team.repository";
-import { EventTeamUsers } from "../entities/event.team.users.entity";
 import { EventTeamUsersRepository } from "../repositories/event.team.users.repository";
 import { NotificationService } from "../../notifications/services/notification.services";
 import { NotificationType } from "../../notifications/entities/notification.entity";
@@ -37,7 +35,7 @@ export class EventService {
       relations: ["team"],
     });
 
-    const myTeamsIds = myTeams.map((player) => player.team.id);
+    const myTeamsIds = myTeams.map((player) => player.team.id).push(-1);
 
     const myEvents = await eventsRepository
       .createQueryBuilder("event")
@@ -46,7 +44,7 @@ export class EventService {
       .innerJoinAndSelect("location.complex", "complex")
       .innerJoinAndSelect("event.organiserTeam", "senderTeam")
       .innerJoinAndSelect("event.receiverTeam", "receiverTeam")
-      .where("event.status IN (:statuses)", {
+      .where("event.status IN (:...statuses)", {
         statuses: [EventStatus.DRAFT, EventStatus.WAITING_FOR_CONFIRMATION, EventStatus.CONFIRMED],
       })
       .andWhere("event.startDate > :todayStart", {
@@ -62,12 +60,8 @@ export class EventService {
         new Brackets((qb) => {
           qb.where("request.receiverId = :id", { id: userId })
             .orWhere("request.senderId = :id", { id: userId })
-            .orWhere("request.senderTeamId IN (:...myTeamsIds)", {
-              myTeamsIds,
-            })
-            .orWhere("request.receiverTeamId IN (:...myTeamsIds)", {
-              myTeamsIds,
-            });
+            .orWhere("request.senderTeamId IN (:...myTeamsIds)", { myTeamsIds })
+            .orWhere("request.receiverTeamId IN (:...myTeamsIds)", { myTeamsIds });
         })
       )
       .getMany();
@@ -79,9 +73,9 @@ export class EventService {
       .leftJoinAndSelect("location.complex", "complex")
       .leftJoinAndSelect("event.organiserTeam", "senderTeam")
       .leftJoinAndSelect("event.receiverTeam", "receiverTeam")
-      .where("event.sport IN (:mySports)", { mySports })
-      .andWhere("event.isPublic = true")
-      .andWhere("event.status IN (:statuses)", {
+      .where("event.sport IN (:...mySports)", { mySports })
+      .andWhere("event.isPublic = :boolean", { boolean: true })
+      .andWhere("event.status IN (:...statuses)", {
         statuses: [EventStatus.CONFIRMED, EventStatus.WAITING_FOR_CONFIRMATION],
       })
       .andWhere("request.status = :status", {
