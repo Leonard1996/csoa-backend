@@ -131,5 +131,11 @@ export class UserRouter {
       ]),
       UserController.deleteAttachmentById,
     ]);
+
+    app.post("/users/:id/changePassword", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
+      UserController.changePassword,
+    ]);
   };
 }

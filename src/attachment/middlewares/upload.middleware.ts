@@ -51,7 +51,11 @@ export class UploadMiddleware {
       filename: (request: Express.Request, file: Express.Multer.File, cb) => {
         const extension = File.getFileExtension(file.originalname);
         const filename =
-          crypto.randomUUID() + "_" + file.fieldname + "." + extension;
+          crypto.randomBytes(20).toString("hex") +
+          "_" +
+          file.fieldname +
+          "." +
+          extension;
         cb(null, filename);
       },
     };
@@ -76,11 +80,11 @@ export class UploadMiddleware {
       },
     };
 
-    if (maxFileSizeInBytes) {
-      multerOptions.limits = {
-        fileSize: maxFileSizeInBytes,
-      };
-    }
+    // if (maxFileSizeInBytes) {
+    multerOptions.limits = {
+      fieldSize: 1024 * 1024 * 10,
+    };
+    // }
 
     const upload: ReturnType<typeof multer> = multer(multerOptions);
 

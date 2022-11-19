@@ -4,10 +4,12 @@ import { ERROR_MESSAGES } from "../../common/utilities/ErrorMessages";
 import { ErrorResponse } from "../../common/utilities/ErrorResponse";
 import { Helper } from "../../common/utilities/Helper";
 import { HttpStatusCode } from "../../common/utilities/HttpStatusCodes";
+import { Mailer } from "../../common/utilities/Mailer";
 import { SuccessResponse } from "../../common/utilities/SuccessResponse";
+import { Complex } from "../../complex/entities/complex.entity";
 import { Location } from "../../complex/entities/location.entity";
 import { User } from "../../user/entities/user.entity";
-import { Event } from "../entities/event.entity";
+import { Event, EventStatus } from "../entities/event.entity";
 import { EventService } from "../services/event.services";
 
 export class EventController {
@@ -73,11 +75,57 @@ export class EventController {
   static createAdminEvent = async (request: Request, response: Response) => {
     try {
       const event = await EventService.createAdminEvent(request, response);
+      const location = await getRepository(Location).findOne(event.locationId);
+      const user = await getRepository(User).findOne({
+        where: { complexId: location.complexId },
+      });
+      const mailer = new Mailer();
+      mailer.sendMail(
+        user.email,
+        "Rezervim i ri",
+        `
+      <div>
+      Pershendetje, ju keni nje rezervim te ri, vizitoni aplikacionin ose panelin per me shume detaje.
+      </div>
+      `
+      );
       if (!event) throw Error();
       return response.status(HttpStatusCode.OK).send(new SuccessResponse({ event }));
     } catch (err) {
       console.log(err);
       return response.status(404).send(new ErrorResponse("Eventi nuk u krijua"));
+    }
+  };
+
+  static confirm = async (request: Request, response: Response) => {
+    try {
+      const event = await getRepository(Event).update(
+        { id: +request.params.eventId },
+        { status: EventStatus.CONFIRMED }
+      );
+      return response
+        .status(HttpStatusCode.OK)
+        .send(new SuccessResponse(event));
+    } catch (err) {
+      console.log({ err });
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not get my events"));
+    }
+  };
+
+  static delete = (request: Request, response: Response) => {
+    try {
+      getRepository(Event).delete({
+        id: +request.params.eventId,
+        status: EventStatus.WAITING_FOR_CONFIRMATION,
+      });
+      return response.sendStatus(204);
+    } catch (err) {
+      console.log({ err });
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not get my events"));
     }
   };
 
