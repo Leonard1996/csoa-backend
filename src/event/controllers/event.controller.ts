@@ -103,14 +103,10 @@ export class EventController {
         { id: +request.params.eventId },
         { status: EventStatus.CONFIRMED }
       );
-      return response
-        .status(HttpStatusCode.OK)
-        .send(new SuccessResponse(event));
+      return response.status(HttpStatusCode.OK).send(new SuccessResponse(event));
     } catch (err) {
       console.log({ err });
-      return response
-        .status(404)
-        .send(new ErrorResponse("Could not get my events"));
+      return response.status(404).send(new ErrorResponse("Could not get my events"));
     }
   };
 
@@ -123,9 +119,7 @@ export class EventController {
       return response.sendStatus(204);
     } catch (err) {
       console.log({ err });
-      return response
-        .status(404)
-        .send(new ErrorResponse("Could not get my events"));
+      return response.status(404).send(new ErrorResponse("Could not get my events"));
     }
   };
 
