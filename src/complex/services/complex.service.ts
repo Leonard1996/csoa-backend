@@ -34,6 +34,7 @@ export class ComplexService {
         "latitude",
         "workingHours",
         "address",
+        "avatar",
       ],
     });
     const response = data.map((complex) => complex.toResponseForApp);
