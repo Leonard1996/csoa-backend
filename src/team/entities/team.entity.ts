@@ -1,6 +1,8 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from "typeorm";
+import { Column, Entity, ManyToOne, OneToMany } from "typeorm";
+import { Attachment } from "../../attachment/entities/attachment.entity";
 import { Common } from "../../common/entities/common";
 import { Event } from "../../event/entities/event.entity";
+import { Request } from "../../request/entities/request.entity";
 import { User } from "../../user/entities/user.entity";
 import { TeamUsers } from "./team.users.entity";
 
@@ -24,6 +26,9 @@ export class Team extends Common {
   @Column("varchar", { nullable: true, name: "level" })
   public level: string;
 
+  @Column("tinyint", { nullable: true, name: "isDummy", default: false })
+  public isDummy: boolean;
+
   @ManyToOne(() => User, (user) => user.teams)
   public user: User;
   @Column("int", { nullable: true })
@@ -37,4 +42,30 @@ export class Team extends Common {
 
   @OneToMany(() => Event, (event) => event.receiverTeam)
   eventReceiver: Event[];
+
+  @OneToMany(() => Event, (event) => event.winnerTeam)
+  eventWinner: Event[];
+
+  @OneToMany(() => Event, (event) => event.loserTeam)
+  eventLoser: Event[];
+
+  @OneToMany(() => Request, (request) => request.senderTeam)
+  sentRequests: Request[];
+
+  @OneToMany(() => Request, (request) => request.receiverTeam)
+  receivedRequests: Request[];
+
+  @OneToMany(() => Attachment, (attachment) => attachment.team)
+  attachments: Attachment[];
+
+  get toResponseObject() {
+    return {
+      name: this.name,
+      banner: this.banner,
+      avatar: this.avatar,
+      sport: this.sport,
+      ageRange: this.ageRange,
+      level: this.level,
+    };
+  }
 }

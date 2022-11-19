@@ -1,12 +1,23 @@
-import { Column, Entity, OneToMany } from "typeorm";
+import {
+  Column,
+  Entity,
+  ManyToMany,
+  ManyToOne,
+  OneToMany,
+  Unique,
+} from "typeorm";
+import { Attachment } from "../../attachment/entities/attachment.entity";
 import { Common } from "../../common/entities/common";
+import { Complex } from "../../complex/entities/complex.entity";
 import { Event } from "../../event/entities/event.entity";
 import { Notification } from "../../notifications/entities/notification.entity";
+import { Request } from "../../request/entities/request.entity";
 import { Review } from "../../review/entities/review.entity";
 import { Team } from "../../team/entities/team.entity";
 import { TeamUsers } from "../../team/entities/team.users.entity";
 
 @Entity("users")
+@Unique(["email"])
 export class User extends Common {
   @Column("varchar", { nullable: true, length: 256, name: "password" })
   public password: string | null;
@@ -51,11 +62,23 @@ export class User extends Common {
   @Column("json", { nullable: false, name: "sports" })
   public sports: string;
 
+  @Column("int", { nullable: true })
+  public complexId: number;
+
+  @ManyToOne(() => Complex, (complex) => complex.users)
+  complex: Complex;
+
   @OneToMany(() => Review, (review) => review.sender)
   givenReviews: Review[];
 
   @OneToMany(() => Review, (review) => review.receiver)
   receivedReviews: Review[];
+
+  @OneToMany(() => Request, (request) => request.sender)
+  sentRequests: Request[];
+
+  @OneToMany(() => Request, (request) => request.receiver)
+  receivedRequests: Request[];
 
   @OneToMany(() => Notification, (notification) => notification.sender)
   givenNotifications: Notification[];
@@ -69,11 +92,17 @@ export class User extends Common {
   @OneToMany(() => Event, (event) => event.receiverTeamCaptain)
   eventReceiverTeamCaptain: Event[];
 
+  @OneToMany(() => Event, (event) => event.receiverTeamCaptain)
+  eventCreator: Event[];
+
   @OneToMany(() => Team, (team) => team.user)
   teams: Team[];
 
   @OneToMany(() => TeamUsers, (teamUsers) => teamUsers.player)
   players: TeamUsers[];
+
+  @OneToMany(() => Attachment, (attachment) => attachment.user)
+  attachments: Attachment[];
 
   toResponseObject() {
     return {

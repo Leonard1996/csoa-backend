@@ -1,5 +1,7 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from "typeorm";
+import { Column, Entity, OneToMany } from "typeorm";
+import { Attachment } from "../../attachment/entities/attachment.entity";
 import { Common } from "../../common/entities/common";
+import { Notification } from "../../notifications/entities/notification.entity";
 import { User } from "../../user/entities/user.entity";
 import { Location } from "./location.entity";
 
@@ -23,13 +25,19 @@ export class Complex extends Common {
   })
   public facilities: string;
 
-  @Column("varchar", {
+  @Column("json", {
+    nullable: true,
+    name: "sports",
+  })
+  public sports: string;
+
+  @Column("longtext", {
     nullable: true,
     name: "banner",
   })
   public banner: string;
 
-  @Column("varchar", {
+  @Column("longtext", {
     nullable: true,
     name: "avatar",
   })
@@ -37,4 +45,50 @@ export class Complex extends Common {
 
   @OneToMany(() => Location, (location) => location.complex)
   locations: Location[];
+
+  @OneToMany(() => Notification, (notification) => notification.complex)
+  notifications: Notification[];
+
+  @Column("varchar", {
+    nullable: true,
+  })
+  public city: string;
+
+  @Column("json", {
+    nullable: true,
+  })
+  public workingHours: string;
+
+  @Column("decimal", {
+    nullable: true,
+    name: "longitude",
+    scale: 7,
+    precision: 10,
+  })
+  public longitude: number;
+
+  @Column("decimal", {
+    nullable: true,
+    name: "latitude",
+    scale: 7,
+    precision: 10,
+  })
+  public latitude: number;
+
+  @OneToMany(() => User, (user) => user.complex)
+  users: User[];
+
+  @OneToMany(() => Attachment, (attachment) => attachment.complex)
+  attachments: Attachment[];
+
+  get baseComplex() {
+    return {
+      id: this.id,
+      name: this.name,
+      phone: this.phone,
+      facilities: this.facilities,
+      banner: this.banner,
+      avatar: this.avatar,
+    };
+  }
 }

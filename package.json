@@ -61,6 +61,7 @@
     "passport-facebook-token": "^3.3.0",
     "passport-google-token": "^0.1.2",
     "reflect-metadata": "^0.1.10",
+    "sse-express": "^1.0.2",
     "twilio": "3.77.2",
     "typeorm": "^0.2.25",
     "uuid": "^3.4.0",

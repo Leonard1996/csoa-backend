@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction, request } from "express";
 import * as jwt from "jsonwebtoken";
-import { Md5 } from "md5-typescript";
 import { getRepository } from "typeorm";
 import { ERROR_MESSAGES } from "../../common/utilities/ErrorMessages";
 import { ErrorResponse } from "../../common/utilities/ErrorResponse";
@@ -50,7 +49,7 @@ export class AuthenticationMiddleware {
 
         next();
       } catch (error) {
-        console.log({ error })
+        console.log({ error });
         return res
           .status(401)
           .send(new ErrorResponse(ERROR_MESSAGES.ACCESS_TOKEN_INVALID));
@@ -149,17 +148,24 @@ export class AuthenticationMiddleware {
     } catch (error) {
       next();
     }
-
   };
 
-  static checkIfFieldsAllowed = (request: Request, response: Response, next: NextFunction) => {
+  static checkIfFieldsAllowed = (
+    request: Request,
+    response: Response,
+    next: NextFunction
+  ) => {
     for (const key in request.body) {
-      if (response.locals.jwt && (response.locals.jwt.userRole === "admin"
-        || response.locals.jwt.userRole === "hc"
-        || response.locals.jwt.userRole === "company")) break;
+      if (
+        response.locals.jwt &&
+        (response.locals.jwt.userRole === "admin" ||
+          response.locals.jwt.userRole === "hc" ||
+          response.locals.jwt.userRole === "company")
+      )
+        break;
 
       if (!response.locals.jwt) {
-        if (!permissions.filter.noAuth.includes(key)) delete request.body[key]
+        if (!permissions.filter.noAuth.includes(key)) delete request.body[key];
       } else {
         if (!permissions.filter[response.locals.jwt.userRole].includes(key)) {
           return response
@@ -169,5 +175,5 @@ export class AuthenticationMiddleware {
       }
     }
     next();
-  }
+  };
 }

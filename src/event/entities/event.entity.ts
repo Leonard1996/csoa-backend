@@ -1,14 +1,25 @@
-import { Column, Entity, ManyToOne, OneToMany } from "typeorm";
+import { Column, Entity, Index, ManyToOne, OneToMany } from "typeorm";
 import { Common } from "../../common/entities/common";
-import { Complex } from "../../complex/entities/complex.entity";
-import { Location } from "../../complex/entities/location.entity";
 import { Team } from "../../team/entities/team.entity";
 import { User } from "../../user/entities/user.entity";
+import { EventTeamUsers } from "./event.team.users.entity";
+import { Location } from "../../complex/entities/location.entity";
+import { Request } from "../../request/entities/request.entity";
+
+export enum EventStatus {
+  DRAFT = "draft",
+  WAITING_FOR_CONFIRMATION = "waiting_for_confirmation",
+  CONFIRMED = "confirmed",
+  COMPLETED = "completed",
+}
 
 @Entity("events")
 export class Event extends Common {
   @Column("varchar", { nullable: true, name: "sport" })
   public sport: string;
+
+  @Column("varchar", { nullable: true, name: "createdYear" })
+  public createdYear: string;
 
   @Column("timestamp", { nullable: true, name: "startDate" })
   public startDate: Date;
@@ -28,11 +39,13 @@ export class Event extends Common {
   @Column("tinyint", { nullable: true, name: "isTeam" })
   public isTeam: boolean;
 
-  @Column("int", { nullable: true, name: "level" })
-  public level: number;
+  @Column("varchar", { nullable: true, name: "level" })
+  public level: string;
+  @Column("text", { nullable: true })
+  public notes: string;
 
-  @Column("int", { nullable: true, name: "playersNumber" })
-  public playersNumber: number;
+  @Column("varchar", { nullable: true, name: "playersNumber" })
+  public playersNumber: string;
 
   @Column("varchar", { nullable: true, name: "playersAge" })
   public playersAge: string;
@@ -42,6 +55,10 @@ export class Event extends Common {
 
   @Column("tinyint", { nullable: true, name: "isWeekly" })
   public isWeekly: boolean;
+
+  @Index()
+  @Column("tinyint", { nullable: true, name: "isDraw" })
+  public isDraw: boolean;
 
   @Column("varchar", { nullable: true, name: "result" })
   public result: string;
@@ -53,6 +70,16 @@ export class Event extends Common {
   public location: Location;
   @Column("int", { nullable: true })
   locationId: number;
+
+  @ManyToOne(() => Team, (team) => team.eventWinner)
+  public winnerTeam: Team;
+  @Column("int", { nullable: true })
+  winnerTeamId: number;
+
+  @ManyToOne(() => Team, (team) => team.eventLoser)
+  public loserTeam: Team;
+  @Column("int", { nullable: true })
+  loserTeamId: number;
 
   @ManyToOne(() => User, (user) => user.eventReceiverTeamCaptain)
   public receiverTeamCaptain: User;
@@ -73,4 +100,48 @@ export class Event extends Common {
   public receiverTeam: Team;
   @Column("int", { nullable: true })
   receiverTeamId: number;
+
+  @ManyToOne(() => User, (user) => user.eventCreator)
+  public creator: User;
+  @Column("int", { nullable: true })
+  creatorId: number;
+
+  @OneToMany(() => EventTeamUsers, (eventTeamUser) => eventTeamUser.event)
+  eventsTeamUser: EventTeamUsers[];
+
+  @OneToMany(() => Request, (request) => request.event)
+  eventRequests: Request[];
+
+  @Index()
+  @Column("tinyint")
+  isUserReservation: boolean;
+
+  get baseEvent() {
+    return {
+      name: this.name,
+      sport: this.sport,
+      startDate: this.startDate,
+      endDate: this.endDate,
+      isDraft: this.isDraft,
+      isPublic: this.isPublic,
+      isTeam: this.isTeam,
+      level: this.level,
+      playersNumber: this.playersNumber,
+      playersAge: this.playersAge,
+      status: this.status,
+      isWeekly: this.isWeekly,
+      isDraw: this.isDraw,
+      result: this.result,
+      lineups: this.lineups,
+    };
+  }
+
+  get toResponse() {
+    return {
+      ...this.baseEvent,
+      location: this.location?.toResponse,
+      organiserTeam: this.organiserTeam?.toResponseObject,
+      receiverTeam: this.receiverTeam?.toResponseObject,
+    };
+  }
 }

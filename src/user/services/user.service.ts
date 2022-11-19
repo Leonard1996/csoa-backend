@@ -1,6 +1,6 @@
 import { UserRepository } from "../repositories/user.repository";
 import { QueryStringProcessor } from "../../common/utilities/QueryStringProcessor";
-import { getCustomRepository, getRepository } from "typeorm";
+import { FileLogger, getCustomRepository, getRepository } from "typeorm";
 import { UserRole } from "../utilities/UserRole";
 import { Md5 } from "md5-typescript";
 import { User } from "../entities/user.entity";
@@ -8,6 +8,15 @@ import { Helper } from "../../common/utilities/Helper";
 import { Request, Response } from "express";
 import { Code } from "../entities/codes.entity";
 import { AuthenticationController } from "../../authentication/controllers/authentication.controller";
+import { TeamUsersRepository } from "../../team/repositories/team.users.repository";
+import { AtachmentRepository } from "../../attachment/repositories/attachment.repository";
+import { Attachment } from "../../attachment/entities/attachment.entity";
+import { ReviewRepository } from "../../review/repositories/review.repository";
+import { StatisticsService } from "../../team/services/statistics.services";
+import { UpdateUserDto } from "../dto/update-user.dto";
+import { File } from "../../common/utilities/File";
+import { Review } from "../../review/entities/review.entity";
+import { TeamUsers } from "../../team/entities/team.users.entity";
 const UUID = require("uuid/v1");
 
 const accountSid = "ACd684d7d904d8ca841081b583bd0eb4d9";
@@ -47,19 +56,19 @@ export class UserService {
     });
     if (isExisting) throw "User with this number already exists";
 
-    const codeRepository = getRepository(Code);
+    // const codeRepository = getRepository(Code);
 
-    const now = new Date();
+    // const now = new Date();
 
-    let isValidCode = await codeRepository
-      .createQueryBuilder("c")
-      .where("value = :code", { code: userPayload.code })
-      .andWhere("is_used = :isUsed", { isUsed: false })
-      .getMany();
+    // let isValidCode = await codeRepository
+    //   .createQueryBuilder("c")
+    //   .where("value = :code", { code: userPayload.code })
+    //   .andWhere("is_used = :isUsed", { isUsed: false })
+    //   .getMany();
 
-    const isValid = isValidCode.filter((code) => code.tsExpirationDate > now);
+    // const isValid = isValidCode.filter((code) => code.tsExpirationDate > now);
 
-    if (!isValid.length) throw "Code not valid or expired";
+    // if (!isValid.length) throw "Code not valid or expired";
 
     const user = userRepository.create({
       ...userPayload,
@@ -68,7 +77,7 @@ export class UserService {
     });
 
     await userRepository.save(user);
-    await codeRepository.save({ ...isValid[0], isUsed: true });
+    // await codeRepository.save({ ...isValid[0], isUsed: true });
 
     request.body = {
       password: userPayload.password,
@@ -78,10 +87,40 @@ export class UserService {
     await AuthenticationController.login(request, response);
   };
 
-  static getById = async (userId: number) => {
+  static findOne = async (userId: number) => {
     const userRepository = getCustomRepository(UserRepository);
+    const user = await userRepository.findById(userId);
+    return user;
+  };
 
-    return await userRepository.findById(userId);
+  static getById = async (userId: number, sport: string) => {
+    const userRepository = getCustomRepository(UserRepository);
+    const teamUsersRepository = getCustomRepository(TeamUsersRepository);
+    const reviewRepository = getCustomRepository(ReviewRepository);
+
+    const user = await userRepository.findById(userId);
+    const stars = await reviewRepository.getStars([userId], sport);
+    const statistics = await StatisticsService.getUserStatistics(
+      user.id,
+      sport
+    );
+    const teams = await teamUsersRepository
+      .createQueryBuilder("tu")
+      .leftJoinAndSelect("tu.team", "t")
+      .where("tu.playerId = :userId", { userId: user.id })
+      .andWhere("tu.sport = :sport", { sport })
+      .getMany();
+
+    user.sports[sport].rating = stars;
+    user.sports[sport].statistics = statistics;
+    user.sports[sport].teams = teams.map((teamUsers) => teamUsers.team);
+
+    for (const type in user.sports as any) {
+      if (type !== sport) {
+        delete user.sports[type];
+      }
+    }
+    return user;
   };
 
   static update = async (userPayload, currentUser: User) => {
@@ -95,17 +134,145 @@ export class UserService {
       userPayload.password = Md5.init(userPayload.newPassword);
     }
 
-    const finalUser = userRepository.merge(currentUser, userPayload);
+    if (userPayload.phoneNumber.slice(0, 3) === "355")
+      userPayload.phoneNumber = userPayload.phoneNumber.slice(
+        3,
+        userPayload.phoneNumber.length
+      );
+    if (userPayload.phoneNumber[0] === "0")
+      userPayload.phoneNumber = userPayload.phoneNumber.slice(
+        1,
+        userPayload.phoneNumber.length
+      );
+    userPayload.phoneNumber = "355" + userPayload.phoneNumber;
+
+    const isExisting = await userRepository.findOne({
+      where: { phoneNumber: userPayload.phoneNumber },
+    });
+    if (isExisting) throw "User with this number already exists";
+
+    const updateUserDto = new UpdateUserDto();
+    updateUserDto.address = userPayload.address;
+    updateUserDto.birthday = userPayload.birthday;
+    updateUserDto.name = userPayload.name;
+    updateUserDto.phoneNumber = userPayload.phoneNumber;
+    updateUserDto.sex = userPayload.sex;
+
+    const finalUser = userRepository.merge(currentUser, updateUserDto);
     await userRepository.save(finalUser);
 
     return finalUser;
   };
 
-  static deleteById = async (userId: number) => {
+  static updateSport = async (sportsPayload, user: User) => {
+    const userRepository = getCustomRepository(UserRepository);
+    for (const sport in user.sports as any) {
+      for (const key in user.sports[sport]) {
+        if (user.sports[sport][key] !== sportsPayload[sport][key]) {
+          user.sports[sport][key] = sportsPayload[sport][key];
+          if (key === "rating") {
+            const reviewRepository = getRepository(Review);
+            await reviewRepository.update(
+              { receiverId: user.id, senderId: user.id },
+              { value: sportsPayload[sport][key] }
+            );
+          }
+          if (key === "picked") {
+            if (sportsPayload[sport][key] === false) {
+              await UserService.deleteReviewsAndTeams(user, sport);
+            } else {
+              await UserService.writeReview(
+                user,
+                sport,
+                sportsPayload[sport]["rating"]
+              );
+            }
+          }
+        }
+      }
+    }
+    return userRepository.save(user);
+  };
+
+  static writeReview = async (user: User, sport: string, value: string) => {
+    const reviewCustomRepository = getCustomRepository(ReviewRepository);
+    await reviewCustomRepository
+      .createQueryBuilder("r")
+      .insert()
+      .values([
+        { sport: sport, value: +value, senderId: user.id, receiverId: user.id },
+      ])
+      .execute();
+  };
+
+  static deleteReviewsAndTeams = async (user: User, sport: string) => {
+    const reviewCustomRepository = getCustomRepository(ReviewRepository);
+    await reviewCustomRepository
+      .createQueryBuilder("r")
+      .delete()
+      .from(Review)
+      .where("sport = :sport", { sport })
+      .andWhere("senderId = :userId", { userId: user.id })
+      .andWhere("receiverId = :userId", { userId: user.id })
+      .execute();
+
+    const teamUsersCustomRepository = getCustomRepository(TeamUsersRepository);
+    await teamUsersCustomRepository
+      .createQueryBuilder("tu")
+      .delete()
+      .from(TeamUsers)
+      .where("sport = :sport", { sport })
+      .andWhere("playerId = :userId", { userId: user.id })
+      .execute();
+  };
+
+  static deleteById = async (user: User) => {
     const userRepository = getCustomRepository(UserRepository);
 
-    await userRepository.deleteById(userId);
+    await userRepository.softDelete(user.id);
+
+    const teamUsersRepository = getCustomRepository(TeamUsersRepository);
+
+    teamUsersRepository
+      .createQueryBuilder("teamUsers")
+      .delete()
+      .where("userId = :userId", { userId: user.id })
+      .execute();
   };
+
+  // static deleteSport = async (user: User, sport: string) => {
+  //   const userRepository = getRepository(User);
+
+  //   let deletedSports = user.sports[sport];
+
+  //   deletedSports.picked = false;
+  //   deletedSports.rating = "";
+  //   deletedSports.position = "";
+  //   deletedSports.experience = "";
+
+  //   userRepository.merge(user, deletedSports);
+
+  //   await userRepository.save(user);
+
+  //   const reviewCustomRepository = getCustomRepository(ReviewRepository);
+  //   await reviewCustomRepository
+  //     .createQueryBuilder("r")
+  //     .delete()
+  //     .from(Review)
+  //     .where("sport = :sport", { sport })
+  //     .andWhere("senderId = :userId", { userId: user.id })
+  //     .andWhere("receiverId = :userId", { userId: user.id })
+  //     .execute();
+
+  //   const teamUsersCustomRepository = getCustomRepository(TeamUsersRepository);
+  //   await teamUsersCustomRepository
+  //     .createQueryBuilder("tu")
+  //     .delete()
+  //     .from(TeamUsers)
+  //     .where("sport = :sport", { sport })
+  //     .andWhere("playerId = :userId", { userId: user.id })
+  //     .execute();
+  // };
 
   static updatePassword = async (
     passwordPayload: string,
@@ -184,6 +351,7 @@ export class UserService {
     //   .done();
     successCallback(code);
   }
+
   static async insertProfilePicture(request: Request, response: Response) {
     const userRepository = getRepository(User);
     const user = await userRepository.findOneOrFail({
@@ -195,4 +363,44 @@ export class UserService {
 
     return userRepository.save(user);
   }
+
+  static async updateProfilePicture(request: Request, response: Response) {
+    const userRepository = getRepository(User);
+    const user = await userRepository.findOneOrFail({
+      where: { id: request.params.userId },
+    });
+
+    File.deleteMedia(user.profilePicture);
+
+    if (request.file) user.profilePicture = request.file.filename;
+    else user.profilePicture = null;
+
+    return userRepository.save(user);
+  }
+
+  static upload = async (request: Request, response: Response) => {
+    if (request.files.length) {
+      const files = [...(request.files as any)];
+      const attachmentRepository = getCustomRepository(AtachmentRepository);
+      return attachmentRepository
+        .createQueryBuilder("attachments")
+        .insert()
+        .into(Attachment)
+        .values(
+          files.map((file) => {
+            return {
+              name: file.filename,
+              originalName: file.originalname,
+              mimeType: file.mimetype,
+              extension: file.mimetype.split("/")[1],
+              sizeInBytes: file.size,
+              path: file.path,
+              teamId: null,
+              userId: +request.params.userId,
+            };
+          })
+        )
+        .execute();
+    }
+  };
 }
