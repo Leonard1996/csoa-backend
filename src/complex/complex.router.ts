@@ -12,6 +12,11 @@ export class ComplexRouter {
       PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN, UserRole.COMPNAY, UserRole.USER]),
       ComplexController.list,
     ]);
+    app.get("/complexes/app", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN, UserRole.COMPNAY, UserRole.USER]),
+      ComplexController.listForApp,
+    ]);
     app.get("/complexes-minified", [
       AuthenticationMiddleware.checkJwtToken,
       PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),

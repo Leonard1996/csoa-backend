@@ -54,6 +54,11 @@ export class Complex extends Common {
   })
   public city: string;
 
+  @Column("varchar", {
+    nullable: true,
+  })
+  public address: string;
+
   @Column("json", {
     nullable: true,
   })
@@ -88,6 +93,22 @@ export class Complex extends Common {
       phone: this.phone,
       facilities: this.facilities,
       banner: this.banner,
+      avatar: this.avatar,
+    };
+  }
+
+  get toResponseForApp() {
+    return {
+      id: this.id,
+      name: this.name,
+      phone: this.phone,
+      city: this.city,
+      address: this.address,
+      sports: this.sports,
+      longitude: this.longitude,
+      latitude: this.latitude,
+      workingHours: this.workingHours,
+      facilities: this.facilities,
       avatar: this.avatar,
     };
   }
