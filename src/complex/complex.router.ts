@@ -54,7 +54,7 @@ export class ComplexRouter {
     ]);
     app.post("/complexes/:id/locations/:locationId/events", [
       AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN, UserRole.COMPNAY]),
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN, UserRole.COMPNAY, UserRole.USER]),
       ComplexController.fetchEventsByLocationdId,
     ]);
     app.get("/complexes/:id/locations", [
