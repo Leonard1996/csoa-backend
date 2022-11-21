@@ -75,7 +75,7 @@ export class TeamController {
         );
         response
           .status(HttpStatusCode.OK)
-          .send(new SuccessResponse(updatedTeam.toResponseObject()));
+          .send(new SuccessResponse(updatedTeam.toResponseObject));
       } else {
         return response
           .status(HttpStatusCode.NOT_FOUND)

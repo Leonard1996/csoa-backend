@@ -11,7 +11,6 @@ export enum RequestStatus {
 }
 
 @Entity("requests")
-@Index(["sender", "receiver", "sport", "status"], { unique: true })
 export class Request extends Common {
   @ManyToOne(() => User, (user) => user.sentRequests)
   public sender: User;
@@ -43,4 +42,10 @@ export class Request extends Common {
 
   @Column("varchar", { nullable: true })
   status: string;
+
+  @Column("tinyint", {
+    nullable: true,
+    name: "isRequest",
+  })
+  public isRequest: boolean;
 }

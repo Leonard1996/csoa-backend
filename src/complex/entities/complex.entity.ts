@@ -1,6 +1,7 @@
 import { Column, Entity, OneToMany } from "typeorm";
 import { Attachment } from "../../attachment/entities/attachment.entity";
 import { Common } from "../../common/entities/common";
+import { Notification } from "../../notifications/entities/notification.entity";
 import { User } from "../../user/entities/user.entity";
 import { Location } from "./location.entity";
 
@@ -45,10 +46,18 @@ export class Complex extends Common {
   @OneToMany(() => Location, (location) => location.complex)
   locations: Location[];
 
+  @OneToMany(() => Notification, (notification) => notification.complex)
+  notifications: Notification[];
+
   @Column("varchar", {
     nullable: true,
   })
   public city: string;
+
+  @Column("varchar", {
+    nullable: true,
+  })
+  public address: string;
 
   @Column("json", {
     nullable: true,
@@ -76,4 +85,31 @@ export class Complex extends Common {
 
   @OneToMany(() => Attachment, (attachment) => attachment.complex)
   attachments: Attachment[];
+
+  get baseComplex() {
+    return {
+      id: this.id,
+      name: this.name,
+      phone: this.phone,
+      facilities: this.facilities,
+      banner: this.banner,
+      avatar: this.avatar,
+    };
+  }
+
+  get toResponseForApp() {
+    return {
+      id: this.id,
+      name: this.name,
+      phone: this.phone,
+      city: this.city,
+      address: this.address,
+      sports: this.sports,
+      longitude: this.longitude,
+      latitude: this.latitude,
+      workingHours: this.workingHours,
+      facilities: this.facilities,
+      avatar: this.avatar,
+    };
+  }
 }

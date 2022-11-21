@@ -15,6 +15,9 @@ import { join } from "path";
 import { TeamRouter } from "./team/team.router";
 import { DashboardRouter } from "./dashboard/dashboard.router";
 import { EventRouter } from "./event/event.router";
+import { RequestRouter } from "./request/request.router";
+import { ReviewRouter } from "./review/review.router";
+import { NotificationRouter } from "./notifications/notification.router";
 import { ComplexRouter } from "./complex/complex.router";
 
 createConnection()
@@ -36,11 +39,20 @@ createConnection()
     // User routes
     UserRouter.configRoutes(app);
 
-    // Team routs
+    // Team routes
     TeamRouter.configRoutes(app);
 
-    // Event routs
+    // Event routes
     EventRouter.configRoutes(app);
+
+    // Request routes
+    RequestRouter.configRoutes(app);
+
+    // Review routes
+    ReviewRouter.configRoutes(app);
+
+    // Notification routes
+    NotificationRouter.configRoutes(app);
 
     // Attachment routes
     AttachmentRouter.configRoutes(app);

@@ -1,15 +1,17 @@
 import { Request, Response } from "express";
-import {
-  Brackets,
-  getCustomRepository,
-  getManager,
-  getRepository,
-} from "typeorm";
+import { Brackets, getCustomRepository, getManager, getRepository } from "typeorm";
 import { Functions } from "../../common/utilities/Functions";
-import { RequestRepository } from "../../request/repositories/request.repository";
+import { RequestStatus } from "../../request/entities/request.entity";
 import { UserService } from "../../user/services/user.service";
 import { Event, EventStatus } from "../entities/event.entity";
 import { EventRepository } from "../repositories/event.repository";
+import { TeamUsers } from "../../team/entities/team.users.entity";
+import { CreateEventDto } from "../dto/create-event.dto";
+import { RequestRepository } from "../../request/repositories/request.repository";
+import { TeamRepository } from "../../team/repositories/team.repository";
+import { EventTeamUsersRepository } from "../repositories/event.team.users.repository";
+import { NotificationService } from "../../notifications/services/notification.services";
+import { NotificationType } from "../../notifications/entities/notification.entity";
 
 export class EventService {
   static listMyEvents = async (request: Request, response: Response) => {
@@ -24,34 +26,103 @@ export class EventService {
       }
     }
 
+    const teamUsersRepository = getRepository(TeamUsers);
+
+    const myTeams = await teamUsersRepository.find({
+      where: {
+        playerId: response.locals.jwt.userId,
+      },
+      relations: ["team"],
+    });
+
+    const myTeamsIds = myTeams.map((player) => player.team.id).push(-1);
+
     const myEvents = await eventsRepository
-      .createQueryBuilder("e")
-      .innerJoinAndSelect("e.location", "l")
-      .where("e.status IN (:statuses)", {
+      .createQueryBuilder("event")
+      .leftJoin("event.eventRequests", "request", "request.eventId = event.id")
+      .leftJoinAndSelect("event.location", "location")
+      .leftJoinAndSelect("location.complex", "complex")
+      .leftJoinAndSelect("event.organiserTeam", "senderTeam")
+      .leftJoinAndSelect("event.receiverTeam", "receiverTeam")
+      .where("event.status IN (:...statuses)", {
         statuses: [
           EventStatus.DRAFT,
           EventStatus.WAITING_FOR_CONFIRMATION,
           EventStatus.CONFIRMED,
+          EventStatus.COMPLETED,
         ],
       })
-      .andWhere("e.startDate > :todayStart", {
+      .andWhere("event.startDate > :todayStart", {
         todayStart: todayDate + " 00:00:00",
       })
-      .andWhere("e.startDate < :todayEnd", {
+      .andWhere("event.startDate < :todayEnd", {
         todayEnd: todayDate + " 23:59:59",
       })
+      .andWhere("request.status = :status", {
+        status: RequestStatus.CONFIRMED,
+      })
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where("request.receiverId = :id", { id: userId })
+            .orWhere("request.senderId = :id", { id: userId })
+            .orWhere("request.senderTeamId IN (:...myTeamsIds)", { myTeamsIds })
+            .orWhere("request.receiverTeamId IN (:...myTeamsIds)", { myTeamsIds });
+        })
+      )
       .getMany();
 
     const publicEvents = await eventsRepository
-      .createQueryBuilder("e")
-      .where("e.sport IN (:mySports)", { mySports })
-      .andWhere("e.isPublic = true")
-      .andWhere("e.status = :statuses", {
+      .createQueryBuilder("event")
+      .leftJoin("event.eventRequests", "request", "request.eventId = event.id")
+      .leftJoinAndSelect("event.location", "location")
+      .leftJoinAndSelect("location.complex", "complex")
+      .leftJoinAndSelect("event.organiserTeam", "senderTeam")
+      .leftJoinAndSelect("event.receiverTeam", "receiverTeam")
+      .where("event.sport IN (:...mySports)", { mySports })
+      .andWhere("event.isPublic = :boolean", { boolean: true })
+      .andWhere("event.status IN (:...statuses)", {
         statuses: [EventStatus.CONFIRMED, EventStatus.WAITING_FOR_CONFIRMATION],
-      });
+      })
+      .andWhere("request.status = :status", {
+        status: RequestStatus.CONFIRMED,
+      })
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where("request.receiverId != :id", {
+            id: userId,
+          });
+          qb.orWhere("request.receiverId IS NULL");
+        })
+      )
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where("request.senderId != :id", {
+            id: userId,
+          });
+          qb.orWhere("request.senderId IS NULL");
+        })
+      )
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where("request.senderTeamId NOT IN (:...myTeamsIds)", {
+            myTeamsIds,
+          });
+          qb.orWhere("request.senderTeamId IS NULL");
+        })
+      )
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where("request.receiverTeamId NOT IN (:...myTeamsIds)", {
+            myTeamsIds,
+          });
+          qb.orWhere("request.receiverTeamId IS NULL");
+        })
+      )
+      .getMany();
 
     const responseData = {
       myEvents: myEvents.map((event) => event.toResponse),
+      publicEvents: publicEvents.map((event) => event.toResponse),
     };
 
     return responseData;
@@ -93,11 +164,7 @@ export class EventService {
     const teamPlayers = await requestRepository
       .createQueryBuilder("r")
       .select("u.name, u.profile_picture, t.name as team, r.status")
-      .innerJoin(
-        "teams",
-        "t",
-        "t.id = r.senderTeamId OR t.id = r.receiverTeamId"
-      )
+      .innerJoin("teams", "t", "t.id = r.senderTeamId OR t.id = r.receiverTeamId")
       .innerJoin("teams_users", "tu", "tu.teamId = t.id")
       .innerJoin("users", "u", "u.id = tu.playerId")
       .where("r.eventId = :id", { id: request.params.id })
@@ -131,12 +198,8 @@ export class EventService {
         .where(`e.locationId = '${locationId}'`)
         .andWhere(
           new Brackets((qb) => {
-            qb.where(
-              `(e.startDate < '${endDate}' AND e.endDate > '${startDate}')`
-            );
-            qb.orWhere(
-              `(e.startDate = '${startDate}' AND e.endDate = '${endDate}')`
-            );
+            qb.where(`(e.startDate < '${endDate}' AND e.endDate > '${startDate}')`);
+            qb.orWhere(`(e.startDate = '${startDate}' AND e.endDate = '${endDate}')`);
           })
         )
         .setLock("pessimistic_read")
@@ -167,173 +230,154 @@ export class EventService {
     }
   }
 
-  // static insert = async (
-  //   teamPayload: CreateTeamDto,
-  //   request: Request,
-  //   response: Response
-  // ) => {
-  //   const teamRepository = getRepository(Team);
+  static insert = async (eventPayload: CreateEventDto, request: Request, response: Response) => {
+    const eventRepository = getCustomRepository(EventRepository);
 
-  //   const isExisting = await teamRepository.findOne({
-  //     where: { name: teamPayload.name, sport: teamPayload.sport },
-  //   });
-  //   if (isExisting) throw "Team with this name already exists";
+    eventPayload.creatorId = response.locals.jwt.userId;
+    const createdEvent = eventRepository.create(eventPayload);
+    const savedEvent = await eventRepository.save(createdEvent);
 
-  //   if (request.files) {
-  //     for (const file of request.files as Array<Express.Multer.File>) {
-  //       if (file.originalname === teamPayload.avatarName) {
-  //         teamPayload.avatar = file.path;
-  //       }
-  //       if (file.originalname === teamPayload.bannerName) {
-  //         teamPayload.banner = file.path;
-  //       }
-  //     }
-  //   }
+    const requestRepository = getCustomRepository(RequestRepository);
+    const teamRepository = getCustomRepository(TeamRepository);
+    if (!savedEvent.isTeam) {
+      const dummyTeams = await teamRepository
+        .createQueryBuilder("team")
+        .insert()
+        .values([
+          { name: "Ekipi blu", sport: savedEvent.sport, isDummy: true },
+          { name: "Ekipi kuq", sport: savedEvent.sport, isDummy: true },
+        ])
+        .execute();
 
-  //   teamPayload.userId = response.locals.jwt.userId;
-  //   const createdTeam = teamRepository.create(teamPayload);
-  //   const savedTeam = await teamRepository.save(createdTeam);
+      savedEvent.organiserTeamId = dummyTeams.generatedMaps[0].id;
+      savedEvent.receiverTeamId = dummyTeams.generatedMaps[1].id;
+      await eventRepository.save(savedEvent);
 
-  //   const teamUsersRepository = getRepository(TeamUsers);
+      console.log("create event");
+    }
+    await requestRepository
+      .createQueryBuilder("request")
+      .insert()
+      .values([
+        {
+          senderId: savedEvent.creatorId,
+          receiverId: savedEvent.creatorId,
+          eventId: savedEvent.id,
+          sport: savedEvent.sport,
+          status: RequestStatus.CONFIRMED,
+        },
+      ])
+      .execute();
+    console.log("create request");
 
-  //   const teamUserDto = new CreateTeamUserDto();
-  //   teamUserDto.sport = savedTeam.sport;
-  //   teamUserDto.isConfirmed = true;
-  //   teamUserDto.playerId = response.locals.jwt.userId;
-  //   teamUserDto.teamId = savedTeam.id;
+    return savedEvent;
+  };
 
-  //   const createdTeamUser = teamUsersRepository.create(teamUserDto);
-  //   await teamUsersRepository.save(createdTeamUser);
+  static getById = async (eventId: number) => {
+    const eventRepository = getCustomRepository(EventRepository);
 
-  //   return savedTeam;
-  // };
+    const event = await eventRepository
+      .createQueryBuilder("event")
+      .leftJoinAndSelect("event.location", "location")
+      .leftJoinAndSelect("location.complex", "complex")
+      .leftJoinAndSelect("event.organiserTeam", "organiserTeam")
+      .leftJoinAndSelect("event.receiverTeam", "receiverTeam")
+      .where("event.id = :id", { id: eventId })
+      .getOne();
 
-  // static getById = async (teamId: number) => {
-  //   const teamRepository = getCustomRepository(TeamRepository);
+    return event.toResponse;
+  };
 
-  //   const team = await teamRepository.findById(teamId);
+  static findById = async (eventId: number) => {
+    const eventRepository = getCustomRepository(EventRepository);
 
-  //   const teamUsersRepository = getCustomRepository(TeamUsersRepository);
+    const event = await eventRepository.createQueryBuilder("event").where("event.id = :id", { id: eventId }).getOne();
 
-  //   if (team) {
-  //     const players = await teamUsersRepository
-  //       .createQueryBuilder("teamUsers")
-  //       .leftJoinAndSelect("teamUsers.player", "player")
-  //       .where("teamId = :teamId", { teamId })
-  //       .getMany();
+    return event;
+  };
 
-  //     const wins = await StatisticsService.getWins([team.id]);
-  //     const loses = await StatisticsService.getLoses([team.id]);
-  //     const draws = await StatisticsService.getDraws([team.id]);
-  //     let lastMatches = await StatisticsService.getLastMatches(team.id);
-  //     lastMatches = lastMatches.map((lastMatch) => {
-  //       if (lastMatch.isDraw) {
-  //         return "draw";
-  //       }
-  //       if (lastMatch.winnerTeamId === team.id) {
-  //         return "win";
-  //       }
-  //       return "loss";
-  //     });
-  //     let drawsMapped = {};
-  //     for (const draw of draws) {
-  //       if (!drawsMapped[draw.organiser]) drawsMapped[draw.organiser] = 0;
-  //       drawsMapped[draw.organiser] += 1;
-  //       if (!drawsMapped[draw.receiver]) drawsMapped[draw.receiver] = 0;
-  //       drawsMapped[draw.receiver] += 1;
-  //     }
-  //     team["wins"] = +(wins[0]?.wins ?? 0);
-  //     team["loses"] = +(loses[0]?.loses ?? 0);
-  //     team["draws"] = drawsMapped[team.id] ?? 0;
-  //     team["lastMatches"] = lastMatches;
-  //     team["players"] = players;
-  //   }
+  static update = async (eventPayload, currentEvent: Event, request: Request) => {
+    const eventRepository = getCustomRepository(EventRepository);
+    const eventTeamsUsersRepository = getCustomRepository(EventTeamUsersRepository);
 
-  //   return team;
-  // };
+    let eventForConfirmation = false;
+    let eventToBeCompleted = false;
+    if (currentEvent.status === EventStatus.WAITING_FOR_CONFIRMATION) {
+      eventForConfirmation = true;
+    }
+    if (currentEvent.status == EventStatus.CONFIRMED) {
+      eventToBeCompleted = true;
+    }
+    const mergedEvent = eventRepository.merge(currentEvent, eventPayload);
+    const updatedEvent = await eventRepository.save(mergedEvent);
 
-  // static update = async (
-  //   teamPayload: UpdateTeamDto,
-  //   currentTeam: Team,
-  //   request: Request
-  // ) => {
-  //   const teamRepository = getRepository(Team);
+    if (eventForConfirmation === true && updatedEvent.status === EventStatus.CONFIRMED) {
+      const eventPlayers = await eventTeamsUsersRepository
+        .createQueryBuilder("etu")
+        .leftJoinAndSelect("etu.teamUser", "tu", "tu.id = etu.teamUserId")
+        .leftJoinAndSelect("tu.player", "p", "p.id = tu.playerId")
+        .where("etu.eventId = :eventId", { eventId: updatedEvent.id })
+        .getMany();
 
-  //   if (request.files) {
-  //     for (const file of request.files as Array<Express.Multer.File>) {
-  //       if (file.originalname === teamPayload.avatarName) {
-  //         teamPayload.avatar = file.path;
-  //       }
-  //       if (file.originalname === teamPayload.bannerName) {
-  //         teamPayload.banner = file.path;
-  //       }
-  //     }
-  //   }
+      const mappedPlayersIds = eventPlayers.map((eventPlayers) => eventPlayers.teamUser.player.id);
+      let notifications = [];
+      for (const player of mappedPlayersIds) {
+        const notificationBody = {
+          receiverId: player,
+          type: NotificationType.EVENT_CONFIRMED,
+          payload: { eventId: updatedEvent.id, eventName: updatedEvent.name },
+        };
+        notifications.push(notificationBody);
+      }
+      await NotificationService.storeNotification(notifications);
+    }
 
-  //   const updatedTeam = teamRepository.merge(currentTeam, teamPayload);
-  //   await teamRepository.save(updatedTeam);
+    if (eventToBeCompleted === true && updatedEvent.status === EventStatus.COMPLETED) {
+      const eventPlayers = await eventTeamsUsersRepository
+        .createQueryBuilder("etu")
+        .leftJoinAndSelect("etu.teamUser", "tu", "tu.id = etu.teamUserId")
+        .leftJoinAndSelect("tu.player", "p", "p.id = tu.playerId")
+        .leftJoinAndSelect("tu.team", "t", "t.id = tu.teamId")
+        .where("etu.eventId = :eventId", { eventId: updatedEvent.id })
+        .getMany();
 
-  //   return updatedTeam;
-  // };
+      const mappedPlayersIds = eventPlayers.map((eventPlayers) => {
+        return {
+          id: eventPlayers.teamUser.player.id,
+          teamId: eventPlayers.teamUser.team.id,
+        };
+      });
+      const organiserTeamPlayersIds = mappedPlayersIds
+        .filter((teamPlayers) => teamPlayers.teamId === updatedEvent.organiserTeamId)
+        .map((player) => player.id);
+      const receiverTeamPlayersIds = mappedPlayersIds
+        .filter((teamPlayers) => teamPlayers.teamId === updatedEvent.receiverTeamId)
+        .map((player) => player.id);
+      let notifications = [];
+      for (const player of mappedPlayersIds) {
+        const resultNotificationBody = {
+          receiverId: player.id,
+          type: NotificationType.EVENT_COMPLETED_RESULT,
+          payload: { eventId: updatedEvent.id, eventName: updatedEvent.name },
+        };
+        const reviewNotificationBody = {
+          receiverId: player.id,
+          type: NotificationType.EVENT_COMPLETED_REVIEW,
+          // TODO: Find opposite players
+          payload: {
+            eventId: updatedEvent.id,
+            eventName: updatedEvent.name,
+            oppositePlayersIds:
+              player.teamId === updatedEvent.organiserTeamId ? receiverTeamPlayersIds : organiserTeamPlayersIds,
+          },
+        };
+        notifications.push(resultNotificationBody);
+        notifications.push(reviewNotificationBody);
+      }
 
-  // static deleteById = async (team: Team) => {
-  //   const teamRepository = getRepository(Team);
+      await NotificationService.storeNotification(notifications);
+    }
 
-  //   await teamRepository.softDelete(team.id);
-
-  //   const teamUsersRepository = getCustomRepository(TeamUsersRepository);
-
-  //   teamUsersRepository
-  //     .createQueryBuilder("teamUsers")
-  //     .delete()
-  //     .where("teamId = :teamId", { teamId: team.id })
-  //     .execute();
-  // };
-
-  // static exit = async (team: Team, response: Response) => {
-  //   const teamUsersRepository = getCustomRepository(TeamUsersRepository);
-
-  //   const teamRepository = getCustomRepository(TeamRepository);
-  //   const creator = await teamRepository
-  //     .createQueryBuilder("team")
-  //     .where("id = :teamId", { teamId: team.id })
-  //     .andWhere("userId = :userId", { userId: response.locals.jwt.userId })
-  //     .getOne();
-
-  //   if (creator)
-  //     throw "You are a creator! You can not remove yourself from the team";
-
-  //   teamUsersRepository
-  //     .createQueryBuilder("teamUsers")
-  //     .delete()
-  //     .where("teamId = :teamId", { teamId: team.id })
-  //     .andWhere("playerId = :userId", { userId: response.locals.jwt.userId })
-  //     .execute();
-  // };
-
-  // static upload = async (request: Request, response: Response) => {
-  //   if (request.files.length) {
-  //     const files = [...(request.files as any)];
-  //     const attachmentRepository = getCustomRepository(AtachmentRepository);
-  //     return attachmentRepository
-  //       .createQueryBuilder("attachments")
-  //       .insert()
-  //       .into(Attachment)
-  //       .values(
-  //         files.map((file) => {
-  //           return {
-  //             name: file.filename,
-  //             originalName: file.originalname,
-  //             mimeType: file.mimetype,
-  //             extension: file.mimetype.split("/")[1],
-  //             sizeInBytes: file.size,
-  //             path: file.path,
-  //             teamId: +request.params.teamId,
-  //             userId: null,
-  //           };
-  //         })
-  //       )
-  //       .execute();
-  //   }
-  // };
+    return updatedEvent;
+  };
 }

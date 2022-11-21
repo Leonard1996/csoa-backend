@@ -26,6 +26,12 @@ export class Team extends Common {
   @Column("varchar", { nullable: true, name: "level" })
   public level: string;
 
+  @Column("int", { nullable: true, name: "year" })
+  public year: string;
+
+  @Column("tinyint", { nullable: true, name: "isDummy", default: false })
+  public isDummy: boolean;
+
   @ManyToOne(() => User, (user) => user.teams)
   public user: User;
   @Column("int", { nullable: true })
@@ -55,7 +61,7 @@ export class Team extends Common {
   @OneToMany(() => Attachment, (attachment) => attachment.team)
   attachments: Attachment[];
 
-  toResponseObject() {
+  get toResponseObject() {
     return {
       name: this.name,
       banner: this.banner,

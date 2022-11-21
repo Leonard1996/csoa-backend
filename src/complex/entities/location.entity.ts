@@ -44,4 +44,11 @@ export class Location extends Common {
       price: this.price,
     };
   }
+
+  get toResponse() {
+    return {
+      ...this.baseLocation,
+      complex: this.complex?.baseComplex,
+    };
+  }
 }

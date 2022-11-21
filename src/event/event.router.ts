@@ -15,6 +15,15 @@ export class EventRouter {
       EventController.listMyEvents,
     ]);
 
+    app.post("/events", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([
+        UserRole.USER,
+        UserRole.ADMIN,
+      ]),
+      EventController.insert,
+    ]);
+
     app.get("/events", [
       AuthenticationMiddleware.checkJwtToken,
       PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
@@ -64,60 +73,22 @@ export class EventRouter {
     //   EventController.insert,
     // ]);
 
-    //   app.post("/teams/:teamId/attachments", [
-    //     AuthenticationMiddleware.checkJwtToken,
-    //     PermissionMiddleware.checkAllowedPermissions([
-    //       UserRole.USER,
-    //       UserRole.ADMIN,
-    //     ]),
-    //     UploadMiddleware.validateFileUpload("file", ["jpg", "png", "jpeg"], 8),
-    //     EventController.upload,
-    //   ]);
+    app.get("/events/:eventId", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkMeOrPermissionsAllowed([
+        UserRole.USER,
+        UserRole.ADMIN,
+      ]),
+      EventController.getById,
+    ]);
 
-    //   app.delete("/teams/:teamId/attachments/:attachmentId", [
-    //     AuthenticationMiddleware.checkJwtToken,
-    //     PermissionMiddleware.checkAllowedPermissions([
-    //       UserRole.ADMIN,
-    //       UserRole.USER,
-    //     ]),
-    //     EventController.deleteAttachmentById,
-    //   ]);
-
-    //   app.get("/teams/:teamId", [
-    //     AuthenticationMiddleware.checkJwtToken,
-    //     PermissionMiddleware.checkMeOrPermissionsAllowed([
-    //       UserRole.USER,
-    //       UserRole.ADMIN,
-    //     ]),
-    //     EventController.getById,
-    //   ]);
-
-    //   app.put("/teams/:teamId", [
-    //     AuthenticationMiddleware.checkJwtToken,
-    //     PermissionMiddleware.checkAllowedPermissions([
-    //       UserRole.USER,
-    //       UserRole.ADMIN,
-    //     ]),
-    //     UploadMiddleware.validateFileUpload("file", ["jpg", "png", "jpeg"], 2),
-    //     EventController.putById,
-    //   ]);
-
-    //   app.delete("/teams/:teamId", [
-    //     AuthenticationMiddleware.checkJwtToken,
-    //     PermissionMiddleware.checkAllowedPermissions([
-    //       UserRole.ADMIN,
-    //       UserRole.USER,
-    //     ]),
-    //     EventController.deleteById,
-    //   ]);
-
-    //   app.delete("/teams/:teamId/exit", [
-    //     AuthenticationMiddleware.checkJwtToken,
-    //     PermissionMiddleware.checkAllowedPermissions([
-    //       UserRole.ADMIN,
-    //       UserRole.USER,
-    //     ]),
-    //     EventController.exit,
-    //   ]);
+    app.put("/events/:eventId", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([
+        UserRole.USER,
+        UserRole.ADMIN,
+      ]),
+      EventController.putById,
+    ]);
   };
 }
