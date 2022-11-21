@@ -39,13 +39,18 @@ export class EventService {
 
     const myEvents = await eventsRepository
       .createQueryBuilder("event")
-      .innerJoin("event.eventRequests", "request", "request.eventId = event.id")
-      .innerJoinAndSelect("event.location", "location")
-      .innerJoinAndSelect("location.complex", "complex")
-      .innerJoinAndSelect("event.organiserTeam", "senderTeam")
-      .innerJoinAndSelect("event.receiverTeam", "receiverTeam")
+      .leftJoin("event.eventRequests", "request", "request.eventId = event.id")
+      .leftJoinAndSelect("event.location", "location")
+      .leftJoinAndSelect("location.complex", "complex")
+      .leftJoinAndSelect("event.organiserTeam", "senderTeam")
+      .leftJoinAndSelect("event.receiverTeam", "receiverTeam")
       .where("event.status IN (:...statuses)", {
-        statuses: [EventStatus.DRAFT, EventStatus.WAITING_FOR_CONFIRMATION, EventStatus.CONFIRMED],
+        statuses: [
+          EventStatus.DRAFT,
+          EventStatus.WAITING_FOR_CONFIRMATION,
+          EventStatus.CONFIRMED,
+          EventStatus.COMPLETED,
+        ],
       })
       .andWhere("event.startDate > :todayStart", {
         todayStart: todayDate + " 00:00:00",
@@ -65,6 +70,8 @@ export class EventService {
         })
       )
       .getMany();
+
+    console.log(myEvents);
 
     const publicEvents = await eventsRepository
       .createQueryBuilder("event")

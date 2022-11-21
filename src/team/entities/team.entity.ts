@@ -26,6 +26,9 @@ export class Team extends Common {
   @Column("varchar", { nullable: true, name: "level" })
   public level: string;
 
+  @Column("int", { nullable: true, name: "year" })
+  public year: string;
+
   @Column("tinyint", { nullable: true, name: "isDummy", default: false })
   public isDummy: boolean;
 

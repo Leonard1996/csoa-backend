@@ -13,6 +13,13 @@ export enum EventStatus {
   COMPLETED = "completed",
 }
 
+export enum EventLevel {
+  amateur = "amateur",
+  serious = "serious",
+  strong = "strong",
+  professional = "professional",
+}
+
 @Entity("events")
 export class Event extends Common {
   @Column("varchar", { nullable: true, name: "sport" })
@@ -41,6 +48,7 @@ export class Event extends Common {
 
   @Column("varchar", { nullable: true, name: "level" })
   public level: string;
+
   @Column("text", { nullable: true })
   public notes: string;
 
