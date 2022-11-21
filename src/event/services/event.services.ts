@@ -153,7 +153,7 @@ export class EventService {
         event.name = name;
         event.locationId = locationId;
         event.sport = sport;
-        event.status = EventStatus.DRAFT;
+        event.status = EventStatus.WAITING_FOR_CONFIRMATION;
         createdEvent = await queryRunner.manager.save(event);
       }
 
