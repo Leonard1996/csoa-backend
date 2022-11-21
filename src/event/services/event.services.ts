@@ -39,13 +39,18 @@ export class EventService {
 
     const myEvents = await eventsRepository
       .createQueryBuilder("event")
-      .innerJoin("event.eventRequests", "request", "request.eventId = event.id")
-      .innerJoinAndSelect("event.location", "location")
-      .innerJoinAndSelect("location.complex", "complex")
-      .innerJoinAndSelect("event.organiserTeam", "senderTeam")
-      .innerJoinAndSelect("event.receiverTeam", "receiverTeam")
+      .leftJoin("event.eventRequests", "request", "request.eventId = event.id")
+      .leftJoinAndSelect("event.location", "location")
+      .leftJoinAndSelect("location.complex", "complex")
+      .leftJoinAndSelect("event.organiserTeam", "senderTeam")
+      .leftJoinAndSelect("event.receiverTeam", "receiverTeam")
       .where("event.status IN (:...statuses)", {
-        statuses: [EventStatus.DRAFT, EventStatus.WAITING_FOR_CONFIRMATION, EventStatus.CONFIRMED],
+        statuses: [
+          EventStatus.DRAFT,
+          EventStatus.WAITING_FOR_CONFIRMATION,
+          EventStatus.CONFIRMED,
+          EventStatus.COMPLETED,
+        ],
       })
       .andWhere("event.startDate > :todayStart", {
         todayStart: todayDate + " 00:00:00",
@@ -248,20 +253,22 @@ export class EventService {
       savedEvent.receiverTeamId = dummyTeams.generatedMaps[1].id;
       await eventRepository.save(savedEvent);
 
-      await requestRepository
-        .createQueryBuilder("request")
-        .insert()
-        .values([
-          {
-            senderId: savedEvent.creatorId,
-            receiverId: savedEvent.creatorId,
-            eventId: savedEvent.id,
-            sport: savedEvent.sport,
-            status: RequestStatus.CONFIRMED,
-          },
-        ])
-        .execute();
+      console.log("create event");
     }
+    await requestRepository
+      .createQueryBuilder("request")
+      .insert()
+      .values([
+        {
+          senderId: savedEvent.creatorId,
+          receiverId: savedEvent.creatorId,
+          eventId: savedEvent.id,
+          sport: savedEvent.sport,
+          status: RequestStatus.CONFIRMED,
+        },
+      ])
+      .execute();
+    console.log("create request");
 
     return savedEvent;
   };
