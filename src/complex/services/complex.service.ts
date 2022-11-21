@@ -86,7 +86,7 @@ export class ComplexService {
     const complexRepository = getRepository(Complex);
     return complexRepository.find({
       withDeleted: true,
-      relations: ["attachments"],
+      relations: ["attachments", "locations"],
       where: { id: request.params.id },
     });
   }
