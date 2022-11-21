@@ -71,8 +71,6 @@ export class EventService {
       )
       .getMany();
 
-    console.log(myEvents);
-
     const publicEvents = await eventsRepository
       .createQueryBuilder("event")
       .leftJoin("event.eventRequests", "request", "request.eventId = event.id")
@@ -255,20 +253,22 @@ export class EventService {
       savedEvent.receiverTeamId = dummyTeams.generatedMaps[1].id;
       await eventRepository.save(savedEvent);
 
-      await requestRepository
-        .createQueryBuilder("request")
-        .insert()
-        .values([
-          {
-            senderId: savedEvent.creatorId,
-            receiverId: savedEvent.creatorId,
-            eventId: savedEvent.id,
-            sport: savedEvent.sport,
-            status: RequestStatus.CONFIRMED,
-          },
-        ])
-        .execute();
+      console.log("create event");
     }
+    await requestRepository
+      .createQueryBuilder("request")
+      .insert()
+      .values([
+        {
+          senderId: savedEvent.creatorId,
+          receiverId: savedEvent.creatorId,
+          eventId: savedEvent.id,
+          sport: savedEvent.sport,
+          status: RequestStatus.CONFIRMED,
+        },
+      ])
+      .execute();
+    console.log("create request");
 
     return savedEvent;
   };
