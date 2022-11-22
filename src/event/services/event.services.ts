@@ -238,6 +238,16 @@ export class EventService {
     const eventRepository = getCustomRepository(EventRepository);
 
     eventPayload.creatorId = response.locals.jwt.userId;
+
+    // const existingEvent = await eventRepository
+    //   .createQueryBuilder("event")
+    //   .leftJoinAndSelect("event.location", "location")
+    //   .where("event.startDate = :startDate", { startDate: eventPayload.startDate })
+    //   .andWhere("event.endDate = :endDate", { endDate: eventPayload.endDate })
+    //   .andWhere("location.id = :id", { id: eventPayload.locationId })
+    //   .getOne();
+    // console.log({ existingEvent });
+
     const createdEvent = eventRepository.create(eventPayload);
     const savedEvent = await eventRepository.save(createdEvent);
 

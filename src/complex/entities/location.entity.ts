@@ -42,13 +42,14 @@ export class Location extends Common {
       name: this.name,
       dimensions: this.dimensions,
       price: this.price,
+      slotRange: this.slotRange,
     };
   }
 
   get toResponse() {
     return {
       ...this.baseLocation,
-      complex: this.complex?.baseComplex,
+      complex: this.complex?.toResponseForApp,
     };
   }
 }

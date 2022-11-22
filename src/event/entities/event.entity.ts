@@ -150,6 +150,7 @@ export class Event extends Common {
       location: this.location?.toResponse,
       organiserTeam: this.organiserTeam?.toResponseObject,
       receiverTeam: this.receiverTeam?.toResponseObject,
+      creatorId: this.creatorId,
     };
   }
 }
