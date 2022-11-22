@@ -256,9 +256,8 @@ export class EventService {
       savedEvent.organiserTeamId = dummyTeams.generatedMaps[0].id;
       savedEvent.receiverTeamId = dummyTeams.generatedMaps[1].id;
       await eventRepository.save(savedEvent);
-
-      console.log("create event");
     }
+
     await requestRepository
       .createQueryBuilder("request")
       .insert()
@@ -272,7 +271,6 @@ export class EventService {
         },
       ])
       .execute();
-    console.log("create request");
 
     return savedEvent;
   };
