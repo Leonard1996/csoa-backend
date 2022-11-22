@@ -126,6 +126,7 @@ export class Event extends Common {
 
   get baseEvent() {
     return {
+      id: this.id,
       name: this.name,
       sport: this.sport,
       startDate: this.startDate,

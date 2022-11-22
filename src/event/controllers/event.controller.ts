@@ -64,8 +64,16 @@ export class EventController {
 
   static insert = async (request: Request, response: Response) => {
     try {
-      const event = await EventService.insert(request.body, request, response);
-      response.status(HttpStatusCode.OK).send(new SuccessResponse({ event }));
+      const event = await EventService.insert(request, response);
+      if (event) {
+        if (!event?.isTeam) {
+          await EventService.createDummyTeams(event);
+        }
+        await EventService.createRequest(event);
+      }
+      response
+        .status(HttpStatusCode.OK)
+        .send(new SuccessResponse({ event: event ? event : "Nje event ekziston ne kete orar" }));
     } catch (err) {
       console.log(err);
       return response.status(400).send(new ErrorResponse(err));

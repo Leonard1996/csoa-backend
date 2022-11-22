@@ -12,6 +12,7 @@ import { TeamRepository } from "../../team/repositories/team.repository";
 import { EventTeamUsersRepository } from "../repositories/event.team.users.repository";
 import { NotificationService } from "../../notifications/services/notification.services";
 import { NotificationType } from "../../notifications/entities/notification.entity";
+import { ErrorResponse } from "../../common/utilities/ErrorResponse";
 
 export class EventService {
   static listMyEvents = async (request: Request, response: Response) => {
@@ -234,55 +235,105 @@ export class EventService {
     }
   }
 
-  static insert = async (eventPayload: CreateEventDto, request: Request, response: Response) => {
-    const eventRepository = getCustomRepository(EventRepository);
-
-    eventPayload.creatorId = response.locals.jwt.userId;
-
-    // const existingEvent = await eventRepository
-    //   .createQueryBuilder("event")
-    //   .leftJoinAndSelect("event.location", "location")
-    //   .where("event.startDate = :startDate", { startDate: eventPayload.startDate })
-    //   .andWhere("event.endDate = :endDate", { endDate: eventPayload.endDate })
-    //   .andWhere("location.id = :id", { id: eventPayload.locationId })
-    //   .getOne();
-    // console.log({ existingEvent });
-
-    const createdEvent = eventRepository.create(eventPayload);
-    const savedEvent = await eventRepository.save(createdEvent);
-
-    const requestRepository = getCustomRepository(RequestRepository);
-    const teamRepository = getCustomRepository(TeamRepository);
-    if (!savedEvent.isTeam) {
-      const dummyTeams = await teamRepository
-        .createQueryBuilder("team")
-        .insert()
-        .values([
-          { name: "Ekipi blu", sport: savedEvent.sport, isDummy: true },
-          { name: "Ekipi kuq", sport: savedEvent.sport, isDummy: true },
-        ])
-        .execute();
-
-      savedEvent.organiserTeamId = dummyTeams.generatedMaps[0].id;
-      savedEvent.receiverTeamId = dummyTeams.generatedMaps[1].id;
-      await eventRepository.save(savedEvent);
+  static insert = async (request: Request, response: Response) => {
+    const {
+      body: {
+        startDate,
+        endDate,
+        notes,
+        name,
+        locationId,
+        sport,
+        status,
+        isPublic,
+        isTeam,
+        playersAge,
+        playersNumber,
+        isWeekly,
+      },
+    } = request;
+    if (new Date(startDate) < new Date()) {
+      throw new Error();
     }
 
+    const queryRunner = getManager().connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const overlappingEvent = await queryRunner.manager
+        .createQueryBuilder()
+        .from("events", "e")
+        .where(`e.locationId = '${locationId}'`)
+        .andWhere(
+          new Brackets((qb) => {
+            qb.where(`(e.startDate < '${endDate}' AND e.endDate > '${startDate}')`);
+            qb.orWhere(`(e.startDate = '${startDate}' AND e.endDate = '${endDate}')`);
+          })
+        )
+        .setLock("pessimistic_read")
+        .getRawOne();
+
+      let createdEvent: any = false;
+      if (!overlappingEvent) {
+        const event = new Event();
+        event.startDate = startDate;
+        event.endDate = endDate;
+        event.isUserReservation = true;
+        event.creatorId = response.locals.jwt.userId;
+        event.notes = notes;
+        event.name = name;
+        event.locationId = locationId;
+        event.sport = sport;
+        event.status = status;
+        event.isPublic = isPublic;
+        event.isTeam = isTeam;
+        event.playersAge = playersAge;
+        event.playersNumber = playersNumber;
+        event.isWeekly = isWeekly;
+        createdEvent = await queryRunner.manager.save(event);
+      }
+
+      await queryRunner.commitTransaction();
+      return createdEvent;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+    } finally {
+      await queryRunner.release();
+    }
+  };
+
+  static createDummyTeams = async (event: Event) => {
+    const teamRepository = getCustomRepository(TeamRepository);
+    const eventRepository = getCustomRepository(EventRepository);
+    const dummyTeams = await teamRepository
+      .createQueryBuilder("team")
+      .insert()
+      .values([
+        { name: "Ekipi blu", sport: event.sport, isDummy: true },
+        { name: "Ekipi kuq", sport: event.sport, isDummy: true },
+      ])
+      .execute();
+
+    event.organiserTeamId = dummyTeams.generatedMaps[0].id;
+    event.receiverTeamId = dummyTeams.generatedMaps[1].id;
+    await eventRepository.save(event);
+  };
+
+  static createRequest = async (event: Event) => {
+    const requestRepository = getCustomRepository(RequestRepository);
     await requestRepository
       .createQueryBuilder("request")
       .insert()
       .values([
         {
-          senderId: savedEvent.creatorId,
-          receiverId: savedEvent.creatorId,
-          eventId: savedEvent.id,
-          sport: savedEvent.sport,
+          senderId: event.creatorId,
+          receiverId: event.creatorId,
+          eventId: event.id,
+          sport: event.sport,
           status: RequestStatus.CONFIRMED,
         },
       ])
       .execute();
-
-    return savedEvent;
   };
 
   static getById = async (eventId: number) => {
