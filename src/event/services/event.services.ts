@@ -37,7 +37,7 @@ export class EventService {
 
     const myTeamsIds = myTeams.map((player) => player.team.id).push(-1);
 
-    const myEvents = await eventsRepository
+    const queryBuilder = eventsRepository
       .createQueryBuilder("event")
       .leftJoin("event.eventRequests", "request", "request.eventId = event.id")
       .leftJoinAndSelect("event.location", "location")
@@ -55,12 +55,6 @@ export class EventService {
       .andWhere("event.startDate > :todayStart", {
         todayStart: todayDate + " 00:00:00",
       })
-      .andWhere("event.startDate < :todayEnd", {
-        todayEnd: todayDate + " 23:59:59",
-      })
-      .andWhere("request.status = :status", {
-        status: RequestStatus.CONFIRMED,
-      })
       .andWhere(
         new Brackets((qb) => {
           qb.where("request.receiverId = :id", { id: userId })
@@ -68,8 +62,18 @@ export class EventService {
             .orWhere("request.senderTeamId IN (:...myTeamsIds)", { myTeamsIds })
             .orWhere("request.receiverTeamId IN (:...myTeamsIds)", { myTeamsIds });
         })
-      )
-      .getMany();
+      );
+
+    if (request.query && request.query.todayEvents === "true") {
+      queryBuilder.andWhere("event.startDate > :todayStart", {
+        todayStart: todayDate + " 00:00:00",
+      });
+      queryBuilder.andWhere("event.startDate < :todayEnd", {
+        todayEnd: todayDate + " 23:59:59",
+      });
+    }
+
+    const myEvents = await queryBuilder.getMany();
 
     const publicEvents = await eventsRepository
       .createQueryBuilder("event")
