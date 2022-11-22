@@ -53,5 +53,8 @@ export class CreateEventDto {
   creatorId: number;
 
   @IsOptional()
+  locationId: number;
+
+  @IsOptional()
   isUserReservation: boolean;
 }
