@@ -8,19 +8,13 @@ export class EventRouter {
   static configRoutes = (app: express.Application) => {
     app.get("/my-events", [
       AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([
-        UserRole.USER,
-        UserRole.ADMIN,
-      ]),
+      PermissionMiddleware.checkAllowedPermissions([UserRole.USER, UserRole.ADMIN]),
       EventController.listMyEvents,
     ]);
 
     app.post("/events", [
       AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([
-        UserRole.USER,
-        UserRole.ADMIN,
-      ]),
+      PermissionMiddleware.checkAllowedPermissions([UserRole.USER, UserRole.ADMIN]),
       EventController.insert,
     ]);
 
@@ -44,10 +38,7 @@ export class EventRouter {
 
     app.post("/admin/events", [
       AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([
-        UserRole.ADMIN,
-        UserRole.COMPNAY,
-      ]),
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN, UserRole.COMPNAY]),
       EventController.createAdminEvent,
     ]);
 
@@ -75,19 +66,13 @@ export class EventRouter {
 
     app.get("/events/:eventId", [
       AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkMeOrPermissionsAllowed([
-        UserRole.USER,
-        UserRole.ADMIN,
-      ]),
+      PermissionMiddleware.checkMeOrPermissionsAllowed([UserRole.USER, UserRole.ADMIN]),
       EventController.getById,
     ]);
 
     app.put("/events/:eventId", [
       AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([
-        UserRole.USER,
-        UserRole.ADMIN,
-      ]),
+      PermissionMiddleware.checkAllowedPermissions([UserRole.USER, UserRole.ADMIN]),
       EventController.putById,
     ]);
   };
