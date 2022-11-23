@@ -1,9 +1,4 @@
-import {
-  Column,
-  PrimaryGeneratedColumn,
-  BeforeUpdate,
-  DeleteDateColumn,
-} from "typeorm";
+import { Column, PrimaryGeneratedColumn, BeforeUpdate, DeleteDateColumn, Index } from "typeorm";
 import { SoftDelete } from "./soft.delete";
 
 export abstract class Common extends SoftDelete {
@@ -27,6 +22,7 @@ export abstract class Common extends SoftDelete {
   })
   public tsLastModified: Date;
 
+  @Index()
   @DeleteDateColumn({ name: "ts_deleted" })
   public tsDeleted: Date;
 

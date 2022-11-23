@@ -28,9 +28,11 @@ export class Event extends Common {
   @Column("varchar", { nullable: true, name: "createdYear" })
   public createdYear: string;
 
+  @Index()
   @Column("timestamp", { nullable: true, name: "startDate" })
   public startDate: Date;
 
+  @Index()
   @Column("timestamp", { nullable: true, name: "endDate" })
   public endDate: Date;
 

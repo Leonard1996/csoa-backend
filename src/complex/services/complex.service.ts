@@ -168,7 +168,6 @@ export class ComplexService {
     const eventRepository = getCustomRepository(EventRepository);
     return eventRepository
       .createQueryBuilder("e")
-      .withDeleted()
       .select(
         "e.id, e.name as name, e.startDate, e.endDate,l.id as locationId, l.name as locationName, l.price, e.status, c.workingHours, e.sport, e.notes"
       )
