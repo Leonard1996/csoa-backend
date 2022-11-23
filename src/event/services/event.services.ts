@@ -207,6 +207,7 @@ export class EventService {
             qb.orWhere(`(e.startDate = '${startDate}' AND e.endDate = '${endDate}')`);
           })
         )
+        .andWhere("e.ts_deleted IS NULL")
         .setLock("pessimistic_read")
         .getRawOne();
 
@@ -270,6 +271,7 @@ export class EventService {
             qb.orWhere(`(e.startDate = '${startDate}' AND e.endDate = '${endDate}')`);
           })
         )
+        .andWhere("e.ts_deleted IS NULL")
         .setLock("pessimistic_read")
         .getRawOne();
 
