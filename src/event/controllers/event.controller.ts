@@ -118,9 +118,9 @@ export class EventController {
     }
   };
 
-  static delete = (request: Request, response: Response) => {
+  static delete = async (request: Request, response: Response) => {
     try {
-      getRepository(Event).delete({
+      await getRepository(Event).delete({
         id: +request.params.eventId,
         status: EventStatus.WAITING_FOR_CONFIRMATION,
       });
