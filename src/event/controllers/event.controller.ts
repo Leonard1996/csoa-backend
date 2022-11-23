@@ -120,7 +120,7 @@ export class EventController {
 
   static delete = async (request: Request, response: Response) => {
     try {
-      await getRepository(Event).delete({
+      await getRepository(Event).softDelete({
         id: +request.params.eventId,
         status: EventStatus.WAITING_FOR_CONFIRMATION,
       });
