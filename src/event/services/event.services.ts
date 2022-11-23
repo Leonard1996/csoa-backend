@@ -1,18 +1,21 @@
 import { Request, Response } from "express";
-import { Brackets, getCustomRepository, getManager, getRepository } from "typeorm";
+import {
+  Brackets,
+  getCustomRepository,
+  getManager,
+  getRepository,
+} from "typeorm";
 import { Functions } from "../../common/utilities/Functions";
 import { RequestStatus } from "../../request/entities/request.entity";
 import { UserService } from "../../user/services/user.service";
 import { Event, EventStatus } from "../entities/event.entity";
 import { EventRepository } from "../repositories/event.repository";
 import { TeamUsers } from "../../team/entities/team.users.entity";
-import { CreateEventDto } from "../dto/create-event.dto";
 import { RequestRepository } from "../../request/repositories/request.repository";
 import { TeamRepository } from "../../team/repositories/team.repository";
 import { EventTeamUsersRepository } from "../repositories/event.team.users.repository";
 import { NotificationService } from "../../notifications/services/notification.services";
 import { NotificationType } from "../../notifications/entities/notification.entity";
-import { ErrorResponse } from "../../common/utilities/ErrorResponse";
 
 export class EventService {
   static listMyEvents = async (request: Request, response: Response) => {
@@ -61,7 +64,9 @@ export class EventService {
           qb.where("request.receiverId = :id", { id: userId })
             .orWhere("request.senderId = :id", { id: userId })
             .orWhere("request.senderTeamId IN (:...myTeamsIds)", { myTeamsIds })
-            .orWhere("request.receiverTeamId IN (:...myTeamsIds)", { myTeamsIds });
+            .orWhere("request.receiverTeamId IN (:...myTeamsIds)", {
+              myTeamsIds,
+            });
         })
       );
 
@@ -169,7 +174,11 @@ export class EventService {
     const teamPlayers = await requestRepository
       .createQueryBuilder("r")
       .select("u.name, u.profile_picture, t.name as team, r.status")
-      .innerJoin("teams", "t", "t.id = r.senderTeamId OR t.id = r.receiverTeamId")
+      .innerJoin(
+        "teams",
+        "t",
+        "t.id = r.senderTeamId OR t.id = r.receiverTeamId"
+      )
       .innerJoin("teams_users", "tu", "tu.teamId = t.id")
       .innerJoin("users", "u", "u.id = tu.playerId")
       .where("r.eventId = :id", { id: request.params.id })
@@ -187,7 +196,7 @@ export class EventService {
 
   static async createAdminEvent(request: Request, response: Response) {
     const {
-      body: { startDate, endDate, notes, name, locationId, sport },
+      body: { startDate, endDate, notes, name, locationId, sport, isWeekly },
     } = request;
     if (new Date(startDate) < new Date()) {
       throw new Error();
@@ -203,8 +212,12 @@ export class EventService {
         .where(`e.locationId = '${locationId}'`)
         .andWhere(
           new Brackets((qb) => {
-            qb.where(`(e.startDate < '${endDate}' AND e.endDate > '${startDate}')`);
-            qb.orWhere(`(e.startDate = '${startDate}' AND e.endDate = '${endDate}')`);
+            qb.where(
+              `(e.startDate < '${endDate}' AND e.endDate > '${startDate}')`
+            );
+            qb.orWhere(
+              `(e.startDate = '${startDate}' AND e.endDate = '${endDate}')`
+            );
           })
         )
         .setLock("pessimistic_read")
@@ -222,6 +235,7 @@ export class EventService {
         event.locationId = locationId;
         event.sport = sport;
         event.status = EventStatus.WAITING_FOR_CONFIRMATION;
+        event.isWeekly = isWeekly ? true : false;
         createdEvent = await queryRunner.manager.save(event);
       }
 
@@ -266,8 +280,12 @@ export class EventService {
         .where(`e.locationId = '${locationId}'`)
         .andWhere(
           new Brackets((qb) => {
-            qb.where(`(e.startDate < '${endDate}' AND e.endDate > '${startDate}')`);
-            qb.orWhere(`(e.startDate = '${startDate}' AND e.endDate = '${endDate}')`);
+            qb.where(
+              `(e.startDate < '${endDate}' AND e.endDate > '${startDate}')`
+            );
+            qb.orWhere(
+              `(e.startDate = '${startDate}' AND e.endDate = '${endDate}')`
+            );
           })
         )
         .setLock("pessimistic_read")
@@ -354,14 +372,23 @@ export class EventService {
   static findById = async (eventId: number) => {
     const eventRepository = getCustomRepository(EventRepository);
 
-    const event = await eventRepository.createQueryBuilder("event").where("event.id = :id", { id: eventId }).getOne();
+    const event = await eventRepository
+      .createQueryBuilder("event")
+      .where("event.id = :id", { id: eventId })
+      .getOne();
 
     return event;
   };
 
-  static update = async (eventPayload, currentEvent: Event, request: Request) => {
+  static update = async (
+    eventPayload,
+    currentEvent: Event,
+    request: Request
+  ) => {
     const eventRepository = getCustomRepository(EventRepository);
-    const eventTeamsUsersRepository = getCustomRepository(EventTeamUsersRepository);
+    const eventTeamsUsersRepository = getCustomRepository(
+      EventTeamUsersRepository
+    );
 
     let eventForConfirmation = false;
     let eventToBeCompleted = false;
@@ -374,7 +401,10 @@ export class EventService {
     const mergedEvent = eventRepository.merge(currentEvent, eventPayload);
     const updatedEvent = await eventRepository.save(mergedEvent);
 
-    if (eventForConfirmation === true && updatedEvent.status === EventStatus.CONFIRMED) {
+    if (
+      eventForConfirmation === true &&
+      updatedEvent.status === EventStatus.CONFIRMED
+    ) {
       const eventPlayers = await eventTeamsUsersRepository
         .createQueryBuilder("etu")
         .leftJoinAndSelect("etu.teamUser", "tu", "tu.id = etu.teamUserId")
@@ -382,7 +412,9 @@ export class EventService {
         .where("etu.eventId = :eventId", { eventId: updatedEvent.id })
         .getMany();
 
-      const mappedPlayersIds = eventPlayers.map((eventPlayers) => eventPlayers.teamUser.player.id);
+      const mappedPlayersIds = eventPlayers.map(
+        (eventPlayers) => eventPlayers.teamUser.player.id
+      );
       let notifications = [];
       for (const player of mappedPlayersIds) {
         const notificationBody = {
@@ -395,7 +427,10 @@ export class EventService {
       await NotificationService.storeNotification(notifications);
     }
 
-    if (eventToBeCompleted === true && updatedEvent.status === EventStatus.COMPLETED) {
+    if (
+      eventToBeCompleted === true &&
+      updatedEvent.status === EventStatus.COMPLETED
+    ) {
       const eventPlayers = await eventTeamsUsersRepository
         .createQueryBuilder("etu")
         .leftJoinAndSelect("etu.teamUser", "tu", "tu.id = etu.teamUserId")
@@ -411,10 +446,14 @@ export class EventService {
         };
       });
       const organiserTeamPlayersIds = mappedPlayersIds
-        .filter((teamPlayers) => teamPlayers.teamId === updatedEvent.organiserTeamId)
+        .filter(
+          (teamPlayers) => teamPlayers.teamId === updatedEvent.organiserTeamId
+        )
         .map((player) => player.id);
       const receiverTeamPlayersIds = mappedPlayersIds
-        .filter((teamPlayers) => teamPlayers.teamId === updatedEvent.receiverTeamId)
+        .filter(
+          (teamPlayers) => teamPlayers.teamId === updatedEvent.receiverTeamId
+        )
         .map((player) => player.id);
       let notifications = [];
       for (const player of mappedPlayersIds) {
@@ -431,7 +470,9 @@ export class EventService {
             eventId: updatedEvent.id,
             eventName: updatedEvent.name,
             oppositePlayersIds:
-              player.teamId === updatedEvent.organiserTeamId ? receiverTeamPlayersIds : organiserTeamPlayersIds,
+              player.teamId === updatedEvent.organiserTeamId
+                ? receiverTeamPlayersIds
+                : organiserTeamPlayersIds,
           },
         };
         notifications.push(resultNotificationBody);

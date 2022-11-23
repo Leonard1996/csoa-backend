@@ -10,6 +10,7 @@ import { User } from "../entities/user.entity";
 import { AttachmentService } from "../../attachment/services/attachment.services";
 import { ReviewRepository } from "../../review/repositories/review.repository";
 import { Md5 } from "md5-typescript";
+import { UserRole } from "../utilities/UserRole";
 
 export class UserController {
   static list = async (request: Request, response: Response) => {
@@ -18,7 +19,7 @@ export class UserController {
       const users = await userRepository.find({
         where: {
           id: Not(response.locals.jwt.userId),
-          role: "user",
+          role: UserRole.USER,
         },
         withDeleted: true,
       });

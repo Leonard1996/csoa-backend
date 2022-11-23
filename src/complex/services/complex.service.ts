@@ -112,7 +112,7 @@ export class ComplexService {
       .createQueryBuilder("e")
       .withDeleted()
       .select(
-        "e.id, u.name, e.startDate, e.endDate, l.name as locationName, l.price, e.status, e.isUserReservation"
+        "e.id, u.name, e.startDate, e.endDate, l.name as locationName, l.price, e.status, e.isUserReservation, e.isWeekly"
       )
       .innerJoin("locations", "l", "l.id = e.locationId")
       .innerJoin("complexes", "c", "c.id = l.complexId")
@@ -128,11 +128,11 @@ export class ComplexService {
     const { body } = request;
     let userReserved = `true`;
 
-    if (body.type["Nga aplikacioni"] && !body.type["Nga sistemi"]) {
-      userReserved = `e.isUserReserved = true`;
+    if (body.type["Nga aplikacion"] && !body.type["Nga paneli"]) {
+      userReserved = `e.isUserReservation = 1`;
     }
-    if (body.type["Nga sistemi"] && !body.type["Nga aplikacioni"]) {
-      userReserved = `e.isUserReserved = false`;
+    if (body.type["Nga paneli"] && !body.type["Nga aplikacion"]) {
+      userReserved = `e.isUserReservation = 0`;
     }
 
     const selectedStatus = Object.keys(body.status).filter(
@@ -146,7 +146,7 @@ export class ComplexService {
       .createQueryBuilder("e")
       .withDeleted()
       .select(
-        "e.id, u.name, e.startDate, e.endDate, l.name as locationName, l.price, e.status, e.isUserReservation"
+        "e.id, u.name, e.startDate, e.endDate, l.name as locationName, l.price, e.status, e.isUserReservation, e.isWeekly"
       )
       .innerJoin("locations", "l", "l.id = e.locationId")
       .innerJoin("complexes", "c", "c.id = l.complexId")
@@ -158,7 +158,9 @@ export class ComplexService {
         startDate: body.time.from,
       })
       .andWhere("e.endDate <= :endDate", { endDate: body.time.to })
+      .andWhere(`${body.isWeekly ? "e.isWeekly = 1" : "e.isWeekly = 0"}`)
       .orderBy("e.id", "DESC")
+      .limit(24 * 62)
       .getRawMany();
   }
 
