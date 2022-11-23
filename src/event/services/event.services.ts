@@ -251,6 +251,8 @@ export class EventService {
         playersAge,
         playersNumber,
         isWeekly,
+        level,
+        isUserReservation,
       },
     } = request;
     if (new Date(startDate) < new Date()) {
@@ -280,7 +282,7 @@ export class EventService {
         const event = new Event();
         event.startDate = startDate;
         event.endDate = endDate;
-        event.isUserReservation = true;
+        event.isUserReservation = isUserReservation;
         event.creatorId = response.locals.jwt.userId;
         event.notes = notes;
         event.name = name;
@@ -292,6 +294,7 @@ export class EventService {
         event.playersAge = playersAge;
         event.playersNumber = playersNumber;
         event.isWeekly = isWeekly;
+        event.level = level;
         createdEvent = await queryRunner.manager.save(event);
       }
 
