@@ -123,7 +123,6 @@ export class EventController {
       await getRepository(Event).softDelete({
         id: +request.params.eventId,
         status: EventStatus.WAITING_FOR_CONFIRMATION,
-        tsDeleted: Date.now(),
       });
       return response.sendStatus(204);
     } catch (err) {
