@@ -70,10 +70,10 @@ export class EventRouter {
       EventController.getById,
     ]);
 
-    app.put("/events/:eventId", [
+    app.patch("/events/:eventId", [
       AuthenticationMiddleware.checkJwtToken,
       PermissionMiddleware.checkAllowedPermissions([UserRole.USER, UserRole.ADMIN]),
-      EventController.putById,
+      EventController.patchById,
     ]);
   };
 }
