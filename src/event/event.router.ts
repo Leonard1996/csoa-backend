@@ -50,7 +50,7 @@ export class EventRouter {
 
     app.delete("/events/:eventId", [
       AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([UserRole.COMPNAY]),
+      PermissionMiddleware.checkAllowedPermissions([UserRole.COMPNAY, UserRole.USER]),
       EventController.delete,
     ]);
 
