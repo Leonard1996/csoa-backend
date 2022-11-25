@@ -43,6 +43,10 @@ export class Location extends Common {
       dimensions: this.dimensions,
       price: this.price,
       slotRange: this.slotRange,
+      isFootball: this.isFootball,
+      isBasketball: this.isBasketball,
+      isTennis: this.isTennis,
+      isVolleyball: this.isVolleyball,
     };
   }
 

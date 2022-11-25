@@ -37,7 +37,7 @@ export class Team extends Common {
   @Column("int", { nullable: true })
   userId: number;
 
-  @OneToMany(() => TeamUsers, (teamUsers) => teamUsers.player)
+  @OneToMany(() => TeamUsers, (teamUsers) => teamUsers.team)
   players: TeamUsers[];
 
   @OneToMany(() => Event, (event) => event.organiserTeam)

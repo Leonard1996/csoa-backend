@@ -110,6 +110,7 @@ export class Complex extends Common {
       workingHours: this.workingHours,
       facilities: this.facilities,
       avatar: this.avatar,
+      locations: this.locations.map((location) => location.baseLocation),
     };
   }
 }
