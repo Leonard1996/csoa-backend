@@ -214,7 +214,7 @@ export class TeamService {
     return team;
   };
 
-  static update = async (teamPayload: UpdateTeamDto, currentTeam: Team, request: Request) => {
+  static update = async (teamPayload, currentTeam: Team, request: Request) => {
     const teamRepository = getRepository(Team);
 
     if (request.files) {
@@ -227,8 +227,7 @@ export class TeamService {
         }
       }
     }
-
-    const updatedTeam = teamRepository.merge(currentTeam, teamPayload);
+    const updatedTeam = teamRepository.merge(currentTeam, JSON.parse(teamPayload.body));
     await teamRepository.save(updatedTeam);
 
     return updatedTeam;
