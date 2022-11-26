@@ -66,7 +66,7 @@ export class PermissionMiddleware {
     }
   };
 
-  static checkIfCreator = async (req: Request, res: Response, next: NextFunction) => {
+  static checkIfCreatorOrCompany = async (req: Request, res: Response, next: NextFunction) => {
     const { userId, userRole } = res.locals.jwt;
     if (userRole === UserRole.ADMIN) {
       next();

@@ -135,6 +135,7 @@ export class TeamService {
 
     if (request.files) {
       for (const file of request.files as Array<Express.Multer.File>) {
+        console.log("🚀 ~ file: team.services.ts ~ line 138 ~ TeamService ~ insert= ~ file", file);
         if (file.originalname === teamPayload.avatarName) {
           teamPayload.avatar = file.path;
         }
