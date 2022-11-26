@@ -104,14 +104,14 @@ export class TeamService {
     }
 
     const myTeamsData = myTeams.map((team) => ({
-      ...team.team,
+      ...team.team.toResponseObject,
       wins: +(myTeamsWinsMapped[team.team.id]?.wins ?? 0),
       loses: +(myTeamsLosesMapped[team.team.id]?.loses ?? 0),
       draws: myTeamsDrawsMapped[team.team.id] ?? 0,
     }));
 
     const similiarTeamsData = similiarTeams.map((similiarTeam) => ({
-      ...similiarTeam,
+      ...similiarTeam.toResponseObject,
       wins: +(similiarTeamsWinsMapped[similiarTeam.id]?.wins ?? 0),
       loses: +(similiarTeamsLosesMapped[similiarTeam.id]?.loses ?? 0),
       draws: similiarTeamsDrawsMapped[similiarTeam.id] ?? 0,
