@@ -32,7 +32,7 @@ export class EventRouter {
 
     app.get("/events/:id/players", [
       AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN, UserRole.USER]),
       EventController.getPlayers,
     ]);
 
@@ -51,6 +51,7 @@ export class EventRouter {
     app.delete("/events/:eventId", [
       AuthenticationMiddleware.checkJwtToken,
       PermissionMiddleware.checkAllowedPermissions([UserRole.COMPNAY, UserRole.USER]),
+      PermissionMiddleware.checkIfCreator,
       EventController.delete,
     ]);
 

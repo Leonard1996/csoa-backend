@@ -53,7 +53,7 @@ export class Location extends Common {
   get toResponse() {
     return {
       ...this.baseLocation,
-      complex: this.complex?.toResponseForApp,
+      complex: this.complex?.toResponse,
     };
   }
 }

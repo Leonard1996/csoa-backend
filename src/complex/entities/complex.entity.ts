@@ -97,6 +97,21 @@ export class Complex extends Common {
     };
   }
 
+  get toResponse() {
+    return {
+      id: this.id,
+      name: this.name,
+      phone: this.phone,
+      city: this.city,
+      address: this.address,
+      sports: this.sports,
+      longitude: this.longitude,
+      latitude: this.latitude,
+      workingHours: this.workingHours,
+      facilities: this.facilities,
+      avatar: this.avatar,
+    };
+  }
   get toResponseForApp() {
     return {
       id: this.id,
