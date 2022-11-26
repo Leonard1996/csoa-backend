@@ -64,8 +64,8 @@ export class Team extends Common {
   get toResponseObject() {
     return {
       name: this.name,
-      banner: this.banner,
-      avatar: this.avatar,
+      banner: this.banner ? this.banner.split("/").pop() : "",
+      avatar: this.avatar ? this.avatar.split("/").pop() : "",
       sport: this.sport,
       ageRange: this.ageRange,
       level: this.level,

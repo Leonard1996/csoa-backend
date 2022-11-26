@@ -159,7 +159,7 @@ export class TeamService {
     const createdTeamUser = teamUsersRepository.create(teamUserDto);
     await teamUsersRepository.save(createdTeamUser);
 
-    return savedTeam;
+    return savedTeam.toResponseObject;
   };
 
   static findOne = async (teamId: number) => {
@@ -172,10 +172,9 @@ export class TeamService {
 
   static getById = async (teamId: number) => {
     const teamRepository = getCustomRepository(TeamRepository);
+    const teamUsersRepository = getCustomRepository(TeamUsersRepository);
 
     const team = await teamRepository.findById(teamId);
-
-    const teamUsersRepository = getCustomRepository(TeamUsersRepository);
 
     if (team) {
       const players = await teamUsersRepository
@@ -209,6 +208,8 @@ export class TeamService {
       team["draws"] = drawsMapped[team.id] ?? 0;
       team["lastMatches"] = lastMatches;
       team["players"] = players;
+      team["banner"] = team.banner ? team.banner.split("/").pop() : "";
+      team["avatar"] = team.avatar ? team.avatar.split("/").pop() : "";
     }
 
     return team;
