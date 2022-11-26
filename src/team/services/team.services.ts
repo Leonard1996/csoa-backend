@@ -133,12 +133,8 @@ export class TeamService {
     });
     if (isExisting) throw "Team with this name already exists";
 
-    console.log(request);
-    console.log({ files: request.files });
-
     if (request.files) {
       for (const file of request.files as Array<Express.Multer.File>) {
-        console.log("🚀 ~ file: team.services.ts ~ line 138 ~ TeamService ~ insert= ~ file", file);
         if (file.originalname === teamPayload.avatarName) {
           teamPayload.avatar = file.path;
         }
