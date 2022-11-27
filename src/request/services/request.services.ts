@@ -22,7 +22,7 @@ export class RequestService {
     const possibleUsers = usersRepository
       .createQueryBuilder("user")
       .leftJoinAndSelect("user.receivedReviews", "review")
-      .where(`user.sports LIKE '%"${sport}":{"picked": true%'`)
+      .where(`user.sports LIKE '%"${sport}":{"picked":true%'`)
       .andWhere(`user.id NOT IN (select receiverId from requests where eventId = ${event.id} )`);
 
     let userQb = `(user.sports `;
