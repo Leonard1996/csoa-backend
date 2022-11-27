@@ -82,7 +82,7 @@ export class EventService {
       .leftJoinAndSelect("location.complex", "complex")
       .leftJoinAndSelect("event.organiserTeam", "senderTeam")
       .leftJoinAndSelect("event.receiverTeam", "receiverTeam")
-      .where("event.sport IN (:...mySports)", { mySports })
+      .where("event.sport IN (:...mySports)", { mySports: mySports.length ? mySports : [-1] })
       .andWhere("event.isPublic = :boolean", { boolean: true })
       .andWhere("event.status IN (:...statuses)", {
         statuses: [EventStatus.CONFIRMED, EventStatus.WAITING_FOR_CONFIRMATION],
