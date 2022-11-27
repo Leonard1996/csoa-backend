@@ -15,6 +15,7 @@ import { NotificationType } from "../../notifications/entities/notification.enti
 export class EventService {
   static listMyEvents = async (request: Request, response: Response) => {
     const eventsRepository = getCustomRepository(EventRepository);
+    const teamUsersRepository = getRepository(TeamUsers);
     let todayDate = Functions.formatCurrentDate(new Date());
     const userId = +response.locals.jwt.userId;
     const user = await UserService.findOne(userId);
@@ -24,8 +25,6 @@ export class EventService {
         mySports.push(sport);
       }
     }
-
-    const teamUsersRepository = getRepository(TeamUsers);
 
     const myTeams = await teamUsersRepository.find({
       where: {
@@ -76,7 +75,7 @@ export class EventService {
 
     const myEvents = await queryBuilder.getMany();
 
-    const publicEvents = await eventsRepository
+    const qb = eventsRepository
       .createQueryBuilder("event")
       .leftJoin("event.eventRequests", "request", "request.eventId = event.id")
       .leftJoinAndSelect("event.location", "location")
@@ -88,9 +87,12 @@ export class EventService {
       .andWhere("event.status IN (:...statuses)", {
         statuses: [EventStatus.CONFIRMED, EventStatus.WAITING_FOR_CONFIRMATION],
       })
-      .andWhere("request.status = :status", {
-        status: RequestStatus.CONFIRMED,
+      .andWhere("event.startDate > :todayStart", {
+        todayStart: todayDate + " 00:00:00",
       })
+      // .andWhere("request.status = :status", {
+      //   status: RequestStatus.CONFIRMED,
+      // })
       .andWhere(
         new Brackets((qb) => {
           qb.where("request.receiverId != :id", {
@@ -122,8 +124,15 @@ export class EventService {
           });
           qb.orWhere("request.receiverTeamId IS NULL");
         })
-      )
-      .getMany();
+      );
+
+    if (request.query && request.query.todayEvents === "true") {
+      qb.andWhere("event.startDate < :todayEnd", {
+        todayEnd: todayDate + " 23:59:59",
+      });
+    }
+
+    const publicEvents = await qb.getMany();
 
     const responseData = {
       myEvents: myEvents.map((event) => event.toResponse),
