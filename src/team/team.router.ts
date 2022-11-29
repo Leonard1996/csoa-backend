@@ -39,7 +39,7 @@ export class TeamRouter {
       TeamController.getById,
     ]);
 
-    app.patch("/teams/:teamId", [
+    app.post("/teams/:teamId", [
       AuthenticationMiddleware.checkJwtToken,
       PermissionMiddleware.checkAllowedPermissions([UserRole.USER, UserRole.ADMIN]),
       UploadMiddleware.validateFileUpload("file", ["jpg", "png", "jpeg"], 2),
