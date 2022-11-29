@@ -24,10 +24,8 @@ export class UploadMiddleware {
       );
 
       multerValidation(request, response, (err) => {
-        console.log("multer validation");
-
         if (err) {
-          console.log("multer err");
+          console.log("multer err", err);
 
           const errorResponse = new ErrorResponse(ERROR_MESSAGES.INVALID_FILE);
           errorResponse.errors = [
