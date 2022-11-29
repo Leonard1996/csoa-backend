@@ -217,6 +217,7 @@ export class TeamService {
 
   static update = async (teamPayload, currentTeam: Team, request: Request) => {
     const teamRepository = getRepository(Team);
+    console.log({ files: request.files });
 
     if (request.files) {
       for (const file of request.files as Array<Express.Multer.File>) {

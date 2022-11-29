@@ -1,10 +1,4 @@
-import {
-  Repository,
-  SelectQueryBuilder,
-  Brackets,
-  WhereExpression,
-  ObjectLiteral,
-} from "typeorm";
+import { Repository, SelectQueryBuilder, Brackets, WhereExpression, ObjectLiteral } from "typeorm";
 import { FilterInfo } from "../utilities/QueryBuilder/FilterInfo";
 import { ConditionGroup } from "../utilities/QueryBuilder/ConditionGroup";
 import { Condition } from "../utilities/QueryBuilder/Condition";
@@ -25,15 +19,7 @@ export abstract class CommonRepository<Entity> extends Repository<Entity> {
     orderBy: string = null,
     orderDirection: "DESC" | "ASC" = null
   ) {
-    const qb = this.getEntitySelect(
-      select,
-      joins,
-      filters,
-      offset,
-      limit,
-      orderBy,
-      orderDirection
-    );
+    const qb = this.getEntitySelect(select, joins, filters, offset, limit, orderBy, orderDirection);
     return qb.getRawMany();
   }
 
@@ -83,13 +69,11 @@ export abstract class CommonRepository<Entity> extends Repository<Entity> {
       where: {
         id,
       },
+      relations: ["attachments"],
     });
   }
 
-  public getSearchConditionGroup(
-    tableAlias: string,
-    searchString: string
-  ): ConditionGroup {
+  public getSearchConditionGroup(tableAlias: string, searchString: string): ConditionGroup {
     const conditions = [];
 
     for (const searchColumn of this.searchColumns) {
@@ -97,22 +81,14 @@ export abstract class CommonRepository<Entity> extends Repository<Entity> {
       const params = {};
       params[paramName] = `%${searchString}%`;
 
-      conditions.push(
-        new Condition(
-          `${tableAlias}.${searchColumn} LIKE :${paramName}`,
-          params
-        )
-      );
+      conditions.push(new Condition(`${tableAlias}.${searchColumn} LIKE :${paramName}`, params));
     }
 
     return new ConditionGroup(conditions, true);
   }
 
   // Form select columns match if order by is equal to a column or alias
-  public getSortObject(
-    selectColumns: string[],
-    queryStringProcessor: QueryStringProcessor
-  ): Sort | undefined {
+  public getSortObject(selectColumns: string[], queryStringProcessor: QueryStringProcessor): Sort | undefined {
     const orderBy = queryStringProcessor.getOrderBy();
 
     let sort: Sort;
@@ -168,10 +144,7 @@ export abstract class CommonRepository<Entity> extends Repository<Entity> {
     return result.length ? result[0] : null;
   }
 
-  private buildFilters(
-    qb: SelectQueryBuilder<Entity>,
-    filters: FilterInfo
-  ): void {
+  private buildFilters(qb: SelectQueryBuilder<Entity>, filters: FilterInfo): void {
     if (filters.conditionGroup) {
       this.buildConditionGroup(qb, filters.conditionGroup);
     }
@@ -185,10 +158,7 @@ export abstract class CommonRepository<Entity> extends Repository<Entity> {
     }
   }
 
-  private buildConditionGroup(
-    qb: WhereExpression,
-    conditionGroup: ConditionGroup
-  ): void {
+  private buildConditionGroup(qb: WhereExpression, conditionGroup: ConditionGroup): void {
     const type = conditionGroup.type;
 
     if (conditionGroup.conditions && conditionGroup.conditions.length) {
@@ -216,12 +186,7 @@ export abstract class CommonRepository<Entity> extends Repository<Entity> {
     }
   }
 
-  private buildFilter(
-    qb: WhereExpression,
-    condition: Condition,
-    index: number,
-    type: string
-  ): void {
+  private buildFilter(qb: WhereExpression, condition: Condition, index: number, type: string): void {
     if (index === 0) {
       qb.where(condition.string, condition.parameter);
     } else {
