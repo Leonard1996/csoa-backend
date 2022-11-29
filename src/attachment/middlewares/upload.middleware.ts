@@ -63,6 +63,8 @@ export class UploadMiddleware {
       storage: multerStorage,
 
       fileFilter: (request: Request, file: Express.Multer.File, cb) => {
+        console.log(file);
+
         const fileExtension = File.getFileExtension(file.originalname);
 
         if (allowedFileExtensions.indexOf(fileExtension) > -1) {
