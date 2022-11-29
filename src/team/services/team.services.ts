@@ -216,13 +216,15 @@ export class TeamService {
   };
 
   static update = async (teamPayload, currentTeam: Team, request: Request) => {
-    console.log("🚀 ~ file: team.services.ts ~ line 219 ~ TeamService ~ update= ~ teamPayload", teamPayload);
+    console.log("teamPayload", teamPayload);
     const teamRepository = getRepository(Team);
     console.log({ files: request.files });
 
     if (request.files) {
       for (const file of request.files as Array<Express.Multer.File>) {
         if (file.originalname === teamPayload.avatarName) {
+          console.log("here");
+
           teamPayload.avatar = file.path;
         }
         if (file.originalname === teamPayload.bannerName) {
@@ -230,8 +232,8 @@ export class TeamService {
         }
       }
     }
-    const updatedTeam = teamRepository.merge(currentTeam, teamPayload);
-    await teamRepository.save(updatedTeam);
+    const mergedTeam = teamRepository.merge(currentTeam, teamPayload);
+    const updatedTeam = await teamRepository.save(mergedTeam);
 
     return updatedTeam;
   };
