@@ -278,6 +278,8 @@ export class TeamService {
         .into(Attachment)
         .values(
           files.map((file) => {
+            console.log(file);
+
             return {
               name: file.filename,
               originalName: file.originalname,
