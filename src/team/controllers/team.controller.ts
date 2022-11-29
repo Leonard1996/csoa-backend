@@ -31,6 +31,8 @@ export class TeamController {
 
   static upload = async (request: Request, response: Response) => {
     try {
+      console.log({ requestController: request });
+
       const attachments = await TeamService.upload(request, response);
       response.status(HttpStatusCode.OK).send(new SuccessResponse({ attachments }));
     } catch (err) {
