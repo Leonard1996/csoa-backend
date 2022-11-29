@@ -24,7 +24,11 @@ export class UploadMiddleware {
       );
 
       multerValidation(request, response, (err) => {
+        console.log("multer validation");
+
         if (err) {
+          console.log("multer err");
+
           const errorResponse = new ErrorResponse(ERROR_MESSAGES.INVALID_FILE);
           errorResponse.errors = [
             {
@@ -34,6 +38,8 @@ export class UploadMiddleware {
           ];
           return response.status(400).send(errorResponse);
         }
+        console.log("next");
+
         next();
       });
     };
@@ -50,18 +56,12 @@ export class UploadMiddleware {
       destination,
       filename: (request: Express.Request, file: Express.Multer.File, cb) => {
         const extension = File.getFileExtension(file.originalname);
-        const filename =
-          crypto.randomBytes(20).toString("hex") +
-          "_" +
-          file.fieldname +
-          "." +
-          extension;
+        const filename = crypto.randomBytes(20).toString("hex") + "_" + file.fieldname + "." + extension;
         cb(null, filename);
       },
     };
 
-    const multerStorage: multer.StorageEngine =
-      multer.diskStorage(storageOptions);
+    const multerStorage: multer.StorageEngine = multer.diskStorage(storageOptions);
 
     const multerOptions: multer.Options = {
       storage: multerStorage,
@@ -72,8 +72,7 @@ export class UploadMiddleware {
         if (allowedFileExtensions.indexOf(fileExtension) > -1) {
           cb(null, true);
         } else {
-          const errorMsg =
-            "Only " + allowedFileExtensions.join(", ") + " files are allowed!";
+          const errorMsg = "Only " + allowedFileExtensions.join(", ") + " files are allowed!";
           const error = new Error(errorMsg);
           cb(error);
         }

@@ -36,6 +36,8 @@ export class TeamController {
       const attachments = await TeamService.upload(request, response);
       response.status(HttpStatusCode.OK).send(new SuccessResponse({ attachments }));
     } catch (err) {
+      console.log("upload att error");
+
       console.log(err);
       return response.status(400).send(new ErrorResponse(err));
     }
