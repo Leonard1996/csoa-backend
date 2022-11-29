@@ -222,6 +222,10 @@ export class TeamService {
 
     if (request.files) {
       for (const file of request.files as Array<Express.Multer.File>) {
+        console.log({ originalName: file.originalname });
+        console.log({ avatarName: teamPayload.avatarName });
+        console.log({ bannerName: teamPayload.bannerName });
+
         if (file.originalname === teamPayload.avatarName) {
           console.log("here");
 
