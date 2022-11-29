@@ -34,8 +34,6 @@ export class UploadMiddleware {
           ];
           return response.status(400).send(errorResponse);
         }
-        console.log("next");
-
         next();
       });
     };
@@ -66,10 +64,12 @@ export class UploadMiddleware {
         console.log(file);
 
         const fileExtension = File.getFileExtension(file.originalname);
+        console.log("🚀 ~ file: upload.middleware.ts ~ line 69 ~ UploadMiddleware ~ fileExtension", fileExtension);
 
         if (allowedFileExtensions.indexOf(fileExtension) > -1) {
           cb(null, true);
         } else {
+          console.log("here files extensions");
           const errorMsg = "Only " + allowedFileExtensions.join(", ") + " files are allowed!";
           const error = new Error(errorMsg);
           cb(error);
