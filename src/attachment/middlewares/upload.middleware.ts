@@ -61,15 +61,11 @@ export class UploadMiddleware {
       storage: multerStorage,
 
       fileFilter: (request: Request, file: Express.Multer.File, cb) => {
-        console.log(file);
-
         const fileExtension = File.getFileExtension(file.originalname);
-        console.log("🚀 ~ file: upload.middleware.ts ~ line 69 ~ UploadMiddleware ~ fileExtension", fileExtension);
 
         if (allowedFileExtensions.indexOf(fileExtension) > -1) {
           cb(null, true);
         } else {
-          console.log("here files extensions");
           const errorMsg = "Only " + allowedFileExtensions.join(", ") + " files are allowed!";
           const error = new Error(errorMsg);
           cb(error);
