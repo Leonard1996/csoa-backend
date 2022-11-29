@@ -269,7 +269,6 @@ export class TeamService {
   };
 
   static upload = async (request: Request, response: Response) => {
-    console.log({ request: request });
     console.log({ files: request.files });
     console.log({ body: request.body });
 
