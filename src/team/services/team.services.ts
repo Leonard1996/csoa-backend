@@ -230,7 +230,7 @@ export class TeamService {
         }
       }
     }
-    const updatedTeam = teamRepository.merge(currentTeam, JSON.parse(teamPayload.body));
+    const updatedTeam = teamRepository.merge(currentTeam, teamPayload);
     await teamRepository.save(updatedTeam);
 
     return updatedTeam;
