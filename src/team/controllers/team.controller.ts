@@ -53,7 +53,7 @@ export class TeamController {
     }
   };
 
-  static putById = async (request: Request, response: Response) => {
+  static patchById = async (request: Request, response: Response) => {
     try {
       const team = await TeamService.getById(+request.params.teamId);
 

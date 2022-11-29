@@ -216,19 +216,11 @@ export class TeamService {
   };
 
   static update = async (teamPayload, currentTeam: Team, request: Request) => {
-    console.log("teamPayload", teamPayload);
     const teamRepository = getRepository(Team);
-    console.log({ files: request.files });
 
     if (request.files) {
       for (const file of request.files as Array<Express.Multer.File>) {
-        console.log({ originalName: file.originalname });
-        console.log({ avatarName: teamPayload.avatarName });
-        console.log({ bannerName: teamPayload.bannerName });
-
         if (file.originalname === teamPayload.avatarName) {
-          console.log("here");
-
           teamPayload.avatar = file.path;
         }
         if (file.originalname === teamPayload.bannerName) {

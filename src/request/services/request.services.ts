@@ -90,7 +90,6 @@ export class RequestService {
 
   static inviteUser = async (event: Event, user: User, request: Request, response: Response) => {
     const requestRepository = getCustomRepository(RequestRepository);
-    console.log(response.locals.jwt);
 
     const senderId = +response.locals.jwt.userId;
     const payload = {
@@ -110,7 +109,6 @@ export class RequestService {
   static requestToEnter = async (event: Event, request: Request, response: Response) => {
     const requestRepository = getCustomRepository(RequestRepository);
     const receiverId = +response.locals.jwt.userId;
-    console.log(event);
 
     const payload = {
       senderId: event.creatorId,
