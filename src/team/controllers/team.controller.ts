@@ -58,7 +58,8 @@ export class TeamController {
       const team = await TeamService.getById(+request.params.teamId);
 
       if (Helper.isDefined(team)) {
-        const updatedTeam = await TeamService.update(request.body, team, request);
+        const teamPayload = JSON.parse(request.body.body);
+        const updatedTeam = await TeamService.update(teamPayload, team, request);
         response.status(HttpStatusCode.OK).send(new SuccessResponse(updatedTeam.toResponseObject));
       } else {
         return response.status(HttpStatusCode.NOT_FOUND).send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));

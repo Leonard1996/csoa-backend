@@ -216,6 +216,7 @@ export class TeamService {
   };
 
   static update = async (teamPayload, currentTeam: Team, request: Request) => {
+    console.log("🚀 ~ file: team.services.ts ~ line 219 ~ TeamService ~ update= ~ teamPayload", teamPayload);
     const teamRepository = getRepository(Team);
     console.log({ files: request.files });
 
