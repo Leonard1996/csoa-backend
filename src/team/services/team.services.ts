@@ -270,7 +270,7 @@ export class TeamService {
 
   static upload = async (request: Request, response: Response) => {
     if (request.body.file.length) {
-      const files = [...(request.body.files as any)];
+      const files = [...(request.body.file as any)];
       const attachmentRepository = getCustomRepository(AtachmentRepository);
       return attachmentRepository
         .createQueryBuilder("attachments")
