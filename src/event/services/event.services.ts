@@ -263,6 +263,7 @@ export class EventService {
         isWeekly,
         level,
         isUserReservation,
+        organiserTeamId,
       },
     } = request;
     if (new Date(startDate) < new Date()) {
@@ -305,6 +306,7 @@ export class EventService {
         event.playersNumber = playersNumber;
         event.isWeekly = isWeekly;
         event.level = level;
+        event.organiserTeamId = organiserTeamId ?? null;
         createdEvent = await queryRunner.manager.save(event);
       }
 
