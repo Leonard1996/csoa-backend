@@ -125,6 +125,23 @@ export class RequestService {
     return createdRequest;
   };
 
+  static teamRequestToEnter = async (event: Event, team: Team, request: Request, response: Response) => {
+    const requestRepository = getCustomRepository(RequestRepository);
+    const payload = {
+      senderTeamId: event.organiserTeamId,
+      receiverTeamId: team.id,
+      eventId: event.id,
+      sport: event.sport,
+      status: RequestStatus.WAITING_FOR_CONFIRMATION,
+      isRequest: true,
+    };
+
+    const createdRequest = requestRepository.create(payload);
+    await requestRepository.save(createdRequest);
+
+    return createdRequest;
+  };
+
   static findById = async (requestId: number) => {
     const requestRepository = getCustomRepository(RequestRepository);
     const request = await requestRepository
@@ -238,8 +255,6 @@ export class RequestService {
         playedBeforeTeamsMapped,
       });
     }
-
-    //TODO: Implement playedBeforeFilter
 
     const results = await possibleTeams.getMany();
 
