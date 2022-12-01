@@ -6,6 +6,7 @@ import { getRepository } from "typeorm";
 import { Complex } from "../../complex/entities/complex.entity";
 import { User } from "../../user/entities/user.entity";
 import { Event } from "../../event/entities/event.entity";
+import { Team } from "../../team/entities/team.entity";
 
 export class PermissionMiddleware {
   static checkAllowedPermissions = (roles: Array<string>) => {
@@ -66,7 +67,7 @@ export class PermissionMiddleware {
     }
   };
 
-  static checkIfCreatorOrCompany = async (req: Request, res: Response, next: NextFunction) => {
+  static checkIfEventCreatorOrCompany = async (req: Request, res: Response, next: NextFunction) => {
     const { userId, userRole } = res.locals.jwt;
     if (userRole === UserRole.ADMIN) {
       next();
@@ -103,6 +104,24 @@ export class PermissionMiddleware {
       } else {
         res.status(403).send(new ErrorResponse(ERROR_MESSAGES.NOT_AUTHORIZED));
       }
+    } else {
+      res.status(403).send(new ErrorResponse(ERROR_MESSAGES.NOT_AUTHORIZED));
+    }
+  };
+
+  static checkIfTeamCreator = async (req: Request, res: Response, next: NextFunction) => {
+    const { userId } = res.locals.jwt;
+    const teamId = req.params.teamId;
+    console.log({ teamId });
+    console.log({ userId });
+
+    const team = await getRepository(Team)
+      .createQueryBuilder("t")
+      .where("t.id = :id", { id: teamId })
+      .andWhere("t.userId = :creatorId", { creatorId: userId })
+      .getOne();
+    if (team) {
+      next();
     } else {
       res.status(403).send(new ErrorResponse(ERROR_MESSAGES.NOT_AUTHORIZED));
     }

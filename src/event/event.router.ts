@@ -51,7 +51,7 @@ export class EventRouter {
     app.delete("/events/:eventId", [
       AuthenticationMiddleware.checkJwtToken,
       PermissionMiddleware.checkAllowedPermissions([UserRole.COMPNAY, UserRole.USER]),
-      PermissionMiddleware.checkIfCreatorOrCompany,
+      PermissionMiddleware.checkIfEventCreatorOrCompany,
       EventController.delete,
     ]);
 
@@ -64,7 +64,7 @@ export class EventRouter {
     app.patch("/events/:eventId", [
       AuthenticationMiddleware.checkJwtToken,
       PermissionMiddleware.checkAllowedPermissions([UserRole.USER, UserRole.COMPNAY, UserRole.ADMIN]),
-      PermissionMiddleware.checkIfCreatorOrCompany,
+      PermissionMiddleware.checkIfEventCreatorOrCompany,
       EventController.patchById,
     ]);
   };

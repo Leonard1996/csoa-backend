@@ -24,12 +24,14 @@ export class TeamRouter {
       AuthenticationMiddleware.checkJwtToken,
       PermissionMiddleware.checkAllowedPermissions([UserRole.USER, UserRole.ADMIN]),
       UploadMiddleware.validateFileUpload("file", ["jpg", "png", "jpeg"], 8),
+      PermissionMiddleware.checkIfTeamCreator,
       TeamController.upload,
     ]);
 
     app.delete("/teams/:teamId/attachments/:attachmentId", [
       AuthenticationMiddleware.checkJwtToken,
       PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN, UserRole.USER]),
+      PermissionMiddleware.checkIfTeamCreator,
       TeamController.deleteAttachmentById,
     ]);
 
@@ -43,12 +45,14 @@ export class TeamRouter {
       AuthenticationMiddleware.checkJwtToken,
       PermissionMiddleware.checkAllowedPermissions([UserRole.USER, UserRole.ADMIN]),
       UploadMiddleware.validateFileUpload("file", ["jpg", "png", "jpeg"], 2),
+      PermissionMiddleware.checkIfTeamCreator,
       TeamController.patchById,
     ]);
 
     app.delete("/teams/:teamId", [
       AuthenticationMiddleware.checkJwtToken,
       PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN, UserRole.USER]),
+      PermissionMiddleware.checkIfTeamCreator,
       TeamController.deleteById,
     ]);
 
