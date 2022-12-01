@@ -210,6 +210,7 @@ export class RequestService {
   static listPossibleTeamsForEvent = async (event: Event, request: Request, response: Response) => {
     const teamsRepository = getCustomRepository(TeamRepository);
     const eventRepository = getCustomRepository(EventRepository);
+    const requestRepository = getCustomRepository(RequestRepository);
     const sport = event.sport;
     const sportsMapped = {
       football: "Futboll",
@@ -217,13 +218,23 @@ export class RequestService {
       tenis: "Tenis",
       voleyball: "Volejboll",
     };
+
+    const requests = await requestRepository
+      .createQueryBuilder("request")
+      .innerJoinAndSelect("request.receiverTeam", "receiverTeam")
+      .where("request.eventId = :eventId", { eventId: event.id })
+      .getMany();
+
+    const invitedTeamIds = requests.map((invitedTeam) => invitedTeam.receiverTeam.id).concat(-1);
+
     const possibleTeams = teamsRepository
       .createQueryBuilder("team")
       .where("team.sport = :sport", { sport: sportsMapped[sport] })
       .andWhere("team.isDummy = false")
       .andWhere("team.id != :organiserTeamId", {
         organiserTeamId: event.organiserTeamId,
-      });
+      })
+      .andWhere("team.id NOT IN (:...invitedTeams)", { invitedTeams: invitedTeamIds });
 
     if (request.body.level) {
       possibleTeams.andWhere("team.level = :level", {
