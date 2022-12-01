@@ -10,59 +10,33 @@ import { UserService } from "../../user/services/user.service";
 import { RequestService } from "../services/request.services";
 
 export class RequestController {
-  static listPossibleUsersForEvent = async (
-    request: Request,
-    response: Response
-  ) => {
+  static listPossibleUsersForEvent = async (request: Request, response: Response) => {
     try {
       const event = await EventService.findById(+request.params.eventId);
       if (Helper.isDefined(event)) {
-        const results = await RequestService.listPossibleUsersForEvent(
-          event,
-          request,
-          response
-        );
-        return response
-          .status(HttpStatusCode.OK)
-          .send(new SuccessResponse({ results }));
+        const results = await RequestService.listPossibleUsersForEvent(event, request, response);
+        return response.status(HttpStatusCode.OK).send(new SuccessResponse({ results }));
       } else {
-        response
-          .status(HttpStatusCode.NOT_FOUND)
-          .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+        response.status(HttpStatusCode.NOT_FOUND).send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
       }
     } catch (err) {
       console.log({ err });
-      return response
-        .status(404)
-        .send(new ErrorResponse("Could not get possible users for event"));
+      return response.status(404).send(new ErrorResponse("Could not get possible users for event"));
     }
   };
 
-  static listInvitationsForEvent = async (
-    request: Request,
-    response: Response
-  ) => {
+  static listInvitationsForEvent = async (request: Request, response: Response) => {
     try {
       const event = await EventService.findById(+request.params.eventId);
       if (Helper.isDefined(event)) {
-        const results = await RequestService.listInvitationsForEvent(
-          event,
-          request,
-          response
-        );
-        return response
-          .status(HttpStatusCode.OK)
-          .send(new SuccessResponse({ results }));
+        const results = await RequestService.listInvitationsForEvent(event, request, response);
+        return response.status(HttpStatusCode.OK).send(new SuccessResponse({ results }));
       } else {
-        response
-          .status(HttpStatusCode.NOT_FOUND)
-          .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+        response.status(HttpStatusCode.NOT_FOUND).send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
       }
     } catch (err) {
       console.log({ err });
-      return response
-        .status(404)
-        .send(new ErrorResponse("Could not get possible users for event"));
+      return response.status(404).send(new ErrorResponse("Could not get possible users for event"));
     }
   };
 
@@ -70,12 +44,7 @@ export class RequestController {
     try {
       const event = await EventService.findById(+request.params.eventId);
       const user = await UserService.findOne(+request.params.userId);
-      const result = await RequestService.inviteUser(
-        event,
-        user,
-        request,
-        response
-      );
+      const result = await RequestService.inviteUser(event, user, request, response);
       response.status(HttpStatusCode.OK).send(new SuccessResponse({ result }));
     } catch (err) {
       console.log(err);
@@ -86,11 +55,7 @@ export class RequestController {
   static requestToEnter = async (request: Request, response: Response) => {
     try {
       const event = await EventService.findById(+request.params.eventId);
-      const result = await RequestService.requestToEnter(
-        event,
-        request,
-        response
-      );
+      const result = await RequestService.requestToEnter(event, request, response);
       response.status(HttpStatusCode.OK).send(new SuccessResponse({ result }));
     } catch (err) {
       console.log(err);
@@ -100,22 +65,12 @@ export class RequestController {
 
   static updateRequest = async (request: Request, response: Response) => {
     try {
-      const originalRequest = await RequestService.findById(
-        +request.params.requestId
-      );
+      const originalRequest = await RequestService.findById(+request.params.requestId);
       if (Helper.isDefined(originalRequest)) {
-        const updatedRequest = await RequestService.updateRequest(
-          request.body,
-          originalRequest,
-          request
-        );
-        return response
-          .status(HttpStatusCode.OK)
-          .send(new SuccessResponse(updatedRequest));
+        const updatedRequest = await RequestService.updateRequest(request.body, originalRequest, request);
+        return response.status(HttpStatusCode.OK).send(new SuccessResponse(updatedRequest));
       } else {
-        return response
-          .status(HttpStatusCode.NOT_FOUND)
-          .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+        return response.status(HttpStatusCode.NOT_FOUND).send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
       }
     } catch (err) {
       console.log(err);
@@ -125,18 +80,12 @@ export class RequestController {
 
   static deleteById = async (request: Request, response: Response) => {
     try {
-      const invitation = await RequestService.findById(
-        +request.params.invitationId
-      );
+      const invitation = await RequestService.findById(+request.params.invitationId);
       if (Helper.isDefined(invitation)) {
         await RequestService.deleteById(invitation);
-        return response
-          .status(HttpStatusCode.OK)
-          .send(new SuccessResponse("Successfully deleted"));
+        return response.status(HttpStatusCode.OK).send(new SuccessResponse("Successfully deleted"));
       } else {
-        return response
-          .status(HttpStatusCode.NOT_FOUND)
-          .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+        return response.status(HttpStatusCode.NOT_FOUND).send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
       }
     } catch (err) {
       console.log(err);
@@ -144,59 +93,33 @@ export class RequestController {
     }
   };
 
-  static listPossibleTeamsForEvent = async (
-    request: Request,
-    response: Response
-  ) => {
+  static listPossibleTeamsForEvent = async (request: Request, response: Response) => {
     try {
       const event = await EventService.findById(+request.params.eventId);
       if (Helper.isDefined(event)) {
-        const results = await RequestService.listPossibleTeamsForEvent(
-          event,
-          request,
-          response
-        );
-        return response
-          .status(HttpStatusCode.OK)
-          .send(new SuccessResponse({ results }));
+        const results = await RequestService.listPossibleTeamsForEvent(event, request, response);
+        return response.status(HttpStatusCode.OK).send(new SuccessResponse({ results }));
       } else {
-        response
-          .status(HttpStatusCode.NOT_FOUND)
-          .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+        response.status(HttpStatusCode.NOT_FOUND).send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
       }
     } catch (err) {
       console.log({ err });
-      return response
-        .status(404)
-        .send(new ErrorResponse("Could not get possible users for event"));
+      return response.status(404).send(new ErrorResponse("Could not get possible users for event"));
     }
   };
 
-  static listTeamsInvitationsForEvent = async (
-    request: Request,
-    response: Response
-  ) => {
+  static listTeamsInvitationsForEvent = async (request: Request, response: Response) => {
     try {
       const event = await EventService.findById(+request.params.eventId);
       if (Helper.isDefined(event)) {
-        const results = await RequestService.listTeamsInvitationsForEvent(
-          event,
-          request,
-          response
-        );
-        return response
-          .status(HttpStatusCode.OK)
-          .send(new SuccessResponse({ results }));
+        const results = await RequestService.listTeamsInvitationsForEvent(event, request, response);
+        return response.status(HttpStatusCode.OK).send(new SuccessResponse({ results }));
       } else {
-        response
-          .status(HttpStatusCode.NOT_FOUND)
-          .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+        response.status(HttpStatusCode.NOT_FOUND).send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
       }
     } catch (err) {
       console.log({ err });
-      return response
-        .status(404)
-        .send(new ErrorResponse("Could not get possible users for event"));
+      return response.status(404).send(new ErrorResponse("Could not get possible users for event"));
     }
   };
 
@@ -204,12 +127,19 @@ export class RequestController {
     try {
       const event = await EventService.findById(+request.params.eventId);
       const team = await TeamService.findOne(+request.params.teamId);
-      const result = await RequestService.inviteTeam(
-        event,
-        team,
-        request,
-        response
-      );
+      const result = await RequestService.inviteTeam(event, team, request, response);
+      response.status(HttpStatusCode.OK).send(new SuccessResponse({ result }));
+    } catch (err) {
+      console.log(err);
+      return response.status(400).send(new ErrorResponse(err));
+    }
+  };
+
+  static teamRequestToEnter = async (request: Request, response: Response) => {
+    try {
+      const event = await EventService.findById(+request.params.eventId);
+      const team = await TeamService.findOne(+request.params.teamId);
+      const result = await RequestService.teamRequestToEnter(event, team, request, response);
       response.status(HttpStatusCode.OK).send(new SuccessResponse({ result }));
     } catch (err) {
       console.log(err);

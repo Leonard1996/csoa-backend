@@ -43,13 +43,17 @@ export class Location extends Common {
       dimensions: this.dimensions,
       price: this.price,
       slotRange: this.slotRange,
+      isFootball: this.isFootball,
+      isBasketball: this.isBasketball,
+      isTennis: this.isTennis,
+      isVolleyball: this.isVolleyball,
     };
   }
 
   get toResponse() {
     return {
       ...this.baseLocation,
-      complex: this.complex?.toResponseForApp,
+      complex: this.complex?.toResponse,
     };
   }
 }

@@ -9,11 +9,7 @@ import { permissions } from "../../user/utilities/UserRole";
 const Joi = require("@hapi/joi");
 
 export class AuthenticationMiddleware {
-  static hasLoginValidFields = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  static hasLoginValidFields = async (req: Request, res: Response, next: NextFunction) => {
     //Register input
     const loginInput = Joi.object().keys({
       username: Joi.string().required(),
@@ -25,47 +21,27 @@ export class AuthenticationMiddleware {
     if (result.error === null) {
       next();
     } else {
-      return res
-        .status(400)
-        .send(
-          new ErrorResponse(
-            ERROR_MESSAGES.VALIDATION_ERROR,
-            result.error.details
-          )
-        );
+      return res.status(400).send(new ErrorResponse(ERROR_MESSAGES.VALIDATION_ERROR, result.error.details));
     }
   };
 
-  static checkJwtToken = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  static checkJwtToken = async (req: Request, res: Response, next: NextFunction) => {
     const token = req.header("Authorization");
     if (token) {
       try {
         const jwtPayload = jwt.verify(token, process.env.JWT_SECRET_KEY);
         res.locals.jwt = jwtPayload;
-
         next();
       } catch (error) {
         console.log({ error });
-        return res
-          .status(401)
-          .send(new ErrorResponse(ERROR_MESSAGES.ACCESS_TOKEN_INVALID));
+        return res.status(401).send(new ErrorResponse(ERROR_MESSAGES.ACCESS_TOKEN_INVALID));
       }
     } else {
-      return res
-        .status(401)
-        .send(new ErrorResponse(ERROR_MESSAGES.NOT_AUTHENTICATED));
+      return res.status(401).send(new ErrorResponse(ERROR_MESSAGES.NOT_AUTHENTICATED));
     }
   };
 
-  static validateRefreshTokenInput = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  static validateRefreshTokenInput = async (req: Request, res: Response, next: NextFunction) => {
     const refreshTokenInput = Joi.object().keys({
       refresh_token: Joi.string().required(),
     });
@@ -75,22 +51,11 @@ export class AuthenticationMiddleware {
     if (result.error === null) {
       next();
     } else {
-      return res
-        .status(400)
-        .send(
-          new ErrorResponse(
-            ERROR_MESSAGES.VALIDATION_ERROR,
-            result.error.details
-          )
-        );
+      return res.status(400).send(new ErrorResponse(ERROR_MESSAGES.VALIDATION_ERROR, result.error.details));
     }
   };
 
-  static verifyUserByEmail = async (
-    request: Request,
-    response: Response,
-    next: NextFunction
-  ) => {
+  static verifyUserByEmail = async (request: Request, response: Response, next: NextFunction) => {
     const { username } = request.body;
 
     const userRepository = getRepository(User);
@@ -103,19 +68,13 @@ export class AuthenticationMiddleware {
     });
 
     if (!user) {
-      return response
-        .status(HttpStatusCode.FORBIDDEN)
-        .send(HttpStatusCode.FORBIDDEN);
+      return response.status(HttpStatusCode.FORBIDDEN).send(HttpStatusCode.FORBIDDEN);
     }
 
     next();
   };
 
-  static verifyUserByToken = async (
-    request: Request,
-    response: Response,
-    next: NextFunction
-  ) => {
+  static verifyUserByToken = async (request: Request, response: Response, next: NextFunction) => {
     const userRepository = getRepository(User);
 
     const user = await userRepository.findOne({
@@ -126,19 +85,13 @@ export class AuthenticationMiddleware {
     });
 
     if (!user) {
-      return response
-        .status(HttpStatusCode.FORBIDDEN)
-        .send(HttpStatusCode.FORBIDDEN);
+      return response.status(HttpStatusCode.FORBIDDEN).send(HttpStatusCode.FORBIDDEN);
     }
 
     next();
   };
 
-  static checkJwtTokenOptional = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  static checkJwtTokenOptional = async (req: Request, res: Response, next: NextFunction) => {
     const token = req.header("Authorization");
 
     try {
@@ -150,11 +103,7 @@ export class AuthenticationMiddleware {
     }
   };
 
-  static checkIfFieldsAllowed = (
-    request: Request,
-    response: Response,
-    next: NextFunction
-  ) => {
+  static checkIfFieldsAllowed = (request: Request, response: Response, next: NextFunction) => {
     for (const key in request.body) {
       if (
         response.locals.jwt &&
@@ -168,9 +117,7 @@ export class AuthenticationMiddleware {
         if (!permissions.filter.noAuth.includes(key)) delete request.body[key];
       } else {
         if (!permissions.filter[response.locals.jwt.userRole].includes(key)) {
-          return response
-            .status(HttpStatusCode.FORBIDDEN)
-            .send(HttpStatusCode.FORBIDDEN);
+          return response.status(HttpStatusCode.FORBIDDEN).send(HttpStatusCode.FORBIDDEN);
         }
       }
     }

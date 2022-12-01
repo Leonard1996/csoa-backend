@@ -11,14 +11,10 @@ export class TeamController {
   static listMyTeams = async (request: Request, response: Response) => {
     try {
       const results = await TeamService.listMyTeams(request, response);
-      return response
-        .status(HttpStatusCode.OK)
-        .send(new SuccessResponse({ results }));
+      return response.status(HttpStatusCode.OK).send(new SuccessResponse({ results }));
     } catch (err) {
       console.log({ err });
-      return response
-        .status(404)
-        .send(new ErrorResponse("Could not get my teams list"));
+      return response.status(404).send(new ErrorResponse("Could not get my teams list"));
     }
   };
 
@@ -36,9 +32,7 @@ export class TeamController {
   static upload = async (request: Request, response: Response) => {
     try {
       const attachments = await TeamService.upload(request, response);
-      response
-        .status(HttpStatusCode.OK)
-        .send(new SuccessResponse({ attachments }));
+      response.status(HttpStatusCode.OK).send(new SuccessResponse({ attachments }));
     } catch (err) {
       console.log(err);
       return response.status(400).send(new ErrorResponse(err));
@@ -51,35 +45,24 @@ export class TeamController {
       if (Helper.isDefined(result)) {
         response.status(HttpStatusCode.OK).send(new SuccessResponse(result));
       } else {
-        response
-          .status(HttpStatusCode.NOT_FOUND)
-          .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+        response.status(HttpStatusCode.NOT_FOUND).send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
       }
     } catch (err) {
       console.log(err);
-      response
-        .status(HttpStatusCode.NOT_FOUND)
-        .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+      response.status(HttpStatusCode.NOT_FOUND).send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
     }
   };
 
-  static putById = async (request: Request, response: Response) => {
+  static patchById = async (request: Request, response: Response) => {
     try {
-      const team = await TeamService.getById(+request.params.userId);
+      const team = await TeamService.getById(+request.params.teamId);
 
       if (Helper.isDefined(team)) {
-        const updatedTeam = await TeamService.update(
-          request.body,
-          team,
-          request
-        );
-        response
-          .status(HttpStatusCode.OK)
-          .send(new SuccessResponse(updatedTeam.toResponseObject));
+        const teamPayload = JSON.parse(request.body.body);
+        const updatedTeam = await TeamService.update(teamPayload, team, request);
+        response.status(HttpStatusCode.OK).send(new SuccessResponse(updatedTeam.toResponseObject));
       } else {
-        return response
-          .status(HttpStatusCode.NOT_FOUND)
-          .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+        return response.status(HttpStatusCode.NOT_FOUND).send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
       }
       response.status(HttpStatusCode.OK).send();
     } catch (err) {
@@ -93,13 +76,9 @@ export class TeamController {
       const team = await TeamService.getById(+request.params.teamId);
       if (Helper.isDefined(team)) {
         await TeamService.deleteById(team);
-        return response
-          .status(HttpStatusCode.OK)
-          .send(new SuccessResponse("Successfully deleted"));
+        return response.status(HttpStatusCode.OK).send(new SuccessResponse("Successfully deleted"));
       } else {
-        return response
-          .status(HttpStatusCode.NOT_FOUND)
-          .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+        return response.status(HttpStatusCode.NOT_FOUND).send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
       }
     } catch (err) {
       console.log(err);
@@ -107,23 +86,14 @@ export class TeamController {
     }
   };
 
-  static deleteAttachmentById = async (
-    request: Request,
-    response: Response
-  ) => {
+  static deleteAttachmentById = async (request: Request, response: Response) => {
     try {
-      const attachment = await AttachmentService.getById(
-        +request.params.attachmentId
-      );
+      const attachment = await AttachmentService.getById(+request.params.attachmentId);
       if (Helper.isDefined(attachment)) {
         await AttachmentService.deleteById(attachment);
-        return response
-          .status(HttpStatusCode.OK)
-          .send(new SuccessResponse("Successfully deleted"));
+        return response.status(HttpStatusCode.OK).send(new SuccessResponse("Successfully deleted"));
       } else {
-        return response
-          .status(HttpStatusCode.NOT_FOUND)
-          .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+        return response.status(HttpStatusCode.NOT_FOUND).send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
       }
     } catch (err) {
       console.log(err);
@@ -136,13 +106,9 @@ export class TeamController {
       const team = await TeamService.getById(+request.params.teamId);
       if (Helper.isDefined(team)) {
         await TeamService.exit(team, response);
-        return response
-          .status(HttpStatusCode.OK)
-          .send(new SuccessResponse("Successfully exited the group"));
+        return response.status(HttpStatusCode.OK).send(new SuccessResponse("Successfully exited the group"));
       } else {
-        return response
-          .status(HttpStatusCode.NOT_FOUND)
-          .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+        return response.status(HttpStatusCode.NOT_FOUND).send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
       }
     } catch (err) {
       console.log(err);

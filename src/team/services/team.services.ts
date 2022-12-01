@@ -104,14 +104,14 @@ export class TeamService {
     }
 
     const myTeamsData = myTeams.map((team) => ({
-      ...team.team,
+      ...team.team.toResponseObject,
       wins: +(myTeamsWinsMapped[team.team.id]?.wins ?? 0),
       loses: +(myTeamsLosesMapped[team.team.id]?.loses ?? 0),
       draws: myTeamsDrawsMapped[team.team.id] ?? 0,
     }));
 
     const similiarTeamsData = similiarTeams.map((similiarTeam) => ({
-      ...similiarTeam,
+      ...similiarTeam.toResponseObject,
       wins: +(similiarTeamsWinsMapped[similiarTeam.id]?.wins ?? 0),
       loses: +(similiarTeamsLosesMapped[similiarTeam.id]?.loses ?? 0),
       draws: similiarTeamsDrawsMapped[similiarTeam.id] ?? 0,
@@ -159,7 +159,7 @@ export class TeamService {
     const createdTeamUser = teamUsersRepository.create(teamUserDto);
     await teamUsersRepository.save(createdTeamUser);
 
-    return savedTeam;
+    return savedTeam.toResponseObject;
   };
 
   static findOne = async (teamId: number) => {
@@ -172,10 +172,9 @@ export class TeamService {
 
   static getById = async (teamId: number) => {
     const teamRepository = getCustomRepository(TeamRepository);
+    const teamUsersRepository = getCustomRepository(TeamUsersRepository);
 
     const team = await teamRepository.findById(teamId);
-
-    const teamUsersRepository = getCustomRepository(TeamUsersRepository);
 
     if (team) {
       const players = await teamUsersRepository
@@ -209,12 +208,14 @@ export class TeamService {
       team["draws"] = drawsMapped[team.id] ?? 0;
       team["lastMatches"] = lastMatches;
       team["players"] = players;
+      team["banner"] = team.banner ? team.banner.split("/").pop() : "";
+      team["avatar"] = team.avatar ? team.avatar.split("/").pop() : "";
     }
 
     return team;
   };
 
-  static update = async (teamPayload: UpdateTeamDto, currentTeam: Team, request: Request) => {
+  static update = async (teamPayload, currentTeam: Team, request: Request) => {
     const teamRepository = getRepository(Team);
 
     if (request.files) {
@@ -227,9 +228,8 @@ export class TeamService {
         }
       }
     }
-
-    const updatedTeam = teamRepository.merge(currentTeam, teamPayload);
-    await teamRepository.save(updatedTeam);
+    const mergedTeam = teamRepository.merge(currentTeam, teamPayload);
+    const updatedTeam = await teamRepository.save(mergedTeam);
 
     return updatedTeam;
   };
@@ -270,7 +270,7 @@ export class TeamService {
 
   static upload = async (request: Request, response: Response) => {
     if (request.files.length) {
-      const files = [...(request.files as any)];
+      const files = [...(request.files as Array<Express.Multer.File>)];
       const attachmentRepository = getCustomRepository(AtachmentRepository);
       return attachmentRepository
         .createQueryBuilder("attachments")

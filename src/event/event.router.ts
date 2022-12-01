@@ -32,7 +32,7 @@ export class EventRouter {
 
     app.get("/events/:id/players", [
       AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN]),
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN, UserRole.USER]),
       EventController.getPlayers,
     ]);
 
@@ -50,19 +50,10 @@ export class EventRouter {
 
     app.delete("/events/:eventId", [
       AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([UserRole.COMPNAY]),
+      PermissionMiddleware.checkAllowedPermissions([UserRole.COMPNAY, UserRole.USER]),
+      PermissionMiddleware.checkIfEventCreatorOrCompany,
       EventController.delete,
     ]);
-
-    // app.post("/teams", [
-    //   AuthenticationMiddleware.checkJwtToken,
-    //   PermissionMiddleware.checkAllowedPermissions([
-    //     UserRole.USER,
-    //     UserRole.ADMIN,
-    //   ]),
-    //   UploadMiddleware.validateFileUpload("file", ["jpg", "png", "jpeg"], 2),
-    //   EventController.insert,
-    // ]);
 
     app.get("/events/:eventId", [
       AuthenticationMiddleware.checkJwtToken,
@@ -70,10 +61,11 @@ export class EventRouter {
       EventController.getById,
     ]);
 
-    app.put("/events/:eventId", [
+    app.patch("/events/:eventId", [
       AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([UserRole.USER, UserRole.ADMIN]),
-      EventController.putById,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.USER, UserRole.COMPNAY, UserRole.ADMIN]),
+      PermissionMiddleware.checkIfEventCreatorOrCompany,
+      EventController.patchById,
     ]);
   };
 }

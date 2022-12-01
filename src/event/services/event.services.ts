@@ -1,10 +1,5 @@
 import { Request, Response } from "express";
-import {
-  Brackets,
-  getCustomRepository,
-  getManager,
-  getRepository,
-} from "typeorm";
+import { Brackets, getCustomRepository, getManager, getRepository } from "typeorm";
 import { Functions } from "../../common/utilities/Functions";
 import { RequestStatus } from "../../request/entities/request.entity";
 import { UserService } from "../../user/services/user.service";
@@ -20,6 +15,7 @@ import { NotificationType } from "../../notifications/entities/notification.enti
 export class EventService {
   static listMyEvents = async (request: Request, response: Response) => {
     const eventsRepository = getCustomRepository(EventRepository);
+    const teamUsersRepository = getRepository(TeamUsers);
     let todayDate = Functions.formatCurrentDate(new Date());
     const userId = +response.locals.jwt.userId;
     const user = await UserService.findOne(userId);
@@ -29,8 +25,6 @@ export class EventService {
         mySports.push(sport);
       }
     }
-
-    const teamUsersRepository = getRepository(TeamUsers);
 
     const myTeams = await teamUsersRepository.find({
       where: {
@@ -43,7 +37,7 @@ export class EventService {
 
     const queryBuilder = eventsRepository
       .createQueryBuilder("event")
-      .leftJoin("event.eventRequests", "request", "request.eventId = event.id")
+      .leftJoin("event.eventRequests", "request", "request.eventId = event.id AND request.status = 'confirmed'")
       .leftJoinAndSelect("event.location", "location")
       .leftJoinAndSelect("location.complex", "complex")
       .leftJoinAndSelect("event.organiserTeam", "senderTeam")
@@ -71,64 +65,70 @@ export class EventService {
       );
 
     if (request.query && request.query.todayEvents === "true") {
-      queryBuilder.andWhere("event.startDate > :todayStart", {
-        todayStart: todayDate + " 00:00:00",
-      });
       queryBuilder.andWhere("event.startDate < :todayEnd", {
         todayEnd: todayDate + " 23:59:59",
       });
     }
 
     const myEvents = await queryBuilder.getMany();
+    const myEventIds = myEvents.map((event) => event.id).concat(-1);
 
-    const publicEvents = await eventsRepository
+    const qb = eventsRepository
       .createQueryBuilder("event")
-      .leftJoin("event.eventRequests", "request", "request.eventId = event.id")
+      .leftJoin("event.eventRequests", "request")
       .leftJoinAndSelect("event.location", "location")
       .leftJoinAndSelect("location.complex", "complex")
       .leftJoinAndSelect("event.organiserTeam", "senderTeam")
       .leftJoinAndSelect("event.receiverTeam", "receiverTeam")
-      .where("event.sport IN (:...mySports)", { mySports })
-      .andWhere("event.isPublic = :boolean", { boolean: true })
+      .where("event.sport IN (:...mySports)", { mySports: mySports.length ? mySports : [-1] })
+      .andWhere("event.isPublic = :public", { public: true })
       .andWhere("event.status IN (:...statuses)", {
         statuses: [EventStatus.CONFIRMED, EventStatus.WAITING_FOR_CONFIRMATION],
       })
-      .andWhere("request.status = :status", {
-        status: RequestStatus.CONFIRMED,
+      .andWhere("event.startDate > :todayStart", {
+        todayStart: todayDate + " 00:00:00",
       })
       .andWhere(
         new Brackets((qb) => {
-          qb.where("request.receiverId != :id", {
-            id: userId,
+          qb.where("request.receiverId != :receiverId", {
+            receiverId: userId,
           });
           qb.orWhere("request.receiverId IS NULL");
         })
       )
       .andWhere(
         new Brackets((qb) => {
-          qb.where("request.senderId != :id", {
-            id: userId,
+          qb.where("request.senderId != :senderId", {
+            senderId: userId,
           });
           qb.orWhere("request.senderId IS NULL");
         })
       )
       .andWhere(
         new Brackets((qb) => {
-          qb.where("request.senderTeamId NOT IN (:...myTeamsIds)", {
-            myTeamsIds,
+          qb.where("request.senderTeamId NOT IN (:...senderTeamIds)", {
+            senderTeamIds: myTeamsIds,
           });
           qb.orWhere("request.senderTeamId IS NULL");
         })
       )
       .andWhere(
         new Brackets((qb) => {
-          qb.where("request.receiverTeamId NOT IN (:...myTeamsIds)", {
-            myTeamsIds,
+          qb.where("request.receiverTeamId NOT IN (:...receiverTeamIds)", {
+            receiverTeamIds: myTeamsIds,
           });
           qb.orWhere("request.receiverTeamId IS NULL");
         })
       )
-      .getMany();
+      .andWhere("event.id NOT IN (:...myEventIds)", { myEventIds });
+
+    if (request.query && request.query.todayEvents === "true") {
+      qb.andWhere("event.startDate < :todayEnd", {
+        todayEnd: todayDate + " 23:59:59",
+      });
+    }
+
+    const publicEvents = await qb.getMany();
 
     const responseData = {
       myEvents: myEvents.map((event) => event.toResponse),
@@ -174,11 +174,7 @@ export class EventService {
     const teamPlayers = await requestRepository
       .createQueryBuilder("r")
       .select("u.name, u.profile_picture, t.name as team, r.status")
-      .innerJoin(
-        "teams",
-        "t",
-        "t.id = r.senderTeamId OR t.id = r.receiverTeamId"
-      )
+      .innerJoin("teams", "t", "t.id = r.senderTeamId OR t.id = r.receiverTeamId")
       .innerJoin("teams_users", "tu", "tu.teamId = t.id")
       .innerJoin("users", "u", "u.id = tu.playerId")
       .where("r.eventId = :id", { id: request.params.id })
@@ -212,12 +208,8 @@ export class EventService {
         .where(`e.locationId = '${locationId}'`)
         .andWhere(
           new Brackets((qb) => {
-            qb.where(
-              `(e.startDate < '${endDate}' AND e.endDate > '${startDate}')`
-            );
-            qb.orWhere(
-              `(e.startDate = '${startDate}' AND e.endDate = '${endDate}')`
-            );
+            qb.where(`(e.startDate < '${endDate}' AND e.endDate > '${startDate}')`);
+            qb.orWhere(`(e.startDate = '${startDate}' AND e.endDate = '${endDate}')`);
           })
         )
         .andWhere("e.ts_deleted IS NULL")
@@ -267,6 +259,7 @@ export class EventService {
         isWeekly,
         level,
         isUserReservation,
+        organiserTeamId,
       },
     } = request;
     if (new Date(startDate) < new Date()) {
@@ -283,12 +276,8 @@ export class EventService {
         .where(`e.locationId = '${locationId}'`)
         .andWhere(
           new Brackets((qb) => {
-            qb.where(
-              `(e.startDate < '${endDate}' AND e.endDate > '${startDate}')`
-            );
-            qb.orWhere(
-              `(e.startDate = '${startDate}' AND e.endDate = '${endDate}')`
-            );
+            qb.where(`(e.startDate < '${endDate}' AND e.endDate > '${startDate}')`);
+            qb.orWhere(`(e.startDate = '${startDate}' AND e.endDate = '${endDate}')`);
           })
         )
         .andWhere("e.ts_deleted IS NULL")
@@ -313,6 +302,7 @@ export class EventService {
         event.playersNumber = playersNumber;
         event.isWeekly = isWeekly;
         event.level = level;
+        event.organiserTeamId = organiserTeamId ?? null;
         createdEvent = await queryRunner.manager.save(event);
       }
 
@@ -377,23 +367,14 @@ export class EventService {
   static findById = async (eventId: number) => {
     const eventRepository = getCustomRepository(EventRepository);
 
-    const event = await eventRepository
-      .createQueryBuilder("event")
-      .where("event.id = :id", { id: eventId })
-      .getOne();
+    const event = await eventRepository.createQueryBuilder("event").where("event.id = :id", { id: eventId }).getOne();
 
     return event;
   };
 
-  static update = async (
-    eventPayload,
-    currentEvent: Event,
-    request: Request
-  ) => {
+  static patch = async (eventPayload, currentEvent: Event, request: Request) => {
     const eventRepository = getCustomRepository(EventRepository);
-    const eventTeamsUsersRepository = getCustomRepository(
-      EventTeamUsersRepository
-    );
+    const eventTeamsUsersRepository = getCustomRepository(EventTeamUsersRepository);
 
     let eventForConfirmation = false;
     let eventToBeCompleted = false;
@@ -406,10 +387,7 @@ export class EventService {
     const mergedEvent = eventRepository.merge(currentEvent, eventPayload);
     const updatedEvent = await eventRepository.save(mergedEvent);
 
-    if (
-      eventForConfirmation === true &&
-      updatedEvent.status === EventStatus.CONFIRMED
-    ) {
+    if (eventForConfirmation === true && updatedEvent.status === EventStatus.CONFIRMED) {
       const eventPlayers = await eventTeamsUsersRepository
         .createQueryBuilder("etu")
         .leftJoinAndSelect("etu.teamUser", "tu", "tu.id = etu.teamUserId")
@@ -417,9 +395,7 @@ export class EventService {
         .where("etu.eventId = :eventId", { eventId: updatedEvent.id })
         .getMany();
 
-      const mappedPlayersIds = eventPlayers.map(
-        (eventPlayers) => eventPlayers.teamUser.player.id
-      );
+      const mappedPlayersIds = eventPlayers.map((eventPlayers) => eventPlayers.teamUser.player.id);
       let notifications = [];
       for (const player of mappedPlayersIds) {
         const notificationBody = {
@@ -432,10 +408,7 @@ export class EventService {
       await NotificationService.storeNotification(notifications);
     }
 
-    if (
-      eventToBeCompleted === true &&
-      updatedEvent.status === EventStatus.COMPLETED
-    ) {
+    if (eventToBeCompleted === true && updatedEvent.status === EventStatus.COMPLETED) {
       const eventPlayers = await eventTeamsUsersRepository
         .createQueryBuilder("etu")
         .leftJoinAndSelect("etu.teamUser", "tu", "tu.id = etu.teamUserId")
@@ -451,14 +424,10 @@ export class EventService {
         };
       });
       const organiserTeamPlayersIds = mappedPlayersIds
-        .filter(
-          (teamPlayers) => teamPlayers.teamId === updatedEvent.organiserTeamId
-        )
+        .filter((teamPlayers) => teamPlayers.teamId === updatedEvent.organiserTeamId)
         .map((player) => player.id);
       const receiverTeamPlayersIds = mappedPlayersIds
-        .filter(
-          (teamPlayers) => teamPlayers.teamId === updatedEvent.receiverTeamId
-        )
+        .filter((teamPlayers) => teamPlayers.teamId === updatedEvent.receiverTeamId)
         .map((player) => player.id);
       let notifications = [];
       for (const player of mappedPlayersIds) {
@@ -475,9 +444,7 @@ export class EventService {
             eventId: updatedEvent.id,
             eventName: updatedEvent.name,
             oppositePlayersIds:
-              player.teamId === updatedEvent.organiserTeamId
-                ? receiverTeamPlayersIds
-                : organiserTeamPlayersIds,
+              player.teamId === updatedEvent.organiserTeamId ? receiverTeamPlayersIds : organiserTeamPlayersIds,
           },
         };
         notifications.push(resultNotificationBody);

@@ -37,7 +37,7 @@ export class Team extends Common {
   @Column("int", { nullable: true })
   userId: number;
 
-  @OneToMany(() => TeamUsers, (teamUsers) => teamUsers.player)
+  @OneToMany(() => TeamUsers, (teamUsers) => teamUsers.team)
   players: TeamUsers[];
 
   @OneToMany(() => Event, (event) => event.organiserTeam)
@@ -63,9 +63,10 @@ export class Team extends Common {
 
   get toResponseObject() {
     return {
+      id: this.id,
       name: this.name,
-      banner: this.banner,
-      avatar: this.avatar,
+      banner: this.banner ? this.banner.split("/").pop() : "",
+      avatar: this.avatar ? this.avatar.split("/").pop() : "",
       sport: this.sport,
       ageRange: this.ageRange,
       level: this.level,

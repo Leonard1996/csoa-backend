@@ -51,6 +51,7 @@ export class ComplexService {
         "address",
         "avatar",
       ],
+      relations: ["locations"],
     });
     const response = data.map((complex) => complex.toResponseForApp);
     return response;
