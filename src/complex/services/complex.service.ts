@@ -185,6 +185,9 @@ export class ComplexService {
       })
       .andWhere("e.endDate <= :endDate", { endDate: request.body.to })
       .andWhere("l.id = :locationId", { locationId: request.params.locationId })
+      .andWhere("e.status != :status", {
+        status: EventStatus.DRAFT,
+      })
       .orderBy("e.id", "DESC")
       .getRawMany();
   }

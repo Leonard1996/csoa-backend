@@ -11,6 +11,8 @@ export enum EventStatus {
   WAITING_FOR_CONFIRMATION = "waiting_for_confirmation",
   CONFIRMED = "confirmed",
   COMPLETED = "completed",
+  CANCELED = "canceled",
+  REFUSED = "refused",
 }
 
 export enum EventLevel {
@@ -60,6 +62,7 @@ export class Event extends Common {
   @Column("varchar", { nullable: true, name: "playersAge" })
   public playersAge: string;
 
+  @Index()
   @Column("varchar", { nullable: true, name: "status" })
   public status: string;
 

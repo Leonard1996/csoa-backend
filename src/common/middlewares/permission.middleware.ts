@@ -37,7 +37,11 @@ export class PermissionMiddleware {
     };
   };
 
-  static checkNotMe = async (req: Request, res: Response, next: NextFunction) => {
+  static checkNotMe = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
     const { userId } = res.locals.jwt;
 
     if (req.params && req.params.userId && req.params.userId === userId) {
@@ -47,7 +51,11 @@ export class PermissionMiddleware {
     next();
   };
 
-  static checkIfOwner = async (req: Request, res: Response, next: NextFunction) => {
+  static checkIfOwner = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
     const { userId, userRole } = res.locals.jwt;
     if (userRole === UserRole.ADMIN) {
       next();
@@ -67,18 +75,21 @@ export class PermissionMiddleware {
     }
   };
 
-  static checkIfEventCreatorOrCompany = async (req: Request, res: Response, next: NextFunction) => {
+  static checkIfEventCreatorOrCompany = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
     const { userId, userRole } = res.locals.jwt;
     if (userRole === UserRole.ADMIN) {
       next();
     } else if (userRole === UserRole.USER) {
-      const user = await getRepository(User)
-        .createQueryBuilder("u")
-        .leftJoin("events", "e", "e.creatorId = u.id")
+      const event = await getRepository(Event)
+        .createQueryBuilder("e")
         .where("e.id = :eventId", { eventId: req.params.eventId })
-        .andWhere("u.id = :id", { id: userId })
-        .getRawOne();
-      if (user) {
+        .andWhere("e.creatorId = :id", { id: userId })
+        .getOne();
+      if (event) {
         next();
       } else {
         res.status(403).send(new ErrorResponse(ERROR_MESSAGES.NOT_AUTHORIZED));
@@ -97,7 +108,9 @@ export class PermissionMiddleware {
         .leftJoin("users", "u", "u.complexId = c.id")
         .where("l.id = :locationId", { locationId: event.locationId })
         .andWhere("u.id = :id", { id: userId })
-        .andWhere("u.complexId = :complexId", { complexId: event.location.complexId })
+        .andWhere("u.complexId = :complexId", {
+          complexId: event.location.complexId,
+        })
         .getRawOne();
       if (complex) {
         next();
@@ -109,7 +122,11 @@ export class PermissionMiddleware {
     }
   };
 
-  static checkIfTeamCreator = async (req: Request, res: Response, next: NextFunction) => {
+  static checkIfTeamCreator = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
     const { userId } = res.locals.jwt;
     const teamId = req.params.teamId;
     console.log({ teamId });
