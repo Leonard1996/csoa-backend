@@ -1,7 +1,11 @@
 import { Request, Response } from "express";
 import { join } from "path";
 const fs = require("fs");
-import { getCustomRepository, getRepository } from "typeorm";
+import {
+  ConnectionIsNotSetError,
+  getCustomRepository,
+  getRepository,
+} from "typeorm";
 import { Attachment } from "../../attachment/entities/attachment.entity";
 import { File } from "../../common/utilities/File";
 import { EventStatus } from "../../event/entities/event.entity";
@@ -25,6 +29,7 @@ export class ComplexService {
         "longitude",
         "latitude",
         "workingHours",
+        "address",
       ])
       .withDeleted()
       .getRawMany();
@@ -126,7 +131,7 @@ export class ComplexService {
 
   static getFilteredEvents(request) {
     const { body } = request;
-    let userReserved = `true`;
+    let userReserved = `(e.isUserReservation = 1 OR e.isUserReservation = 0)`;
 
     if (body.type["Nga aplikacion"] && !body.type["Nga paneli"]) {
       userReserved = `e.isUserReservation = 1`;
@@ -325,6 +330,7 @@ export class ComplexService {
     complex.latitude = fields.latitude ? +fields.latitude : null;
     complex.banner = fields?.fileBanner?.base64;
     complex.avatar = fields?.fileAvatar?.base64;
+    complex.address = fields.address;
     let from: any = new Date(fields.from);
     let hours = from.getHours();
     let minutes = from.getMinutes();
