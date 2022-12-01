@@ -211,9 +211,15 @@ export class RequestService {
     const teamsRepository = getCustomRepository(TeamRepository);
     const eventRepository = getCustomRepository(EventRepository);
     const sport = event.sport;
+    const sportsMapped = {
+      football: "Futboll",
+      basketball: "Basketboll",
+      tenis: "Tenis",
+      voleyball: "Volejboll",
+    };
     const possibleTeams = teamsRepository
       .createQueryBuilder("team")
-      .where("team.sport = :sport", { sport })
+      .where("team.sport = :sport", { sport: sportsMapped[sport] })
       .andWhere("team.isDummy = false")
       .andWhere("team.id != :organiserTeamId", {
         organiserTeamId: event.organiserTeamId,

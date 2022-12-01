@@ -37,7 +37,7 @@ export class EventService {
 
     const queryBuilder = eventsRepository
       .createQueryBuilder("event")
-      .leftJoin("event.eventRequests", "request", "request.eventId = event.id")
+      .leftJoin("event.eventRequests", "request", "request.eventId = event.id AND request.status = 'confirmed'")
       .leftJoinAndSelect("event.location", "location")
       .leftJoinAndSelect("location.complex", "complex")
       .leftJoinAndSelect("event.organiserTeam", "senderTeam")
@@ -65,66 +65,62 @@ export class EventService {
       );
 
     if (request.query && request.query.todayEvents === "true") {
-      queryBuilder.andWhere("event.startDate > :todayStart", {
-        todayStart: todayDate + " 00:00:00",
-      });
       queryBuilder.andWhere("event.startDate < :todayEnd", {
         todayEnd: todayDate + " 23:59:59",
       });
     }
 
     const myEvents = await queryBuilder.getMany();
+    const myEventIds = myEvents.map((event) => event.id).concat(-1);
 
     const qb = eventsRepository
       .createQueryBuilder("event")
-      .leftJoin("event.eventRequests", "request", "request.eventId = event.id")
+      .leftJoin("event.eventRequests", "request")
       .leftJoinAndSelect("event.location", "location")
       .leftJoinAndSelect("location.complex", "complex")
       .leftJoinAndSelect("event.organiserTeam", "senderTeam")
       .leftJoinAndSelect("event.receiverTeam", "receiverTeam")
       .where("event.sport IN (:...mySports)", { mySports: mySports.length ? mySports : [-1] })
-      .andWhere("event.isPublic = :boolean", { boolean: true })
+      .andWhere("event.isPublic = :public", { public: true })
       .andWhere("event.status IN (:...statuses)", {
         statuses: [EventStatus.CONFIRMED, EventStatus.WAITING_FOR_CONFIRMATION],
       })
       .andWhere("event.startDate > :todayStart", {
         todayStart: todayDate + " 00:00:00",
       })
-      // .andWhere("request.status = :status", {
-      //   status: RequestStatus.CONFIRMED,
-      // })
       .andWhere(
         new Brackets((qb) => {
-          qb.where("request.receiverId != :id", {
-            id: userId,
+          qb.where("request.receiverId != :receiverId", {
+            receiverId: userId,
           });
           qb.orWhere("request.receiverId IS NULL");
         })
       )
       .andWhere(
         new Brackets((qb) => {
-          qb.where("request.senderId != :id", {
-            id: userId,
+          qb.where("request.senderId != :senderId", {
+            senderId: userId,
           });
           qb.orWhere("request.senderId IS NULL");
         })
       )
       .andWhere(
         new Brackets((qb) => {
-          qb.where("request.senderTeamId NOT IN (:...myTeamsIds)", {
-            myTeamsIds,
+          qb.where("request.senderTeamId NOT IN (:...senderTeamIds)", {
+            senderTeamIds: myTeamsIds,
           });
           qb.orWhere("request.senderTeamId IS NULL");
         })
       )
       .andWhere(
         new Brackets((qb) => {
-          qb.where("request.receiverTeamId NOT IN (:...myTeamsIds)", {
-            myTeamsIds,
+          qb.where("request.receiverTeamId NOT IN (:...receiverTeamIds)", {
+            receiverTeamIds: myTeamsIds,
           });
           qb.orWhere("request.receiverTeamId IS NULL");
         })
-      );
+      )
+      .andWhere("event.id NOT IN (:...myEventIds)", { myEventIds });
 
     if (request.query && request.query.todayEvents === "true") {
       qb.andWhere("event.startDate < :todayEnd", {
