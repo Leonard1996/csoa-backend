@@ -364,7 +364,7 @@ export class RequestService {
     return requests.map((request) => ({
       ...request,
       receiverTeam: {
-        ...request.receiverTeam,
+        ...request.receiverTeam.toResponseObject,
         wins: +(invitedTeamsWinsMapped[request.receiverTeam.id]?.wins ?? 0),
         loses: +(invitedTeamsLosesMapped[request.receiverTeam.id]?.wins ?? 0),
         draws: invitedTeamsDrawsMapped[request.receiverTeam.id] ?? 0,
