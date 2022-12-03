@@ -5,6 +5,7 @@ import { User } from "../../user/entities/user.entity";
 import { EventTeamUsers } from "./event.team.users.entity";
 import { Location } from "../../complex/entities/location.entity";
 import { Request } from "../../request/entities/request.entity";
+import { WeeklyEventGroup } from "./weekly.event.group.entity";
 
 export enum EventStatus {
   DRAFT = "draft",
@@ -78,6 +79,11 @@ export class Event extends Common {
 
   @Column("json", { nullable: true, name: "lineups" })
   public lineups: string;
+
+  @ManyToOne(() => WeeklyEventGroup, (weeklyGroup) => weeklyGroup.events)
+  public weeklyGrouped: WeeklyEventGroup;
+  @Column("int", { nullable: true })
+  weeklyGroupedId: number;
 
   @ManyToOne(() => Location, (location) => location.events)
   public location: Location;

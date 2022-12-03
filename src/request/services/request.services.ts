@@ -323,6 +323,8 @@ export class RequestService {
     const requests = await requestRepository
       .createQueryBuilder("request")
       .innerJoinAndSelect("request.receiverTeam", "receiverTeam")
+      .innerJoinAndSelect("receiverTeam.players", "players")
+      .innerJoinAndSelect("players.player", "p")
       .where("request.eventId = :eventId", { eventId: event.id })
       .getMany();
 
@@ -361,15 +363,17 @@ export class RequestService {
       }
     }
 
-    return requests.map((request) => ({
-      ...request,
-      receiverTeam: {
-        ...request.receiverTeam.toResponseObject,
-        wins: +(invitedTeamsWinsMapped[request.receiverTeam.id]?.wins ?? 0),
-        loses: +(invitedTeamsLosesMapped[request.receiverTeam.id]?.wins ?? 0),
-        draws: invitedTeamsDrawsMapped[request.receiverTeam.id] ?? 0,
-      },
-    }));
+    return requests.map((request) => {
+      return {
+        ...request,
+        receiverTeam: {
+          ...request.receiverTeam.toResponseWithPlayers,
+          wins: +(invitedTeamsWinsMapped[request.receiverTeam.id]?.wins ?? 0),
+          loses: +(invitedTeamsLosesMapped[request.receiverTeam.id]?.wins ?? 0),
+          draws: invitedTeamsDrawsMapped[request.receiverTeam.id] ?? 0,
+        },
+      };
+    });
   };
 
   static inviteTeam = async (event: Event, team: Team, request: Request, response: Response) => {

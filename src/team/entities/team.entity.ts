@@ -70,6 +70,14 @@ export class Team extends Common {
       sport: this.sport,
       ageRange: this.ageRange,
       level: this.level,
+      creatorId: this.userId,
+    };
+  }
+
+  get toResponseWithPlayers() {
+    return {
+      ...this.toResponseObject,
+      players: this.players.map((player) => player.player.toResponseObject()),
     };
   }
 }
