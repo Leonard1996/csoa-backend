@@ -10,6 +10,9 @@ export class CreateTeamUserDto {
   sport: string;
 
   @IsOptional()
+  status: string;
+
+  @IsOptional()
   isConfirmed: boolean;
 
   @IsOptional()

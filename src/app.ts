@@ -19,6 +19,7 @@ import { RequestRouter } from "./request/request.router";
 import { ReviewRouter } from "./review/review.router";
 import { NotificationRouter } from "./notifications/notification.router";
 import { ComplexRouter } from "./complex/complex.router";
+import { TeamUsersRouter } from "./team/team.users.router";
 
 createConnection()
   .then(async (connection) => {
@@ -30,31 +31,24 @@ createConnection()
     app.use(express.static(join(__dirname, "..", "public")));
     //app.use(expressFormidable());
 
-    // Doc routes
     DocRouter.configRoutes(app);
 
-    // Authentication routes
     AuthenticationRouter.configRoutes(app);
 
-    // User routes
     UserRouter.configRoutes(app);
 
-    // Team routes
     TeamRouter.configRoutes(app);
 
-    // Event routes
+    TeamUsersRouter.configRoutes(app);
+
     EventRouter.configRoutes(app);
 
-    // Request routes
     RequestRouter.configRoutes(app);
 
-    // Review routes
     ReviewRouter.configRoutes(app);
 
-    // Notification routes
     NotificationRouter.configRoutes(app);
 
-    // Attachment routes
     AttachmentRouter.configRoutes(app);
 
     DashboardRouter.configRoutes(app);
@@ -74,18 +68,9 @@ createConnection()
     const port = process.env.PORT || 4500;
 
     if (process.env.SSL_LOCATION) {
-      const privateKey = fs.readFileSync(
-        process.env.SSL_LOCATION + "/privkey.pem",
-        "utf8"
-      );
-      const certificate = fs.readFileSync(
-        process.env.SSL_LOCATION + "/cert.pem",
-        "utf8"
-      );
-      const ca = fs.readFileSync(
-        process.env.SSL_LOCATION + "/chain.pem",
-        "utf8"
-      );
+      const privateKey = fs.readFileSync(process.env.SSL_LOCATION + "/privkey.pem", "utf8");
+      const certificate = fs.readFileSync(process.env.SSL_LOCATION + "/cert.pem", "utf8");
+      const ca = fs.readFileSync(process.env.SSL_LOCATION + "/chain.pem", "utf8");
       const credentials = {
         key: privateKey,
         cert: certificate,
