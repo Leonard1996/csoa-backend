@@ -20,7 +20,7 @@ export class TeamUsersService {
     const possibleUsers = usersRepository
       .createQueryBuilder("user")
       .leftJoinAndSelect("user.receivedReviews", "review")
-      .where(`user.sports LIKE '%"${sportsMapped[sport]}": {"picked": true%'`)
+      .where(`user.sports LIKE '%"${sportsMapped[sport]}":{"picked":true%'`)
       .andWhere(`user.id NOT IN (select playerId from teams_users where teamId = ${team.id} )`);
 
     let userQb = `(user.sports `;
