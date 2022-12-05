@@ -10,10 +10,17 @@ export class TeamUsersService {
   static listPossiblePlayers = async (team: Team, request: Request, response: Response) => {
     const usersRepository = getCustomRepository(UserRepository);
     const sport = team.sport;
+    const sportsMapped = {
+      Futboll: "football",
+      Basketboll: "basketball",
+      Tenis: "tenis",
+      Volejboll: "voleyball",
+    };
+
     const possibleUsers = usersRepository
       .createQueryBuilder("user")
       .leftJoinAndSelect("user.receivedReviews", "review")
-      .where(`user.sports LIKE '%"${sport}": {"picked": true%'`)
+      .where(`user.sports LIKE '%"${sportsMapped[sport]}": {"picked": true%'`)
       .andWhere(`user.id NOT IN (select playerId from teams_users where teamId = ${team.id} )`);
 
     let userQb = `(user.sports `;
