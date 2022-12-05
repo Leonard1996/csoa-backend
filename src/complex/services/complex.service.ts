@@ -70,7 +70,7 @@ export class ComplexService {
     complex["facilities"] = {
       "Fushë e mbyllur": payload["Fushë e mbyllur"],
       Dushe: payload["Dushe"],
-      "Kend Lojrash": payload["Kend Lojrash"],
+      "Kënd Lojrash": payload["Kënd Lojrash"],
       Bar: payload["Bar"],
       Parkim: payload["Parkim"],
     };
