@@ -190,6 +190,14 @@ export class EventService {
       .getRawMany();
   };
 
+  static addDays(date) {
+    const newDate = new Date(date);
+    newDate.setDate(newDate.getDate() + 7);
+    newDate.setHours(newDate.getHours());
+    newDate.setMinutes(newDate.getMinutes());
+    return new Date(newDate.setSeconds(0));
+  }
+
   static async createAdminEvent(request: Request, response: Response) {
     const {
       body: { startDate, endDate, notes, name, locationId, sport, isWeekly },
@@ -202,6 +210,18 @@ export class EventService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
+      if (isWeekly) {
+        let upgradedStartDate;
+        let upgradedEndDate;
+        for (let i = 0; i <= 12; i++) {
+          const incrementedStartDate = this.addDays(startDate);
+          const incrementedEndDate = this.addDays(endDate);
+          upgradedStartDate = incrementedStartDate;
+          upgradedEndDate = incrementedEndDate;
+          console.log({ upgradedStartDate });
+          console.log({ upgradedEndDate });
+        }
+      }
       const overlappingEvent = await queryRunner.manager
         .createQueryBuilder()
         .from("events", "e")
