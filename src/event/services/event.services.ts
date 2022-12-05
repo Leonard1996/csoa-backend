@@ -358,10 +358,14 @@ export class EventService {
       .leftJoinAndSelect("location.complex", "complex")
       .leftJoinAndSelect("event.organiserTeam", "organiserTeam")
       .leftJoinAndSelect("event.receiverTeam", "receiverTeam")
+      .leftJoinAndSelect("organiserTeam.players", "organiserPlayers", `organiserPlayers.status = 'confirmed'`)
+      .leftJoinAndSelect("receiverTeam.players", "receiverPlayers", `receiverPlayers.status = 'confirmed'`)
+      .leftJoinAndSelect("organiserPlayers.player", "op")
+      .leftJoinAndSelect("receiverPlayers.player", "rp")
       .where("event.id = :id", { id: eventId })
       .getOne();
 
-    return event.toResponse;
+    return event.toResponseWithPlayers;
   };
 
   static findById = async (eventId: number) => {

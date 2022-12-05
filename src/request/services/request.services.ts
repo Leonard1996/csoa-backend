@@ -223,6 +223,9 @@ export class RequestService {
       .createQueryBuilder("request")
       .innerJoinAndSelect("request.receiverTeam", "receiverTeam")
       .where("request.eventId = :eventId", { eventId: event.id })
+      .andWhere("request.status IN (:statuses)", {
+        statuses: [RequestStatus.CONFIRMED, RequestStatus.WAITING_FOR_CONFIRMATION],
+      })
       .getMany();
 
     const invitedTeamIds = requests.map((invitedTeam) => invitedTeam.receiverTeam.id).concat(-1);

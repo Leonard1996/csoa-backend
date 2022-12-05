@@ -21,7 +21,7 @@ export class TeamUsersService {
       .createQueryBuilder("user")
       .leftJoinAndSelect("user.receivedReviews", "review")
       .where(`user.sports LIKE '%"${sportsMapped[sport]}":{"picked":true%'`)
-      .andWhere(`user.id NOT IN (select playerId from teams_users where teamId = ${team.id} )`);
+      .andWhere(`user.id NOT IN (select playerId from teams_users where teamId = ${team.id} and ts_deleted IS NULL )`);
 
     let userQb = `(user.sports `;
 
@@ -97,7 +97,9 @@ export class TeamUsersService {
       .createQueryBuilder("tu")
       .innerJoinAndSelect("tu.player", "p")
       .where("tu.teamId = :teamId", { teamId: team.id })
-      .andWhere("tu.status = :status", { status: TeamUserStatus.WAITING_FOR_CONFIRMATION })
+      .andWhere("tu.status IN (:...statuses)", {
+        statuses: [TeamUserStatus.WAITING_FOR_CONFIRMATION, TeamUserStatus.CONFIRMED],
+      })
       .getMany();
 
     return invitations.map((invitation) => invitation.toResponse);
