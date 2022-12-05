@@ -4,6 +4,12 @@ import { EventTeamUsers } from "../../event/entities/event.team.users.entity";
 import { User } from "../../user/entities/user.entity";
 import { Team } from "./team.entity";
 
+export enum TeamUserStatus {
+  CONFIRMED = "confirmed",
+  WAITING_FOR_CONFIRMATION = "waiting_for_confirmation",
+  REFUSED = "refused",
+}
+
 @Entity("teams_users")
 export class TeamUsers extends Common {
   @Column("varchar", {
@@ -11,6 +17,12 @@ export class TeamUsers extends Common {
     name: "sport",
   })
   public sport: string;
+
+  @Column("varchar", {
+    nullable: true,
+    name: "status",
+  })
+  public status: string;
 
   @Column("tinyint", {
     nullable: true,
@@ -34,4 +46,14 @@ export class TeamUsers extends Common {
 
   @OneToMany(() => EventTeamUsers, (eventTeamUser) => eventTeamUser.teamUser)
   eventsTeamUser: EventTeamUsers[];
+
+  get toResponse() {
+    return {
+      id: this.id,
+      sport: this.sport,
+      status: this.status,
+      isConfirmed: this.isConfirmed,
+      player: this.player.toResponseObject(),
+    };
+  }
 }

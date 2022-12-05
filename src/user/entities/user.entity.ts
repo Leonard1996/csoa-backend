@@ -98,6 +98,7 @@ export class User extends Common {
 
   toResponseObject() {
     return {
+      id: this.id,
       name: this.name,
       sex: this.sex,
       sports: this.sports,

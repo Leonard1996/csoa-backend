@@ -36,7 +36,7 @@ export class RequestController {
       }
     } catch (err) {
       console.log({ err });
-      return response.status(404).send(new ErrorResponse("Could not get possible users for event"));
+      return response.status(404).send(new ErrorResponse("Could not get invitations for event"));
     }
   };
 

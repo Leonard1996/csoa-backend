@@ -6,7 +6,7 @@ import { CreateTeamUserDto } from "../dto/create-team-user.dto";
 import { CreateTeamDto } from "../dto/create-team.dto";
 import { UpdateTeamDto } from "../dto/update-team.dto";
 import { Team } from "../entities/team.entity";
-import { TeamUsers } from "../entities/team.users.entity";
+import { TeamUsers, TeamUserStatus } from "../entities/team.users.entity";
 import { TeamRepository } from "../repositories/team.repository";
 import { TeamUsersRepository } from "../repositories/team.users.repository";
 import { StatisticsService } from "./statistics.services";
@@ -18,6 +18,7 @@ export class TeamService {
     const myTeams = await teamUsersRepository.find({
       where: {
         playerId: response.locals.jwt.userId,
+        status: TeamUserStatus.CONFIRMED,
       },
       relations: ["team"],
     });
@@ -155,6 +156,7 @@ export class TeamService {
     teamUserDto.isConfirmed = true;
     teamUserDto.playerId = response.locals.jwt.userId;
     teamUserDto.teamId = savedTeam.id;
+    teamUserDto.status = TeamUserStatus.CONFIRMED;
 
     const createdTeamUser = teamUsersRepository.create(teamUserDto);
     await teamUsersRepository.save(createdTeamUser);
