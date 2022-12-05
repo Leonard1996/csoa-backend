@@ -224,6 +224,9 @@ export class EventService {
           .createQueryBuilder()
           .from("events", "e")
           .where(`e.locationId = '${locationId}'`)
+          .andWhere("e.status NOT IN (:...statuses)", {
+            statuses: [EventStatus.DRAFT, EventStatus.CANCELED, EventStatus.REFUSED],
+          })
           .andWhere(
             new Brackets((qb) => {
               qb.where(
