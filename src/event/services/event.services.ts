@@ -210,16 +210,44 @@ export class EventService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      if (isWeekly) {
-        let upgradedStartDate;
-        let upgradedEndDate;
-        for (let i = 0; i <= 12; i++) {
-          const incrementedStartDate = this.addDays(startDate);
-          const incrementedEndDate = this.addDays(endDate);
+      let isWeekly1 = true;
+      if (isWeekly1) {
+        let upgradedStartDate = startDate;
+        let upgradedEndDate = endDate;
+        for (let i = 0; i <= 2; i++) {
+          const incrementedStartDate = this.addDays(upgradedStartDate);
+          const incrementedEndDate = this.addDays(upgradedEndDate);
           upgradedStartDate = incrementedStartDate;
           upgradedEndDate = incrementedEndDate;
-          console.log({ upgradedStartDate });
-          console.log({ upgradedEndDate });
+          const overlappingEvent = await queryRunner.manager
+            .createQueryBuilder()
+            .from("events", "e")
+            .where(`e.locationId = '${locationId}'`)
+            .andWhere(
+              new Brackets((qb) => {
+                qb.where(`(e.startDate < '${incrementedEndDate}' AND e.endDate > '${incrementedStartDate}')`);
+                qb.orWhere(`(e.startDate = '${incrementedStartDate}' AND e.endDate = '${incrementedEndDate}')`);
+              })
+            )
+            .andWhere("e.ts_deleted IS NULL")
+            .setLock("pessimistic_read")
+            .getRawOne();
+
+          let createdEvent: any = false;
+          if (!overlappingEvent) {
+            const event = new Event();
+            event.startDate = startDate;
+            event.endDate = endDate;
+            event.isUserReservation = false;
+            event.creatorId = response.locals.jwt.userId;
+            event.notes = notes;
+            event.name = name;
+            event.locationId = locationId;
+            event.sport = sport;
+            event.status = EventStatus.WAITING_FOR_CONFIRMATION;
+            event.isWeekly = isWeekly ? true : false;
+            createdEvent = await queryRunner.manager.save(event);
+          }
         }
       }
       const overlappingEvent = await queryRunner.manager
