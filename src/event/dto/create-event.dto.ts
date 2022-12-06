@@ -29,6 +29,9 @@ export class CreateEventDto {
   weeklyGroupedId: number;
 
   @IsOptional()
+  organiserTeamId: number;
+
+  @IsOptional()
   isTeam: boolean;
 
   @IsOptional()
