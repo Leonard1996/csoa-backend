@@ -49,6 +49,9 @@ export class User extends Common {
   @Column("varchar", { nullable: false, name: "address" })
   public address: string;
 
+  @Column("varchar", { nullable: true, name: "pushToken" })
+  public pushToken: string;
+
   @Column("timestamp", { nullable: false, name: "birthday" })
   public birthday: Date;
 
