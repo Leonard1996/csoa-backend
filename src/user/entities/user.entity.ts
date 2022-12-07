@@ -110,6 +110,7 @@ export class User extends Common {
       phoneNumber: this.phoneNumber,
       profilePicture: this.profilePicture,
       email: this.email,
+      pushToken: this.pushToken,
     };
   }
 }

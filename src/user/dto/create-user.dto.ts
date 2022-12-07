@@ -24,4 +24,7 @@ export class CreateUserDto {
 
   @IsOptional()
   sports: string;
+
+  @IsOptional()
+  pushToken: string;
 }
