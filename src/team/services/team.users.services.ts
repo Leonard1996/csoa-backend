@@ -103,8 +103,8 @@ export class TeamUsersService {
     };
     const pushNotificationBody = {
       to: user.pushToken,
-      title: `You have been invited to team: ${team.name}`,
-      body: "Enter the app and see the request",
+      title: `Ju jeni ftuar tek ekipi: ${team.name}`,
+      body: "Futuni ne aplikacion dhe shikoni ftesen",
       data: { teamId: team.id },
     };
 
