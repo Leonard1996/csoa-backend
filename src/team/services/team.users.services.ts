@@ -105,6 +105,7 @@ export class TeamUsersService {
       to: user.pushToken,
       title: `You have been invited to team: ${team.name}`,
       body: "Enter the app and see the request",
+      data: { teamId: team.id },
     };
 
     notifications.push(notificationBody);
