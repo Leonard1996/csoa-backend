@@ -53,10 +53,6 @@ export class NotificationService {
 
     for (const body of payload) {
       const response = await Axios.post(PUSH_TOKEN_BASE_API, body, { headers });
-      console.log(
-        "🚀 ~ file: notification.services.ts:56 ~ NotificationService ~ pushNotification= ~ response",
-        response
-      );
     }
   };
 }
