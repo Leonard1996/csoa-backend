@@ -391,15 +391,12 @@ export class EventService {
     }
 
     const dummyTeams = await teamRepository.createQueryBuilder("team").insert().values(payload).execute();
-    const a = performance.now();
+
     for (let j = 0; j < events.length; j++) {
       events[j].organiserTeamId = dummyTeams.generatedMaps[j * 2].id;
       events[j].receiverTeamId = dummyTeams.generatedMaps[j * 2 + 1].id;
     }
-    const b = performance.now();
-    console.log(b - a);
-
-    await eventRepository.save(events);
+    eventRepository.save(events);
   };
 
   static createRequest = async (events: Event[]) => {
