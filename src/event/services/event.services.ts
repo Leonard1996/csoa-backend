@@ -378,21 +378,22 @@ export class EventService {
     }
   };
 
-  static createDummyTeams = async (event: Event) => {
+  static createDummyTeams = async (events: Event[]) => {
     const teamRepository = getCustomRepository(TeamRepository);
     const eventRepository = getCustomRepository(EventRepository);
-    const dummyTeams = await teamRepository
-      .createQueryBuilder("team")
-      .insert()
-      .values([
-        { name: "Ekipi blu", sport: event.sport, isDummy: true },
-        { name: "Ekipi kuq", sport: event.sport, isDummy: true },
-      ])
-      .execute();
+    const payload = [];
+    for (const event of events) {
+      const blueTeam = { name: "Ekipi blu", sport: event.sport, isDummy: true };
+      const redTeam = { name: "Ekipi kuq", sport: event.sport, isDummy: true };
+      payload.push(blueTeam);
+      payload.push(redTeam);
+    }
+    const dummyTeams = await teamRepository.createQueryBuilder("team").insert().values(payload).execute();
 
-    event.organiserTeamId = dummyTeams.generatedMaps[0].id;
-    event.receiverTeamId = dummyTeams.generatedMaps[1].id;
-    await eventRepository.save(event);
+    console.log({ a: dummyTeams.generatedMaps });
+    // event.organiserTeamId = dummyTeams.generatedMaps[0].id;
+    // event.receiverTeamId = dummyTeams.generatedMaps[1].id;
+    // await eventRepository.save(event);
   };
 
   static createRequest = async (events: Event[]) => {

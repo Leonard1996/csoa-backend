@@ -66,7 +66,7 @@ export class EventController {
     try {
       const event = await EventService.insert(request, response);
       if (event) {
-        if (!event?.isTeam) {
+        if (!event[0].isTeam) {
           await EventService.createDummyTeams(event);
         }
         await EventService.createRequest(event);
