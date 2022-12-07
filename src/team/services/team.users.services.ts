@@ -5,6 +5,8 @@ import { getCustomRepository, getRepository } from "typeorm";
 import { UserRepository } from "../../user/repositories/user.repository";
 import { TeamUsers, TeamUserStatus } from "../entities/team.users.entity";
 import { TeamUsersRepository } from "../repositories/team.users.repository";
+import { NotificationType } from "../../notifications/entities/notification.entity";
+import { NotificationService } from "../../notifications/services/notification.services";
 
 export class TeamUsersService {
   static listPossiblePlayers = async (team: Team, request: Request, response: Response) => {
@@ -87,6 +89,28 @@ export class TeamUsersService {
 
     const createdInvitation = teamUsersRepository.create(payload);
     await teamUsersRepository.save(createdInvitation);
+
+    let notifications = [];
+    let pushNotifications = [];
+    const notificationBody = {
+      receiverId: user.id,
+      type: NotificationType.INVITATION_TO_TEAM,
+      payload: {
+        teamName: team.name,
+        teamId: team.id,
+        exponentPushToken: user.pushToken,
+      },
+    };
+    const pushNotificationBody = {
+      to: user.pushToken,
+      title: `You have been invited to team: ${team.name}`,
+      body: "Enter the app and see the request",
+    };
+
+    notifications.push(notificationBody);
+    pushNotifications.push(pushNotificationBody);
+    NotificationService.storeNotification(notifications);
+    NotificationService.pushNotification(pushNotifications);
 
     return createdInvitation;
   };
