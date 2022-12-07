@@ -13,6 +13,7 @@ import { NotificationService } from "../../notifications/services/notification.s
 import { NotificationType } from "../../notifications/entities/notification.entity";
 import { CreateEventDto } from "../dto/create-event.dto";
 import { WeeklyEventGroup } from "../entities/weekly.event.group.entity";
+import { performance } from "perf_hooks";
 
 export class EventService {
   static listMyEvents = async (request: Request, response: Response) => {
@@ -388,12 +389,17 @@ export class EventService {
       payload.push(blueTeam);
       payload.push(redTeam);
     }
-    const dummyTeams = await teamRepository.createQueryBuilder("team").insert().values(payload).execute();
 
-    console.log({ a: dummyTeams.generatedMaps });
-    // event.organiserTeamId = dummyTeams.generatedMaps[0].id;
-    // event.receiverTeamId = dummyTeams.generatedMaps[1].id;
-    // await eventRepository.save(event);
+    const dummyTeams = await teamRepository.createQueryBuilder("team").insert().values(payload).execute();
+    const a = performance.now();
+    for (let j = 0; j < events.length; j++) {
+      events[j].organiserTeamId = dummyTeams.generatedMaps[j * 2].id;
+      events[j].receiverTeamId = dummyTeams.generatedMaps[j * 2 + 1].id;
+    }
+    const b = performance.now();
+    console.log(b - a);
+
+    await eventRepository.save(events);
   };
 
   static createRequest = async (events: Event[]) => {
