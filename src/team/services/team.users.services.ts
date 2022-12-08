@@ -141,58 +141,116 @@ export class TeamUsersService {
     return teamUser;
   };
 
+  static getOne = async (teamUserId: number) => {
+    const teamUsersRepository = getCustomRepository(TeamUsersRepository);
+
+    const teamUser = await teamUsersRepository
+      .createQueryBuilder("tu")
+      .leftJoinAndSelect("tu.team", "t")
+      .leftJoinAndSelect("t.user", "u")
+      .leftJoinAndSelect("tu.player", "p")
+      .where("tu.id = :id", { id: teamUserId })
+      .getOne();
+
+    return teamUser;
+  };
+
   static updateInvitation = async (invitationPayload, teamUser: TeamUsers, request: Request) => {
     const teamUsersRepository = getCustomRepository(TeamUsersRepository);
     let invitationToBeConfirmed = false;
     let invitationToBeRefused = false;
-    // if (
-    //   teamUser.status === TeamUserStatus.WAITING_FOR_CONFIRMATION &&
-    //   invitationPayload.status === TeamUserStatus.CONFIRMED
-    // ) {
-    //   invitationToBeConfirmed = true;
-    // }
-    // if (
-    //   teamUser.status === TeamUserStatus.WAITING_FOR_CONFIRMATION &&
-    //   invitationPayload.status === TeamUserStatus.REFUSED
-    // ) {
-    //   invitationToBeRefused = true;
-    // }
+    if (
+      teamUser.status === TeamUserStatus.WAITING_FOR_CONFIRMATION &&
+      invitationPayload.status === TeamUserStatus.CONFIRMED
+    ) {
+      invitationToBeConfirmed = true;
+    }
+    if (
+      teamUser.status === TeamUserStatus.WAITING_FOR_CONFIRMATION &&
+      invitationPayload.status === TeamUserStatus.REFUSED
+    ) {
+      invitationToBeRefused = true;
+    }
     const mergedInvitation = teamUsersRepository.merge(teamUser, invitationPayload);
     const updatedInvitation = await teamUsersRepository.save(mergedInvitation);
-    // if (invitationToBeConfirmed === true && updatedInvitation.status === TeamUserStatus.CONFIRMED) {
-    //   let notifications = [];
-    //   const notificationBody = {
-    //     receiverId: teamUser.playerId,
-    //     type: NotificationType.REQUEST_CONFIRMED,
-    //     payload: {
-    //       eventName: updatedInvitation.event.name,
-    //       playerName: updatedInvitation.receiver.name,
-    //       requestId: updatedInvitation.id,
-    //     },
-    //   };
-    //   notifications.push(notificationBody);
-    //   await NotificationService.storeNotification(notifications);
-    // }
-    // if (invitationToBeRefused === true && updatedInvitation.status === TeamUserStatus.REFUSED) {
-    //   let notifications = [];
-    //   const notificationBody = {
-    //     receiverId: teamUser.event.creatorId,
-    //     type: NotificationType.REQUEST_REFUSED,
-    //     payload: {
-    //       eventName: updatedInvitation1.event.name,
-    //       playerName: updatedInvitation1.receiver.name,
-    //       requestId: updatedInvitation1.id,
-    //     },
-    //   };
-    //   notifications.push(notificationBody);
-    //   await NotificationService.storeNotification(notifications);
-    // }
+    if (invitationToBeConfirmed === true && updatedInvitation.status === TeamUserStatus.CONFIRMED) {
+      const notifications = [];
+      const pushNotifications = [];
+      const notificationBody = {
+        receiverId: teamUser.team.userId,
+        type: NotificationType.INVITATION_TO_TEAM_CONFIRMED,
+        payload: {
+          teamId: teamUser.teamId,
+          teamName: teamUser.team.name,
+          playerId: teamUser.playerId,
+          playerName: teamUser.player.name,
+        },
+      };
+      const pushNotificationBody = {
+        to: teamUser.team.user.pushToken,
+        title: `Lojtari ${teamUser.player.name} pranoi ftesen tek ekipi: ${teamUser.team.name}`,
+        body: "Futuni ne aplikacion dhe shikoni ftesen e pranuar",
+        data: { teamId: teamUser.team.id },
+      };
+      notifications.push(notificationBody);
+      pushNotifications.push(pushNotificationBody);
+      NotificationService.storeNotification(notifications);
+      NotificationService.pushNotification(pushNotifications);
+    }
+    if (invitationToBeRefused === true && updatedInvitation.status === TeamUserStatus.REFUSED) {
+      const notifications = [];
+      const pushNotifications = [];
+      const notificationBody = {
+        receiverId: teamUser.team.userId,
+        type: NotificationType.INVITATION_TO_TEAM_REFUSED,
+        payload: {
+          teamId: teamUser.teamId,
+          teamName: teamUser.team.name,
+          playerId: teamUser.playerId,
+          playerName: teamUser.player.name,
+        },
+      };
+      const pushNotificationBody = {
+        to: teamUser.team.user.pushToken,
+        title: `Lojtari ${teamUser.player.name} refuzoi ftesen tek ekipi: ${teamUser.team.name}`,
+        body: "Futuni ne aplikacion dhe shikoni ftesen e refuzuar",
+        data: { teamId: teamUser.team.id },
+      };
+      notifications.push(notificationBody);
+      pushNotifications.push(pushNotificationBody);
+      NotificationService.storeNotification(notifications);
+      NotificationService.pushNotification(pushNotifications);
+    }
     return "Request successfully updated!";
   };
 
   static deleteById = async (teamUser: TeamUsers) => {
     const teamUserRepository = getRepository(TeamUsers);
-
     await teamUserRepository.softDelete(teamUser.id);
+
+    if (teamUser.status === TeamUserStatus.CONFIRMED) {
+      const notifications = [];
+      const pushNotifications = [];
+      const notificationBody = {
+        receiverId: teamUser.team.userId,
+        type: NotificationType.USER_EXITED_TEAM,
+        payload: {
+          teamId: teamUser.teamId,
+          teamName: teamUser.team.name,
+          playerId: teamUser.playerId,
+          playerName: teamUser.player.name,
+        },
+      };
+      const pushNotificationBody = {
+        to: teamUser.team.user.pushToken,
+        title: `Lojtari ${teamUser.player.name} eshte larguar nga ekipi: ${teamUser.team.name}`,
+        body: "Futuni ne aplikacion dhe shikoni me shume",
+        data: { teamId: teamUser.team.id },
+      };
+      notifications.push(notificationBody);
+      pushNotifications.push(pushNotificationBody);
+      NotificationService.storeNotification(notifications);
+      NotificationService.pushNotification(pushNotifications);
+    }
   };
 }

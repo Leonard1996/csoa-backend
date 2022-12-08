@@ -10,6 +10,9 @@ export enum NotificationType {
   REQUEST_CONFIRMED = "request confirmed",
   REQUEST_REFUSED = "request refused",
   INVITATION_TO_TEAM = "user invited to team",
+  INVITATION_TO_TEAM_CONFIRMED = "user confirmed invitation to team",
+  INVITATION_TO_TEAM_REFUSED = "user refused invitation to team",
+  USER_EXITED_TEAM = "user exited team",
 }
 
 @Entity("notifications")
