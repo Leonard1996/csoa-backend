@@ -23,6 +23,15 @@ export class CreateEventDto {
   name: string;
 
   @IsOptional()
+  notes: string;
+
+  @IsOptional()
+  weeklyGroupedId: number;
+
+  @IsOptional()
+  organiserTeamId: number;
+
+  @IsOptional()
   isTeam: boolean;
 
   @IsOptional()

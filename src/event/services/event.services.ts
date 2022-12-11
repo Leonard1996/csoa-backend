@@ -11,6 +11,10 @@ import { TeamRepository } from "../../team/repositories/team.repository";
 import { EventTeamUsersRepository } from "../repositories/event.team.users.repository";
 import { NotificationService } from "../../notifications/services/notification.services";
 import { NotificationType } from "../../notifications/entities/notification.entity";
+import { CreateEventDto } from "../dto/create-event.dto";
+import { WeeklyEventGroup } from "../entities/weekly.event.group.entity";
+import { performance } from "perf_hooks";
+import { UpdateEventDto } from "../dto/update-event.dto";
 
 export class EventService {
   static listMyEvents = async (request: Request, response: Response) => {
@@ -192,44 +196,74 @@ export class EventService {
 
   static async createAdminEvent(request: Request, response: Response) {
     const {
-      body: { startDate, endDate, notes, name, locationId, sport, isWeekly },
+      body: { startDate, endDate, notes, name, locationId, sport, status, isWeekly },
     } = request;
     if (new Date(startDate) < new Date()) {
-      throw new Error();
+      throw new Error("Ora e eventit nuk mund te jete ne te shkuaren!");
     }
 
     const queryRunner = getManager().connection.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      const overlappingEvent = await queryRunner.manager
-        .createQueryBuilder()
-        .from("events", "e")
-        .where(`e.locationId = '${locationId}'`)
-        .andWhere(
-          new Brackets((qb) => {
-            qb.where(`(e.startDate < '${endDate}' AND e.endDate > '${startDate}')`);
-            qb.orWhere(`(e.startDate = '${startDate}' AND e.endDate = '${endDate}')`);
-          })
-        )
-        .andWhere("e.ts_deleted IS NULL")
-        .setLock("pessimistic_read")
-        .getRawOne();
-
       let createdEvent: any = false;
-      if (!overlappingEvent) {
-        const event = new Event();
-        event.startDate = startDate;
-        event.endDate = endDate;
-        event.isUserReservation = false;
-        event.creatorId = response.locals.jwt.userId;
-        event.notes = notes;
-        event.name = name;
-        event.locationId = locationId;
-        event.sport = sport;
-        event.status = EventStatus.WAITING_FOR_CONFIRMATION;
-        event.isWeekly = isWeekly ? true : false;
-        createdEvent = await queryRunner.manager.save(event);
+      let upgradedStartDate = startDate;
+      let upgradedEndDate = endDate;
+      let eventsToBeInserted = [];
+      for (let i = 0; i <= (isWeekly ? 11 : 0); i++) {
+        const incrementedStartDate = EventService.addDays(upgradedStartDate, i);
+        const incrementedEndDate = EventService.addDays(upgradedEndDate, i);
+        const overlappingEvent = await queryRunner.manager
+          .createQueryBuilder()
+          .from("events", "e")
+          .where(`e.locationId = '${locationId}'`)
+          .andWhere("e.status NOT IN (:...statuses)", {
+            statuses: [EventStatus.DRAFT, EventStatus.CANCELED, EventStatus.REFUSED],
+          })
+          .andWhere(
+            new Brackets((qb) => {
+              qb.where(
+                `(e.startDate < '${incrementedEndDate.toISOString()}' AND e.endDate > '${incrementedStartDate.toISOString()}')`
+              );
+              qb.orWhere(
+                `(e.startDate = '${incrementedStartDate.toISOString()}' AND e.endDate = '${incrementedEndDate.toISOString()}')`
+              );
+            })
+          )
+          .andWhere("e.ts_deleted IS NULL")
+          .setLock("pessimistic_read")
+          .getRawOne();
+
+        if (!overlappingEvent) {
+          const event = new CreateEventDto();
+          event.startDate = incrementedStartDate;
+          event.endDate = incrementedEndDate;
+          event.isUserReservation = false;
+          event.creatorId = response.locals.jwt.userId;
+          event.notes = notes;
+          event.name = name;
+          event.locationId = locationId;
+          event.sport = sport;
+          event.status = status;
+          event.isWeekly = isWeekly ? true : false;
+          eventsToBeInserted.push(event);
+        }
+        if ((isWeekly && eventsToBeInserted.length === 12) || (!isWeekly && eventsToBeInserted.length === 1)) {
+          createdEvent = queryRunner.manager.create(Event, eventsToBeInserted);
+          if (isWeekly) {
+            const weeklyEventGroup = new WeeklyEventGroup();
+            weeklyEventGroup.startDate = eventsToBeInserted[0].startDate;
+            weeklyEventGroup.endDate = eventsToBeInserted[11].endDate;
+            weeklyEventGroup.status = eventsToBeInserted[0].status;
+            queryRunner.manager.create(WeeklyEventGroup, new WeeklyEventGroup());
+            const createdWeekly = await queryRunner.manager.save(weeklyEventGroup);
+            for (const event of eventsToBeInserted) {
+              event.weeklyGroupedId = createdWeekly.id;
+            }
+          }
+
+          createdEvent = await queryRunner.manager.save(createdEvent);
+        }
       }
 
       await queryRunner.commitTransaction();
@@ -243,7 +277,7 @@ export class EventService {
   }
 
   static insert = async (request: Request, response: Response) => {
-    const {
+    let {
       body: {
         startDate,
         endDate,
@@ -263,47 +297,78 @@ export class EventService {
       },
     } = request;
     if (new Date(startDate) < new Date()) {
-      throw new Error();
+      throw new Error("Ora e eventit nuk mund te jete ne te shkuaren!");
     }
 
     const queryRunner = getManager().connection.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      const overlappingEvent = await queryRunner.manager
-        .createQueryBuilder()
-        .from("events", "e")
-        .where(`e.locationId = '${locationId}'`)
-        .andWhere(
-          new Brackets((qb) => {
-            qb.where(`(e.startDate < '${endDate}' AND e.endDate > '${startDate}')`);
-            qb.orWhere(`(e.startDate = '${startDate}' AND e.endDate = '${endDate}')`);
-          })
-        )
-        .andWhere("e.ts_deleted IS NULL")
-        .setLock("pessimistic_read")
-        .getRawOne();
-
       let createdEvent: any = false;
-      if (!overlappingEvent) {
-        const event = new Event();
-        event.startDate = startDate;
-        event.endDate = endDate;
-        event.isUserReservation = isUserReservation;
-        event.creatorId = response.locals.jwt.userId;
-        event.notes = notes;
-        event.name = name;
-        event.locationId = locationId;
-        event.sport = sport;
-        event.status = status;
-        event.isPublic = isPublic;
-        event.isTeam = isTeam;
-        event.playersAge = playersAge;
-        event.playersNumber = playersNumber;
-        event.isWeekly = isWeekly;
-        event.level = level;
-        event.organiserTeamId = organiserTeamId ?? null;
-        createdEvent = await queryRunner.manager.save(event);
+      let upgradedStartDate = startDate;
+      let upgradedEndDate = endDate;
+      let eventsToBeInserted = [];
+      for (let i = 0; i <= (isWeekly ? 11 : 0); i++) {
+        const incrementedStartDate = EventService.addDays(upgradedStartDate, i);
+        const incrementedEndDate = EventService.addDays(upgradedEndDate, i);
+        const overlappingEvent = await queryRunner.manager
+          .createQueryBuilder()
+          .from("events", "e")
+          .where(`e.locationId = '${locationId}'`)
+          .andWhere("e.status NOT IN (:...statuses)", {
+            statuses: [EventStatus.DRAFT, EventStatus.CANCELED, EventStatus.REFUSED],
+          })
+          .andWhere(
+            new Brackets((qb) => {
+              qb.where(
+                `(e.startDate < '${incrementedEndDate.toISOString()}' AND e.endDate > '${incrementedStartDate.toISOString()}')`
+              );
+              qb.orWhere(
+                `(e.startDate = '${incrementedStartDate.toISOString()}' AND e.endDate = '${incrementedEndDate.toISOString()}')`
+              );
+            })
+          )
+          .andWhere("e.ts_deleted IS NULL")
+          .setLock("pessimistic_read")
+          .getRawOne();
+
+        if (!overlappingEvent) {
+          const event = new CreateEventDto();
+          event.startDate = incrementedStartDate;
+          event.endDate = incrementedEndDate;
+          event.isUserReservation = false;
+          event.creatorId = response.locals.jwt.userId;
+          event.notes = notes;
+          event.name = name;
+          event.locationId = locationId;
+          event.sport = sport;
+          event.status = status;
+          event.isWeekly = isWeekly ? true : false;
+          event.isUserReservation = isUserReservation;
+          event.isPublic = isPublic;
+          event.isTeam = isTeam;
+          event.playersAge = playersAge;
+          event.playersNumber = playersNumber;
+          event.level = level;
+          event.organiserTeamId = organiserTeamId ?? null;
+          eventsToBeInserted.push(event);
+        }
+        if ((isWeekly && eventsToBeInserted.length === 12) || (!isWeekly && eventsToBeInserted.length === 1)) {
+          createdEvent = queryRunner.manager.create(Event, eventsToBeInserted);
+          if (isWeekly) {
+            const weeklyEventGroup = new WeeklyEventGroup();
+            weeklyEventGroup.startDate = eventsToBeInserted[0].startDate;
+            weeklyEventGroup.endDate = eventsToBeInserted[11].endDate;
+            weeklyEventGroup.status = eventsToBeInserted[0].status;
+            queryRunner.manager.create(WeeklyEventGroup, new WeeklyEventGroup());
+            const createdWeekly = await queryRunner.manager.save(weeklyEventGroup);
+            for (const event of createdEvent) {
+              event.weeklyGroupedId = createdWeekly.id;
+            }
+          }
+
+          createdEvent = await queryRunner.manager.save(createdEvent);
+        }
       }
 
       await queryRunner.commitTransaction();
@@ -315,38 +380,40 @@ export class EventService {
     }
   };
 
-  static createDummyTeams = async (event: Event) => {
+  static createDummyTeams = async (events: Event[]) => {
     const teamRepository = getCustomRepository(TeamRepository);
     const eventRepository = getCustomRepository(EventRepository);
-    const dummyTeams = await teamRepository
-      .createQueryBuilder("team")
-      .insert()
-      .values([
-        { name: "Ekipi blu", sport: event.sport, isDummy: true },
-        { name: "Ekipi kuq", sport: event.sport, isDummy: true },
-      ])
-      .execute();
+    const payload = [];
+    for (const event of events) {
+      const blueTeam = { name: "Ekipi blu", sport: event.sport, isDummy: true };
+      const redTeam = { name: "Ekipi kuq", sport: event.sport, isDummy: true };
+      payload.push(blueTeam);
+      payload.push(redTeam);
+    }
 
-    event.organiserTeamId = dummyTeams.generatedMaps[0].id;
-    event.receiverTeamId = dummyTeams.generatedMaps[1].id;
-    await eventRepository.save(event);
+    const dummyTeams = await teamRepository.createQueryBuilder("team").insert().values(payload).execute();
+
+    for (let j = 0; j < events.length; j++) {
+      events[j].organiserTeamId = dummyTeams.generatedMaps[j * 2].id;
+      events[j].receiverTeamId = dummyTeams.generatedMaps[j * 2 + 1].id;
+    }
+    eventRepository.save(events);
   };
 
-  static createRequest = async (event: Event) => {
+  static createRequest = async (events: Event[]) => {
     const requestRepository = getCustomRepository(RequestRepository);
-    await requestRepository
-      .createQueryBuilder("request")
-      .insert()
-      .values([
-        {
-          senderId: event.creatorId,
-          receiverId: event.creatorId,
-          eventId: event.id,
-          sport: event.sport,
-          status: RequestStatus.CONFIRMED,
-        },
-      ])
-      .execute();
+    const payload = [];
+    for (const event of events) {
+      const element = {
+        senderId: event.creatorId,
+        receiverId: event.creatorId,
+        eventId: event.id,
+        sport: event.sport,
+        status: RequestStatus.CONFIRMED,
+      };
+      payload.push(element);
+    }
+    await requestRepository.createQueryBuilder("request").insert().values(payload).execute();
   };
 
   static getById = async (eventId: number) => {
@@ -379,6 +446,29 @@ export class EventService {
   static patch = async (eventPayload, currentEvent: Event, request: Request) => {
     const eventRepository = getCustomRepository(EventRepository);
     const eventTeamsUsersRepository = getCustomRepository(EventTeamUsersRepository);
+    const {
+      body: {
+        startDate,
+        endDate,
+        notes,
+        name,
+        locationId,
+        sport,
+        status,
+        isPublic,
+        isTeam,
+        playersAge,
+        playersNumber,
+        isWeekly,
+        level,
+        isUserReservation,
+        organiserTeamId,
+        weeklyGroupedId,
+      },
+    } = request;
+    if (new Date(startDate) < new Date()) {
+      throw new Error("Ora e eventit nuk mund te jete ne te shkuaren!");
+    }
 
     let eventForConfirmation = false;
     let eventToBeCompleted = false;
@@ -388,76 +478,173 @@ export class EventService {
     if (currentEvent.status == EventStatus.CONFIRMED) {
       eventToBeCompleted = true;
     }
+
+    const queryRunner = getManager().connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      let updatedEvent: any = false;
+      let upgradedStartDate = startDate;
+      let upgradedEndDate = endDate;
+      let eventsToBeUpdated = [];
+      const events = [];
+      if (currentEvent.isWeekly) {
+        const remainedEvents = await eventRepository
+          .createQueryBuilder("e")
+          .where("e.weeklyGroupedId = :groupedId", { groupedId: currentEvent.weeklyGroupedId })
+          .andWhere("e.startDate >= :now", { now: new Date().toISOString() })
+          .getMany();
+        events.push(remainedEvents);
+      }
+      // for (let i = 0; i < events.length; i++) {
+      //   const incrementedStartDate = EventService.addDays(upgradedStartDate, i);
+      //   const incrementedEndDate = EventService.addDays(upgradedEndDate, i);
+      //   const overlappingEvent = await queryRunner.manager
+      //     .createQueryBuilder()
+      //     .from("events", "e")
+      //     .where(`e.locationId = '${locationId}'`)
+      //     .andWhere("e.status NOT IN (:...statuses)", {
+      //       statuses: [EventStatus.DRAFT, EventStatus.CANCELED, EventStatus.REFUSED],
+      //     })
+      //     .andWhere(
+      //       new Brackets((qb) => {
+      //         qb.where(
+      //           `(e.startDate < '${incrementedEndDate.toISOString()}' AND e.endDate > '${incrementedStartDate.toISOString()}')`
+      //         );
+      //         qb.orWhere(
+      //           `(e.startDate = '${incrementedStartDate.toISOString()}' AND e.endDate = '${incrementedEndDate.toISOString()}')`
+      //         );
+      //       })
+      //     )
+      //     .andWhere("e.ts_deleted IS NULL")
+      //     .setLock("pessimistic_read")
+      //     .getRawOne();
+
+      //   if (!overlappingEvent) {
+      //     const event = new UpdateEventDto();
+      //     // event.id =
+      //     currentEvent.startDate = incrementedStartDate;
+      //     currentEvent.endDate = incrementedEndDate;
+      //     currentEvent.isUserReservation = false;
+      //     currentEvent.notes = notes;
+      //     currentEvent.name = name;
+      //     currentEvent.locationId = locationId;
+      //     currentEvent.sport = sport;
+      //     currentEvent.status = status;
+      //     currentEvent.isWeekly = isWeekly ? true : false;
+      //     currentEvent.isUserReservation = isUserReservation;
+      //     currentEvent.isPublic = isPublic;
+      //     currentEvent.isTeam = isTeam;
+      //     currentEvent.playersAge = playersAge;
+      //     currentEvent.playersNumber = playersNumber;
+      //     currentEvent.level = level;
+      //     currentEvent.organiserTeamId = organiserTeamId ?? null;
+      //     eventsToBeUpdated.push(currentEvent);
+      //   }
+      //   if ((isWeekly && eventsToBeUpdated.length === 12) || (!isWeekly && eventsToBeUpdated.length === 1)) {
+      //     updatedEvent = queryRunner.manager.create(Event, eventsToBeUpdated);
+      //     if (isWeekly) {
+      //       const weeklyEventGroup = new WeeklyEventGroup();
+      //       weeklyEventGroup.startDate = eventsToBeUpdated[0].startDate;
+      //       weeklyEventGroup.endDate = eventsToBeUpdated[11].endDate;
+      //       weeklyEventGroup.status = EventStatus.CONFIRMED;
+      //       queryRunner.manager.create(WeeklyEventGroup, new WeeklyEventGroup());
+      //       const createdWeekly = await queryRunner.manager.save(weeklyEventGroup);
+      //       for (const event of eventsToBeUpdated) {
+      //         event.weeklyGroupedId = createdWeekly.id;
+      //       }
+      //     }
+
+      //     updatedEvent = await queryRunner.manager.save(updatedEvent);
+      //   }
+      // }
+
+      await queryRunner.commitTransaction();
+      return updatedEvent;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+    } finally {
+      await queryRunner.release();
+    }
+
     const mergedEvent = eventRepository.merge(currentEvent, eventPayload);
     const updatedEvent = await eventRepository.save(mergedEvent);
 
-    if (eventForConfirmation === true && updatedEvent.status === EventStatus.CONFIRMED) {
-      const eventPlayers = await eventTeamsUsersRepository
-        .createQueryBuilder("etu")
-        .leftJoinAndSelect("etu.teamUser", "tu", "tu.id = etu.teamUserId")
-        .leftJoinAndSelect("tu.player", "p", "p.id = tu.playerId")
-        .where("etu.eventId = :eventId", { eventId: updatedEvent.id })
-        .getMany();
+    // if (eventForConfirmation === true && updatedEvent.status === EventStatus.CONFIRMED) {
+    //   const eventPlayers = await eventTeamsUsersRepository
+    //     .createQueryBuilder("etu")
+    //     .leftJoinAndSelect("etu.teamUser", "tu", "tu.id = etu.teamUserId")
+    //     .leftJoinAndSelect("tu.player", "p", "p.id = tu.playerId")
+    //     .where("etu.eventId = :eventId", { eventId: updatedEvent.id })
+    //     .getMany();
 
-      const mappedPlayersIds = eventPlayers.map((eventPlayers) => eventPlayers.teamUser.player.id);
-      let notifications = [];
-      for (const player of mappedPlayersIds) {
-        const notificationBody = {
-          receiverId: player,
-          type: NotificationType.EVENT_CONFIRMED,
-          payload: { eventId: updatedEvent.id, eventName: updatedEvent.name },
-        };
-        notifications.push(notificationBody);
-      }
-      await NotificationService.storeNotification(notifications);
-    }
+    //   const mappedPlayersIds = eventPlayers.map((eventPlayers) => eventPlayers.teamUser.player.id);
+    //   let notifications = [];
+    //   for (const player of mappedPlayersIds) {
+    //     const notificationBody = {
+    //       receiverId: player,
+    //       type: NotificationType.EVENT_CONFIRMED,
+    //       payload: { eventId: updatedEvent.id, eventName: updatedEvent.name },
+    //     };
+    //     notifications.push(notificationBody);
+    //   }
+    //   await NotificationService.storeNotification(notifications);
+    // }
 
-    if (eventToBeCompleted === true && updatedEvent.status === EventStatus.COMPLETED) {
-      const eventPlayers = await eventTeamsUsersRepository
-        .createQueryBuilder("etu")
-        .leftJoinAndSelect("etu.teamUser", "tu", "tu.id = etu.teamUserId")
-        .leftJoinAndSelect("tu.player", "p", "p.id = tu.playerId")
-        .leftJoinAndSelect("tu.team", "t", "t.id = tu.teamId")
-        .where("etu.eventId = :eventId", { eventId: updatedEvent.id })
-        .getMany();
+    // if (eventToBeCompleted === true && updatedEvent.status === EventStatus.COMPLETED) {
+    //   const eventPlayers = await eventTeamsUsersRepository
+    //     .createQueryBuilder("etu")
+    //     .leftJoinAndSelect("etu.teamUser", "tu", "tu.id = etu.teamUserId")
+    //     .leftJoinAndSelect("tu.player", "p", "p.id = tu.playerId")
+    //     .leftJoinAndSelect("tu.team", "t", "t.id = tu.teamId")
+    //     .where("etu.eventId = :eventId", { eventId: updatedEvent.id })
+    //     .getMany();
 
-      const mappedPlayersIds = eventPlayers.map((eventPlayers) => {
-        return {
-          id: eventPlayers.teamUser.player.id,
-          teamId: eventPlayers.teamUser.team.id,
-        };
-      });
-      const organiserTeamPlayersIds = mappedPlayersIds
-        .filter((teamPlayers) => teamPlayers.teamId === updatedEvent.organiserTeamId)
-        .map((player) => player.id);
-      const receiverTeamPlayersIds = mappedPlayersIds
-        .filter((teamPlayers) => teamPlayers.teamId === updatedEvent.receiverTeamId)
-        .map((player) => player.id);
-      let notifications = [];
-      for (const player of mappedPlayersIds) {
-        const resultNotificationBody = {
-          receiverId: player.id,
-          type: NotificationType.EVENT_COMPLETED_RESULT,
-          payload: { eventId: updatedEvent.id, eventName: updatedEvent.name },
-        };
-        const reviewNotificationBody = {
-          receiverId: player.id,
-          type: NotificationType.EVENT_COMPLETED_REVIEW,
-          // TODO: Find opposite players
-          payload: {
-            eventId: updatedEvent.id,
-            eventName: updatedEvent.name,
-            oppositePlayersIds:
-              player.teamId === updatedEvent.organiserTeamId ? receiverTeamPlayersIds : organiserTeamPlayersIds,
-          },
-        };
-        notifications.push(resultNotificationBody);
-        notifications.push(reviewNotificationBody);
-      }
+    //   const mappedPlayersIds = eventPlayers.map((eventPlayers) => {
+    //     return {
+    //       id: eventPlayers.teamUser.player.id,
+    //       teamId: eventPlayers.teamUser.team.id,
+    //     };
+    //   });
+    //   const organiserTeamPlayersIds = mappedPlayersIds
+    //     .filter((teamPlayers) => teamPlayers.teamId === updatedEvent.organiserTeamId)
+    //     .map((player) => player.id);
+    //   const receiverTeamPlayersIds = mappedPlayersIds
+    //     .filter((teamPlayers) => teamPlayers.teamId === updatedEvent.receiverTeamId)
+    //     .map((player) => player.id);
+    //   let notifications = [];
+    //   for (const player of mappedPlayersIds) {
+    //     const resultNotificationBody = {
+    //       receiverId: player.id,
+    //       type: NotificationType.EVENT_COMPLETED_RESULT,
+    //       payload: { eventId: updatedEvent.id, eventName: updatedEvent.name },
+    //     };
+    //     const reviewNotificationBody = {
+    //       receiverId: player.id,
+    //       type: NotificationType.EVENT_COMPLETED_REVIEW,
+    //       // TODO: Find opposite players
+    //       payload: {
+    //         eventId: updatedEvent.id,
+    //         eventName: updatedEvent.name,
+    //         oppositePlayersIds:
+    //           player.teamId === updatedEvent.organiserTeamId ? receiverTeamPlayersIds : organiserTeamPlayersIds,
+    //       },
+    //     };
+    //     notifications.push(resultNotificationBody);
+    //     notifications.push(reviewNotificationBody);
+    //   }
 
-      await NotificationService.storeNotification(notifications);
-    }
+    //   await NotificationService.storeNotification(notifications);
+    // }
 
     return updatedEvent;
+  };
+
+  static addDays = (date, counter) => {
+    const newDate = new Date(date);
+    newDate.setDate(newDate.getDate() + counter * 7);
+    newDate.setHours(newDate.getHours());
+    newDate.setMinutes(newDate.getMinutes());
+    return new Date(newDate.setSeconds(0));
   };
 }
