@@ -67,7 +67,7 @@ export class TeamUsersController {
 
   static updateInvitation = async (request: Request, response: Response) => {
     try {
-      const originalInvitation = await TeamUsersService.findOne(+request.params.teamUserId);
+      const originalInvitation = await TeamUsersService.getOne(+request.params.teamUserId);
       if (Helper.isDefined(originalInvitation)) {
         const updatedRequest = await TeamUsersService.updateInvitation(request.body, originalInvitation, request);
         return response.status(HttpStatusCode.OK).send(new SuccessResponse(updatedRequest));
@@ -82,7 +82,7 @@ export class TeamUsersController {
 
   static deleteById = async (request: Request, response: Response) => {
     try {
-      const teamUser = await TeamUsersService.findOne(+request.params.teamUserId);
+      const teamUser = await TeamUsersService.getOne(+request.params.teamUserId);
       if (Helper.isDefined(teamUser)) {
         await TeamUsersService.deleteById(teamUser);
         return response.status(HttpStatusCode.OK).send(new SuccessResponse("Successfully deleted"));

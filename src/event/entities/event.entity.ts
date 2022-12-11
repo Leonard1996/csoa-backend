@@ -165,4 +165,14 @@ export class Event extends Common {
       creatorId: this.creatorId,
     };
   }
+
+  get toResponseWithPlayers() {
+    return {
+      ...this.baseEvent,
+      location: this.location?.toResponse,
+      organiserTeam: this.organiserTeam?.toResponseWithPlayers,
+      receiverTeam: this.receiverTeam?.toResponseWithPlayers,
+      creatorId: this.creatorId,
+    };
+  }
 }

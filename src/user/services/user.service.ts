@@ -27,10 +27,7 @@ const authToken = "225cb1eacac6ea2abc6ad799ec9f4280";
 const client = require("twilio")(accountSid, authToken);
 
 export class UserService {
-  static list = async (
-    queryStringProcessor: QueryStringProcessor,
-    filter: any
-  ) => {
+  static list = async (queryStringProcessor: QueryStringProcessor, filter: any) => {
     const userRepository = getCustomRepository(UserRepository);
 
     return await userRepository.list(queryStringProcessor, filter);
@@ -40,15 +37,9 @@ export class UserService {
     const userRepository = getRepository(User);
 
     if (userPayload.phoneNumber.slice(0, 3) === "355")
-      userPayload.phoneNumber = userPayload.phoneNumber.slice(
-        3,
-        userPayload.phoneNumber.length
-      );
+      userPayload.phoneNumber = userPayload.phoneNumber.slice(3, userPayload.phoneNumber.length);
     if (userPayload.phoneNumber[0] === "0")
-      userPayload.phoneNumber = userPayload.phoneNumber.slice(
-        1,
-        userPayload.phoneNumber.length
-      );
+      userPayload.phoneNumber = userPayload.phoneNumber.slice(1, userPayload.phoneNumber.length);
     userPayload.phoneNumber = "355" + userPayload.phoneNumber;
 
     const isExisting = await userRepository.findOne({
@@ -100,10 +91,7 @@ export class UserService {
 
     const user = await userRepository.findById(userId);
     const stars = await reviewRepository.getStars([userId], sport);
-    const statistics = await StatisticsService.getUserStatistics(
-      user.id,
-      sport
-    );
+    const statistics = await StatisticsService.getUserStatistics(user.id, sport);
     const teams = await teamUsersRepository
       .createQueryBuilder("tu")
       .leftJoinAndSelect("tu.team", "t")
@@ -134,17 +122,11 @@ export class UserService {
       userPayload.password = Md5.init(userPayload.newPassword);
     }
 
-    if (userPayload.phoneNumber.slice(0, 3) === "355")
-      userPayload.phoneNumber = userPayload.phoneNumber.slice(
-        3,
-        userPayload.phoneNumber.length
-      );
-    if (userPayload.phoneNumber[0] === "0")
-      userPayload.phoneNumber = userPayload.phoneNumber.slice(
-        1,
-        userPayload.phoneNumber.length
-      );
-    userPayload.phoneNumber = "355" + userPayload.phoneNumber;
+    if (userPayload.phoneNumber && userPayload.phoneNumber.slice(0, 3) === "355")
+      userPayload.phoneNumber = userPayload.phoneNumber.slice(3, userPayload.phoneNumber.length);
+    if (userPayload.phoneNumber && userPayload.phoneNumber[0] === "0")
+      userPayload.phoneNumber = userPayload.phoneNumber.slice(1, userPayload.phoneNumber.length);
+    if (userPayload.phoneNumber) userPayload.phoneNumber = "355" + userPayload.phoneNumber;
 
     const isExisting = await userRepository.findOne({
       where: { phoneNumber: userPayload.phoneNumber },
@@ -157,6 +139,7 @@ export class UserService {
     updateUserDto.name = userPayload.name;
     updateUserDto.phoneNumber = userPayload.phoneNumber;
     updateUserDto.sex = userPayload.sex;
+    updateUserDto.pushToken = userPayload.pushToken;
 
     const finalUser = userRepository.merge(currentUser, updateUserDto);
     await userRepository.save(finalUser);
@@ -181,11 +164,7 @@ export class UserService {
             if (sportsPayload[sport][key] === false) {
               await UserService.deleteReviewsAndTeams(user, sport);
             } else {
-              await UserService.writeReview(
-                user,
-                sport,
-                sportsPayload[sport]["rating"]
-              );
+              await UserService.writeReview(user, sport, sportsPayload[sport]["rating"]);
             }
           }
         }
@@ -199,9 +178,7 @@ export class UserService {
     await reviewCustomRepository
       .createQueryBuilder("r")
       .insert()
-      .values([
-        { sport: sport, value: +value, senderId: user.id, receiverId: user.id },
-      ])
+      .values([{ sport: sport, value: +value, senderId: user.id, receiverId: user.id }])
       .execute();
   };
 
@@ -274,10 +251,7 @@ export class UserService {
   //     .execute();
   // };
 
-  static updatePassword = async (
-    passwordPayload: string,
-    currentUser: User
-  ) => {
+  static updatePassword = async (passwordPayload: string, currentUser: User) => {
     const userRepository = getCustomRepository(UserRepository);
 
     if (Helper.isDefined(passwordPayload)) {
@@ -325,10 +299,8 @@ export class UserService {
     errCallback: Function,
     codeExisting?: string
   ) {
-    if (phoneNumber.slice(0, 3) === "355")
-      phoneNumber = phoneNumber.slice(3, phoneNumber.length);
-    if (phoneNumber[0] === "0")
-      phoneNumber = phoneNumber.slice(1, phoneNumber.length);
+    if (phoneNumber.slice(0, 3) === "355") phoneNumber = phoneNumber.slice(3, phoneNumber.length);
+    if (phoneNumber[0] === "0") phoneNumber = phoneNumber.slice(1, phoneNumber.length);
 
     let code;
     if (!codeExisting) {

@@ -18,6 +18,7 @@ export class TeamService {
     const myTeams = await teamUsersRepository.find({
       where: {
         playerId: response.locals.jwt.userId,
+        status: TeamUserStatus.CONFIRMED,
       },
       relations: ["team"],
     });
@@ -182,6 +183,7 @@ export class TeamService {
         .createQueryBuilder("teamUsers")
         .leftJoinAndSelect("teamUsers.player", "player")
         .where("teamId = :teamId", { teamId })
+        .andWhere("status = :status", { status: TeamUserStatus.CONFIRMED })
         .getMany();
 
       const wins = await StatisticsService.getWins([team.id]);
@@ -208,7 +210,7 @@ export class TeamService {
       team["loses"] = +(loses[0]?.loses ?? 0);
       team["draws"] = drawsMapped[team.id] ?? 0;
       team["lastMatches"] = lastMatches;
-      team["players"] = players;
+      team["players"] = players.map((player) => player.toResponse) as any;
       team["banner"] = team.banner ? team.banner.split("/").pop() : "";
       team["avatar"] = team.avatar ? team.avatar.split("/").pop() : "";
     }

@@ -4,11 +4,20 @@ import { Complex } from "../../complex/entities/complex.entity";
 import { User } from "../../user/entities/user.entity";
 
 export enum NotificationType {
-  EVENT_CONFIRMED = "eventConfirmed",
-  EVENT_COMPLETED_RESULT = "eventCompletedResult",
-  EVENT_COMPLETED_REVIEW = "eventCompletedReview",
-  REQUEST_CONFIRMED = "requestConfirmed",
-  REQUEST_REFUSED = "requestRefused",
+  EVENT_CONFIRMED = "event confirmed",
+  EVENT_COMPLETED_RESULT = "event completed result",
+  EVENT_COMPLETED_REVIEW = "event completed review",
+  REQUEST_TO_EVENT = "user requested to enter event",
+  TEAM_REQUEST_TO_EVENT = "team requested to enter event",
+  TEAM_INVITED_TO_EVENT = "team invited to enter event",
+  REQUEST_CONFIRMED = "request confirmed",
+  REQUEST_REFUSED = "request refused",
+  INVITATION_TO_EVENT = "user invited to event",
+  INVITATION_DELETED = "invitation deleted",
+  INVITATION_TO_TEAM = "user invited to team",
+  INVITATION_TO_TEAM_CONFIRMED = "user confirmed invitation to team",
+  INVITATION_TO_TEAM_REFUSED = "user refused invitation to team",
+  USER_EXITED_TEAM = "user exited team",
 }
 
 @Entity("notifications")

@@ -1,3 +1,4 @@
+import Axios from "axios";
 import { Request, Response } from "express";
 import { getCustomRepository, getRepository } from "typeorm";
 import { Notification } from "../entities/notification.entity";
@@ -30,21 +31,28 @@ export class NotificationService {
   static updateNotification = async (notification: Notification) => {
     const notificationRepository = getRepository(Notification);
 
-    const updatedNotification = await notificationRepository.update(
-      notification,
-      { isRead: true }
-    );
+    const updatedNotification = await notificationRepository.update(notification, { isRead: true });
 
     return updatedNotification;
   };
 
-  static storeNotification = async (notifications) => {
+  static storeNotification = async (payload) => {
     const notificationRepository = getCustomRepository(NotificationRepository);
-    await notificationRepository
-      .createQueryBuilder("notification")
-      .insert()
-      .values(notifications)
-      .execute();
+    await notificationRepository.createQueryBuilder("notification").insert().values(payload).execute();
     return "Notification successfully created!";
+  };
+
+  static pushNotification = async (payload) => {
+    const PUSH_TOKEN_BASE_API = "https://exp.host/--/api/v2/push/send";
+    const headers = {
+      host: "exp.host",
+      accept: "application/json",
+      "accept-encoding": "gzip, deflate",
+      "content-type": "application/json",
+    };
+
+    for (const body of payload) {
+      const response = await Axios.post(PUSH_TOKEN_BASE_API, body, { headers });
+    }
   };
 }

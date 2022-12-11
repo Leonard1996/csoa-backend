@@ -55,7 +55,8 @@ export class RequestController {
   static requestToEnter = async (request: Request, response: Response) => {
     try {
       const event = await EventService.findById(+request.params.eventId);
-      const result = await RequestService.requestToEnter(event, request, response);
+      const creator = await UserService.findOne(event.creatorId);
+      const result = await RequestService.requestToEnter(event, creator, request, response);
       response.status(HttpStatusCode.OK).send(new SuccessResponse({ result }));
     } catch (err) {
       console.log(err);

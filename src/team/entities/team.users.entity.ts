@@ -46,4 +46,14 @@ export class TeamUsers extends Common {
 
   @OneToMany(() => EventTeamUsers, (eventTeamUser) => eventTeamUser.teamUser)
   eventsTeamUser: EventTeamUsers[];
+
+  get toResponse() {
+    return {
+      id: this.id,
+      sport: this.sport,
+      status: this.status,
+      isConfirmed: this.isConfirmed,
+      player: this.player.toResponseObject(),
+    };
+  }
 }

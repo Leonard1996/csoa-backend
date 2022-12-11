@@ -49,6 +49,9 @@ export class User extends Common {
   @Column("varchar", { nullable: false, name: "address" })
   public address: string;
 
+  @Column("varchar", { nullable: true, name: "pushToken" })
+  public pushToken: string;
+
   @Column("timestamp", { nullable: false, name: "birthday" })
   public birthday: Date;
 
@@ -98,6 +101,7 @@ export class User extends Common {
 
   toResponseObject() {
     return {
+      id: this.id,
       name: this.name,
       sex: this.sex,
       sports: this.sports,
@@ -106,6 +110,8 @@ export class User extends Common {
       phoneNumber: this.phoneNumber,
       profilePicture: this.profilePicture,
       email: this.email,
+      pushToken: this.pushToken,
+      role: this.role,
     };
   }
 }
