@@ -111,6 +111,7 @@ export class User extends Common {
       profilePicture: this.profilePicture,
       email: this.email,
       pushToken: this.pushToken,
+      role: this.role,
     };
   }
 }

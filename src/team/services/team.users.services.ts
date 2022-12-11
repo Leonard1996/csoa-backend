@@ -99,6 +99,8 @@ export class TeamUsersService {
         teamName: team.name,
         teamId: team.id,
         exponentPushToken: user.pushToken,
+        title: `Ju jeni ftuar tek ekipi: ${team.name}`,
+        body: "Futuni ne aplikacion dhe shikoni ftesen",
       },
     };
     const pushNotificationBody = {
@@ -184,6 +186,8 @@ export class TeamUsersService {
           teamName: teamUser.team.name,
           playerId: teamUser.playerId,
           playerName: teamUser.player.name,
+          title: `Lojtari ${teamUser.player.name} pranoi ftesen tek ekipi: ${teamUser.team.name}`,
+          body: "Futuni ne aplikacion dhe shikoni ftesen e pranuar",
         },
       };
       const pushNotificationBody = {
@@ -208,6 +212,8 @@ export class TeamUsersService {
           teamName: teamUser.team.name,
           playerId: teamUser.playerId,
           playerName: teamUser.player.name,
+          title: `Lojtari ${teamUser.player.name} refuzoi ftesen tek ekipi: ${teamUser.team.name}`,
+          body: "Futuni ne aplikacion dhe shikoni ftesen e refuzuar",
         },
       };
       const pushNotificationBody = {
@@ -239,6 +245,8 @@ export class TeamUsersService {
           teamName: teamUser.team.name,
           playerId: teamUser.playerId,
           playerName: teamUser.player.name,
+          title: `Lojtari ${teamUser.player.name} eshte larguar nga ekipi: ${teamUser.team.name}`,
+          body: "Futuni ne aplikacion dhe shikoni me shume",
         },
       };
       const pushNotificationBody = {

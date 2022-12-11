@@ -12,6 +12,8 @@ import { Request as Invitation, RequestStatus } from "../entities/request.entity
 import { NotificationType } from "../../notifications/entities/notification.entity";
 import { TeamUsersRepository } from "../../team/repositories/team.users.repository";
 import { NotificationService } from "../../notifications/services/notification.services";
+import { UserService } from "../../user/services/user.service";
+import { TeamService } from "../../team/services/team.services";
 
 export class RequestService {
   static listPossibleUsersForEvent = async (event: Event, request: Request, response: Response) => {
@@ -103,10 +105,35 @@ export class RequestService {
     const createdRequest = requestRepository.create(payload);
     await requestRepository.save(createdRequest);
 
+    let notifications = [];
+    let pushNotifications = [];
+    const notificationBody = {
+      receiverId: user.id,
+      type: NotificationType.INVITATION_TO_EVENT,
+      payload: {
+        eventId: event.id,
+        eventName: event.name,
+        exponentPushToken: user.pushToken,
+        title: `Ju jeni ftuar tek eventi: ${event.name}`,
+        body: "Futuni ne aplikacion dhe shikoni ftesen",
+      },
+    };
+    const pushNotificationBody = {
+      to: user.pushToken,
+      title: `Ju jeni ftuar tek eventi: ${event.name}`,
+      body: "Futuni ne aplikacion dhe shikoni ftesen",
+      data: { eventId: event.id },
+    };
+
+    notifications.push(notificationBody);
+    pushNotifications.push(pushNotificationBody);
+    NotificationService.storeNotification(notifications);
+    NotificationService.pushNotification(pushNotifications);
+
     return createdRequest;
   };
 
-  static requestToEnter = async (event: Event, request: Request, response: Response) => {
+  static requestToEnter = async (event: Event, creator: User, request: Request, response: Response) => {
     const requestRepository = getCustomRepository(RequestRepository);
     const receiverId = +response.locals.jwt.userId;
 
@@ -121,6 +148,31 @@ export class RequestService {
 
     const createdRequest = requestRepository.create(payload);
     await requestRepository.save(createdRequest);
+
+    let notifications = [];
+    let pushNotifications = [];
+    const notificationBody = {
+      receiverId: receiverId,
+      type: NotificationType.REQUEST_TO_EVENT,
+      payload: {
+        eventId: event.id,
+        eventName: event.name,
+        exponentPushToken: creator.pushToken,
+        title: `Ju keni nje kerkese te re per t'u futur tek eventi: ${event.name}`,
+        body: "Futuni ne aplikacion dhe shikoni kerkesen",
+      },
+    };
+    const pushNotificationBody = {
+      to: creator.pushToken,
+      title: `Ju keni nje kerkese te re per t'u futur tek eventi: ${event.name}`,
+      body: "Futuni ne aplikacion dhe shikoni kerkesen",
+      data: { eventId: event.id },
+    };
+
+    notifications.push(notificationBody);
+    pushNotifications.push(pushNotificationBody);
+    NotificationService.storeNotification(notifications);
+    NotificationService.pushNotification(pushNotifications);
 
     return createdRequest;
   };
@@ -139,6 +191,38 @@ export class RequestService {
     const createdRequest = requestRepository.create(payload);
     await requestRepository.save(createdRequest);
 
+    const teamRepository = getCustomRepository(TeamRepository);
+    const creatorTeam = await teamRepository
+      .createQueryBuilder("team")
+      .leftJoinAndSelect("team.user", "u")
+      .where("team.id = :id", { id: event.organiserTeamId })
+      .getOne();
+
+    let notifications = [];
+    let pushNotifications = [];
+    const notificationBody = {
+      receiverId: event.organiserTeamId,
+      type: NotificationType.TEAM_REQUEST_TO_EVENT,
+      payload: {
+        eventId: event.id,
+        eventName: event.name,
+        exponentPushToken: creatorTeam.user.pushToken,
+        title: `Ekipi ${team.name} ka kerkuar te luaje me ju ne eventin ${event.name}`,
+        body: "Futuni ne aplikacion dhe shikoni ftesen",
+      },
+    };
+    const pushNotificationBody = {
+      to: creatorTeam.user.pushToken,
+      title: `Ekipi ${team.name} ka kerkuar te luaje me ju ne eventin ${event.name}`,
+      body: "Futuni ne aplikacion dhe shikoni ftesen",
+      data: { eventId: event.id },
+    };
+
+    notifications.push(notificationBody);
+    pushNotifications.push(pushNotificationBody);
+    NotificationService.storeNotification(notifications);
+    NotificationService.pushNotification(pushNotifications);
+
     return createdRequest;
   };
 
@@ -156,6 +240,30 @@ export class RequestService {
   static deleteById = async (request: Invitation) => {
     const requestRepository = getCustomRepository(RequestRepository);
     await requestRepository.delete(request.id);
+    let notifications = [];
+    let pushNotifications = [];
+    const notificationBody = {
+      receiverId: request.receiver.id,
+      type: NotificationType.INVITATION_DELETED,
+      payload: {
+        eventId: request.event.id,
+        eventName: request.event.name,
+        exponentPushToken: request.receiver.pushToken,
+        title: `Ftesa tek eventi ${request.event.name} eshte anuluar!`,
+        body: "Futuni ne aplikacion dhe shikoni me shume",
+      },
+    };
+    const pushNotificationBody = {
+      to: request.receiver.pushToken,
+      title: `Ftesa tek eventi ${request.event.name} eshte anuluar!`,
+      body: "Futuni ne aplikacion dhe shikoni me shume",
+      data: { eventId: request.event.id },
+    };
+
+    notifications.push(notificationBody);
+    pushNotifications.push(pushNotificationBody);
+    NotificationService.storeNotification(notifications);
+    NotificationService.pushNotification(pushNotifications);
   };
 
   static updateRequest = async (requestPayload, originalRequest: Invitation, request: Request) => {
@@ -176,33 +284,121 @@ export class RequestService {
     }
     const mergedRequest = requestRepository.merge(originalRequest, requestPayload);
     const updatedRequest = await requestRepository.save(mergedRequest);
+
     if (requestToBeConfirmed === true && updatedRequest.status === RequestStatus.CONFIRMED) {
-      let notifications = [];
-      const notificationBody = {
-        receiverId: originalRequest.event.creatorId,
-        type: NotificationType.REQUEST_CONFIRMED,
-        payload: {
-          eventName: updatedRequest.event.name,
-          playerName: updatedRequest.receiver.name,
-          requestId: updatedRequest.id,
-        },
-      };
-      notifications.push(notificationBody);
-      await NotificationService.storeNotification(notifications);
+      if (originalRequest.isRequest) {
+        const invitedUser = await UserService.findOne(originalRequest.receiverId);
+        let notifications = [];
+        let pushNotifications = [];
+        const notificationBody = {
+          receiverId: originalRequest.receiverId,
+          type: NotificationType.REQUEST_CONFIRMED,
+          payload: {
+            eventName: updatedRequest.event.name,
+            playerName: updatedRequest.receiver.name,
+            requestId: updatedRequest.id,
+            exponentPushToken: invitedUser.pushToken,
+            title: `Krijuesi i eventit ${updatedRequest.event.name} pranoi kerkesen tuaj per t'u futur`,
+            body: "Futuni ne aplikacion dhe shikoni me shume",
+          },
+        };
+        const pushNotificationBody = {
+          to: invitedUser.pushToken,
+          title: `Krijuesi i eventit ${updatedRequest.event.name} pranoi kerkesen tuaj per t'u futur`,
+          body: "Futuni ne aplikacion dhe shikoni me shume",
+          data: { eventId: updatedRequest.event.id },
+        };
+
+        notifications.push(notificationBody);
+        pushNotifications.push(pushNotificationBody);
+        NotificationService.storeNotification(notifications);
+        NotificationService.pushNotification(pushNotifications);
+      } else {
+        const creator = await UserService.findOne(originalRequest.event.creatorId);
+        let notifications = [];
+        let pushNotifications = [];
+        const notificationBody = {
+          receiverId: originalRequest.event.creatorId,
+          type: NotificationType.REQUEST_CONFIRMED,
+          payload: {
+            eventName: updatedRequest.event.name,
+            playerName: updatedRequest.receiver.name,
+            requestId: updatedRequest.id,
+            exponentPushToken: creator.pushToken,
+            title: `${updatedRequest.receiver.name} pranoi ftesen tek eventi ${updatedRequest.event.name}`,
+            body: "Futuni ne aplikacion dhe shikoni me shume",
+          },
+        };
+        const pushNotificationBody = {
+          to: creator.pushToken,
+          title: `${updatedRequest.receiver.name} pranoi ftesen tek eventi ${updatedRequest.event.name}`,
+          body: "Futuni ne aplikacion dhe shikoni me shume",
+          data: { eventId: updatedRequest.event.id },
+        };
+
+        notifications.push(notificationBody);
+        pushNotifications.push(pushNotificationBody);
+        NotificationService.storeNotification(notifications);
+        NotificationService.pushNotification(pushNotifications);
+      }
     }
+
     if (requestToBeRefused === true && updatedRequest.status === RequestStatus.REFUSED) {
-      let notifications = [];
-      const notificationBody = {
-        receiverId: originalRequest.event.creatorId,
-        type: NotificationType.REQUEST_REFUSED,
-        payload: {
-          eventName: updatedRequest.event.name,
-          playerName: updatedRequest.receiver.name,
-          requestId: updatedRequest.id,
-        },
-      };
-      notifications.push(notificationBody);
-      await NotificationService.storeNotification(notifications);
+      if (originalRequest.isRequest) {
+        const invitedUser = await UserService.findOne(originalRequest.receiverId);
+        let notifications = [];
+        let pushNotifications = [];
+        const notificationBody = {
+          receiverId: originalRequest.receiverId,
+          type: NotificationType.REQUEST_REFUSED,
+          payload: {
+            eventName: updatedRequest.event.name,
+            playerName: updatedRequest.receiver.name,
+            requestId: updatedRequest.id,
+            exponentPushToken: invitedUser.pushToken,
+            title: `Krijuesi i eventit ${updatedRequest.event.name} refuzoi kerkesen tuaj per t'u futur`,
+            body: "Futuni ne aplikacion dhe shikoni me shume",
+          },
+        };
+        const pushNotificationBody = {
+          to: invitedUser.pushToken,
+          title: `Krijuesi i eventit ${updatedRequest.event.name} refuzoi kerkesen tuaj per t'u futur`,
+          body: "Futuni ne aplikacion dhe shikoni me shume",
+          data: { eventId: updatedRequest.event.id },
+        };
+
+        notifications.push(notificationBody);
+        pushNotifications.push(pushNotificationBody);
+        NotificationService.storeNotification(notifications);
+        NotificationService.pushNotification(pushNotifications);
+      } else {
+        const creator = await UserService.findOne(originalRequest.event.creatorId);
+        let notifications = [];
+        let pushNotifications = [];
+        const notificationBody = {
+          receiverId: originalRequest.event.creatorId,
+          type: NotificationType.REQUEST_CONFIRMED,
+          payload: {
+            eventName: updatedRequest.event.name,
+            playerName: updatedRequest.receiver.name,
+            requestId: updatedRequest.id,
+            exponentPushToken: creator.pushToken,
+            title: `${updatedRequest.receiver.name} refuzoi ftesen tek eventi ${updatedRequest.event.name}`,
+            body: "Futuni ne aplikacion dhe shikoni me shume",
+          },
+        };
+        const pushNotificationBody = {
+          to: creator.pushToken,
+          title: `${updatedRequest.receiver.name} refuzoi ftesen tek eventi ${updatedRequest.event.name}`,
+          body: "Futuni ne aplikacion dhe shikoni me shume",
+          data: { eventId: updatedRequest.event.id },
+        };
+
+        notifications.push(notificationBody);
+        pushNotifications.push(pushNotificationBody);
+        NotificationService.storeNotification(notifications);
+        NotificationService.pushNotification(pushNotifications);
+      }
     }
     return "Request successfully updated!";
   };
@@ -391,6 +587,38 @@ export class RequestService {
 
     const createdRequest = requestRepository.create(payload);
     await requestRepository.save(createdRequest);
+
+    const teamRepository = getCustomRepository(TeamRepository);
+    const invitedTeam = await teamRepository
+      .createQueryBuilder("team")
+      .leftJoinAndSelect("team.user", "u")
+      .where("team.id = :id", { id: event.organiserTeamId })
+      .getOne();
+
+    let notifications = [];
+    let pushNotifications = [];
+    const notificationBody = {
+      receiverId: team.id,
+      type: NotificationType.TEAM_INVITED_TO_EVENT,
+      payload: {
+        eventId: event.id,
+        eventName: event.name,
+        exponentPushToken: invitedTeam.user.pushToken,
+        title: `Ju jeni ftuar te luani tek eventi ${event.name}`,
+        body: "Futuni ne aplikacion dhe shikoni ftesen",
+      },
+    };
+    const pushNotificationBody = {
+      to: invitedTeam.user.pushToken,
+      title: `Ju jeni ftuar te luani tek eventi ${event.name}`,
+      body: "Futuni ne aplikacion dhe shikoni ftesen",
+      data: { eventId: event.id },
+    };
+
+    notifications.push(notificationBody);
+    pushNotifications.push(pushNotificationBody);
+    NotificationService.storeNotification(notifications);
+    NotificationService.pushNotification(pushNotifications);
 
     return createdRequest;
   };
