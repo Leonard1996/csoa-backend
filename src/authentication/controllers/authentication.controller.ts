@@ -15,8 +15,10 @@ export class AuthenticationController {
     const userRepository = getRepository(User);
 
     if (phoneNumber) {
-      if (phoneNumber.slice(0, 3) === "355") phoneNumber = phoneNumber.slice(3, phoneNumber.length);
-      if (phoneNumber[0] === "0") phoneNumber = phoneNumber.slice(1, phoneNumber.length);
+      if (phoneNumber.slice(0, 3) === "355")
+        phoneNumber = phoneNumber.slice(3, phoneNumber.length);
+      if (phoneNumber[0] === "0")
+        phoneNumber = phoneNumber.slice(1, phoneNumber.length);
       phoneNumber = "355" + phoneNumber;
     }
 
@@ -29,9 +31,13 @@ export class AuthenticationController {
     });
 
     if (user) {
-      const accessToken = jwt.sign({ userId: user.id, userRole: user.role }, process.env.JWT_SECRET_KEY, {
-        expiresIn: process.env.ACCESS_TOKEN_LIFETIME_MS,
-      });
+      const accessToken = jwt.sign(
+        { userId: user.id, userRole: user.role },
+        process.env.JWT_SECRET_KEY,
+        {
+          expiresIn: process.env.ACCESS_TOKEN_LIFETIME_MS,
+        }
+      );
 
       if (pushToken && pushToken !== user.pushToken) {
         const dto = new UpdateUserDto();
@@ -47,7 +53,9 @@ export class AuthenticationController {
 
       return res.status(200).send(new SuccessResponse(responseData));
     } else {
-      return res.status(400).send(new ErrorResponse(ERROR_MESSAGES.INVALID_USERNAME_PASSWORD));
+      return res
+        .status(400)
+        .send(new ErrorResponse(ERROR_MESSAGES.INVALID_USERNAME_PASSWORD));
     }
   };
 

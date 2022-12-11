@@ -175,10 +175,13 @@ export class ComplexService {
     return eventRepository
       .createQueryBuilder("e")
       .select(
-        "e.id, e.name as name, e.startDate, e.endDate,l.id as locationId, l.name as locationName, l.price, e.status, c.workingHours, e.sport, e.notes"
+        `e.id, e.name as name, e.startDate, e.endDate,l.id as locationId, l.name as locationName, 
+        l.price, e.status, c.workingHours, e.sport, e.notes, e.isWeekly,
+        e.weeklyGroupedId, u.name as organiser, u.email as email, u.phoneNumber as phoneNumber `
       )
       .innerJoin("locations", "l", "l.id = e.locationId")
       .innerJoin("complexes", "c", "c.id = l.complexId")
+      .leftJoin("users", "u", "u.id = e.creatorId")
       .where("c.id = :id", { id: request.params.id })
       .andWhere("e.startDate >= :startDate", {
         startDate: request.body.from,
