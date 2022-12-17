@@ -9,36 +9,32 @@ import { NotificationService } from "../services/notification.services";
 export class NotificationController {
   static listMyNotifications = async (request: Request, response: Response) => {
     try {
-      const results = await NotificationService.listMyNotifications(
-        request,
-        response
-      );
-      return response
-        .status(HttpStatusCode.OK)
-        .send(new SuccessResponse({ results }));
+      const results = await NotificationService.listMyNotifications(request, response);
+      return response.status(HttpStatusCode.OK).send(new SuccessResponse({ results }));
     } catch (err) {
       console.log({ err });
-      return response
-        .status(404)
-        .send(new ErrorResponse("Could not get notifications for user"));
+      return response.status(404).send(new ErrorResponse("Could not get notifications for user"));
+    }
+  };
+
+  static listMyComplexNotifications = async (request: Request, response: Response) => {
+    try {
+      const results = await NotificationService.listMyComplexNotifications(request, response);
+      return response.status(HttpStatusCode.OK).send(new SuccessResponse({ results }));
+    } catch (err) {
+      console.log({ err });
+      return response.status(404).send(new ErrorResponse("Could not get notifications for user"));
     }
   };
 
   static updateNotification = async (request: Request, response: Response) => {
     try {
-      const originalNotification = await NotificationService.findById(
-        +request.params.id
-      );
+      const originalNotification = await NotificationService.findById(+request.params.id);
       if (Helper.isDefined(originalNotification)) {
-        const updatedNotification =
-          await NotificationService.updateNotification(originalNotification);
-        return response
-          .status(HttpStatusCode.OK)
-          .send(new SuccessResponse(updatedNotification));
+        const updatedNotification = await NotificationService.updateNotification(originalNotification);
+        return response.status(HttpStatusCode.OK).send(new SuccessResponse(updatedNotification));
       } else {
-        return response
-          .status(HttpStatusCode.NOT_FOUND)
-          .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+        return response.status(HttpStatusCode.NOT_FOUND).send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
       }
     } catch (err) {
       console.log(err);

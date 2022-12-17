@@ -17,6 +17,18 @@ export class NotificationService {
     return myNotifications;
   };
 
+  static listMyComplexNotifications = async (request: Request, response: Response) => {
+    const notificationRepository = getCustomRepository(NotificationRepository);
+    const eventId = request.params.complexId;
+
+    const myNotifications = await notificationRepository
+      .createQueryBuilder("notification")
+      .where("complexId = :eventId", { eventId })
+      .getMany();
+
+    return myNotifications;
+  };
+
   static findById = async (id: number) => {
     const notificationRepository = getCustomRepository(NotificationRepository);
 
