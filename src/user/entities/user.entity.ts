@@ -1,4 +1,11 @@
-import { Column, Entity, ManyToMany, ManyToOne, OneToMany, Unique } from "typeorm";
+import {
+  Column,
+  Entity,
+  ManyToMany,
+  ManyToOne,
+  OneToMany,
+  Unique,
+} from "typeorm";
 import { Attachment } from "../../attachment/entities/attachment.entity";
 import { Common } from "../../common/entities/common";
 import { Complex } from "../../complex/entities/complex.entity";
@@ -98,6 +105,9 @@ export class User extends Common {
 
   @OneToMany(() => Attachment, (attachment) => attachment.user)
   attachments: Attachment[];
+
+  @OneToMany(() => Event, (event) => event.deletedBy)
+  eventDeleter: Event[];
 
   toResponseObject() {
     return {

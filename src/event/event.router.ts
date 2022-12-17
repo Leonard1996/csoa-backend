@@ -62,6 +62,13 @@ export class EventRouter {
       EventController.cancel,
     ]);
 
+    app.delete("/after-confirmation/events/:eventId", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.USER]),
+      PermissionMiddleware.checkIfEventCreatorOrCompany,
+      EventController.deleteAfterCancelation,
+    ]);
+
     app.get("/events/:eventId", [
       AuthenticationMiddleware.checkJwtToken,
       PermissionMiddleware.checkMeOrPermissionsAllowed([UserRole.USER, UserRole.ADMIN]),

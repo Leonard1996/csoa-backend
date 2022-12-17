@@ -10,9 +10,11 @@ import { WeeklyEventGroup } from "./weekly.event.group.entity";
 export enum EventStatus {
   DRAFT = "draft",
   WAITING_FOR_CONFIRMATION = "waiting_for_confirmation",
+  DELETED_BY_USER_BEFORE_CONFIRMATION = "deleted by user before confirmation",
   CONFIRMED = "confirmed",
   COMPLETED = "completed",
   CANCELED = "canceled",
+  DELETED_BY_USER_AFTER_CANCELATION = "deleted by user after cancelation",
   REFUSED = "refused",
 }
 
@@ -124,6 +126,11 @@ export class Event extends Common {
   public creator: User;
   @Column("int", { nullable: true })
   creatorId: number;
+
+  @ManyToOne(() => User, (user) => user.eventDeleter)
+  public deletedBy: User;
+  @Column("int", { nullable: true })
+  deletedById: number;
 
   @OneToMany(() => EventTeamUsers, (eventTeamUser) => eventTeamUser.event)
   eventsTeamUser: EventTeamUsers[];

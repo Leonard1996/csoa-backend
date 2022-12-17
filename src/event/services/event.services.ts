@@ -12,7 +12,7 @@ import { EventTeamUsersRepository } from "../repositories/event.team.users.repos
 import { CreateEventDto } from "../dto/create-event.dto";
 import { WeeklyEventGroup } from "../entities/weekly.event.group.entity";
 import { WeeklyEventGroupRepository } from "../repositories/weekly.event.group.repository";
-import { NotificationService } from "../../notifications/services/notification.services";
+import { UserRole } from "../../user/utilities/UserRole";
 
 export class EventService {
   static listMyEvents = async (request: Request, response: Response) => {
@@ -164,6 +164,7 @@ export class EventService {
       .innerJoin("complexes", "c", "c.id = l.complexId")
       .leftJoin("users", "u", "u.id = e.creatorId")
       .where("(e.isDraft is null OR e.isDraft = 0)")
+      .andWhere("u.role = :role", { role: UserRole.USER })
       .orderBy("e.ts_Created", "DESC")
       .withDeleted()
       .limit(15)

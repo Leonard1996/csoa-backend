@@ -9,6 +9,7 @@ import { SuccessResponse } from "../../common/utilities/SuccessResponse";
 import { Complex } from "../../complex/entities/complex.entity";
 import { Location } from "../../complex/entities/location.entity";
 import { User } from "../../user/entities/user.entity";
+import { UserRole } from "../../user/utilities/UserRole";
 import { Event, EventStatus } from "../entities/event.entity";
 import { EventService } from "../services/event.services";
 
@@ -89,16 +90,16 @@ export class EventController {
       const user = await getRepository(User).findOne({
         where: { complexId: location.complexId },
       });
-      // const mailer = new Mailer();
-      // mailer.sendMail(
-      //   user.email,
-      //   "Rezervim i ri",
-      //   `
-      // <div>
-      // Pershendetje, ju keni nje rezervim te ri, vizitoni aplikacionin ose panelin per me shume detaje.
-      // </div>
-      // `
-      // );
+      const mailer = new Mailer();
+      mailer.sendMail(
+        user.email,
+        "Rezervim i ri",
+        `
+      <div>
+      Pershendetje, ju keni nje rezervim te ri, vizitoni aplikacionin ose panelin per me shume detaje.
+      </div>
+      `
+      );
       if (!event) throw Error();
       return response.status(HttpStatusCode.OK).send(new SuccessResponse({ event }));
     } catch (err) {
@@ -134,8 +135,12 @@ export class EventController {
           ...(weeklyGroupedId && { weeklyGroupedId }),
         },
         {
-          status: EventStatus.REFUSED,
+          status:
+            response.locals.jwt.role === UserRole.USER
+              ? EventStatus.DELETED_BY_USER_BEFORE_CONFIRMATION
+              : EventStatus.REFUSED,
           tsDeleted: new Date(),
+          deletedById: response.locals.jwt.userId,
         }
       );
       return response.sendStatus(204);
@@ -215,6 +220,7 @@ export class EventController {
           {
             status: EventStatus.CANCELED,
             tsDeleted: new Date(),
+            deletedById: response.locals.jwt.userId,
           }
         );
         return response.sendStatus(204);
@@ -227,12 +233,40 @@ export class EventController {
         {
           status: EventStatus.CANCELED,
           tsDeleted: new Date(),
+          deletedById: response.locals.jwt.userId,
         }
       );
       return response.sendStatus(204);
     } catch (err) {
       console.log({ err });
       return response.status(404).send(new ErrorResponse("Could not cancel event"));
+    }
+  };
+
+  static deleteAfterCancelation = async (
+    request: Request,
+    response: Response
+  ) => {
+    const weeklyGroupedId = +request.query.weeklyGroupedId;
+    try {
+      await getRepository(Event).update(
+        {
+          ...(!weeklyGroupedId && { id: +request.params.eventId }),
+          status: EventStatus.CANCELED,
+          ...(weeklyGroupedId && { weeklyGroupedId }),
+        },
+        {
+          status: EventStatus.DELETED_BY_USER_AFTER_CANCELATION,
+          tsDeleted: new Date(),
+          deletedById: response.locals.jwt.userId,
+        }
+      );
+      return response.sendStatus(204);
+    } catch (err) {
+      console.log({ err });
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not delete my events"));
     }
   };
 }
