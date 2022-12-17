@@ -1,10 +1,5 @@
-import { Request, Response } from "express";
-import {
-  Brackets,
-  getCustomRepository,
-  getManager,
-  getRepository,
-} from "typeorm";
+import { query, Request, Response } from "express";
+import { Brackets, getCustomRepository, getManager, getRepository } from "typeorm";
 import { Functions } from "../../common/utilities/Functions";
 import { RequestStatus } from "../../request/entities/request.entity";
 import { UserService } from "../../user/services/user.service";
@@ -14,12 +9,10 @@ import { TeamUsers } from "../../team/entities/team.users.entity";
 import { RequestRepository } from "../../request/repositories/request.repository";
 import { TeamRepository } from "../../team/repositories/team.repository";
 import { EventTeamUsersRepository } from "../repositories/event.team.users.repository";
-import { NotificationService } from "../../notifications/services/notification.services";
-import { NotificationType } from "../../notifications/entities/notification.entity";
 import { CreateEventDto } from "../dto/create-event.dto";
 import { WeeklyEventGroup } from "../entities/weekly.event.group.entity";
-import { performance } from "perf_hooks";
-import { UpdateEventDto } from "../dto/update-event.dto";
+import { WeeklyEventGroupRepository } from "../repositories/weekly.event.group.repository";
+import { NotificationService } from "../../notifications/services/notification.services";
 
 export class EventService {
   static listMyEvents = async (request: Request, response: Response) => {
@@ -46,11 +39,7 @@ export class EventService {
 
     const queryBuilder = eventsRepository
       .createQueryBuilder("event")
-      .leftJoin(
-        "event.eventRequests",
-        "request",
-        "request.eventId = event.id AND request.status = 'confirmed'"
-      )
+      .leftJoin("event.eventRequests", "request", "request.eventId = event.id AND request.status = 'confirmed'")
       .leftJoinAndSelect("event.location", "location")
       .leftJoinAndSelect("location.complex", "complex")
       .leftJoinAndSelect("event.organiserTeam", "senderTeam")
@@ -191,11 +180,7 @@ export class EventService {
     const teamPlayers = await requestRepository
       .createQueryBuilder("r")
       .select("u.name, u.profile_picture, t.name as team, r.status")
-      .innerJoin(
-        "teams",
-        "t",
-        "t.id = r.senderTeamId OR t.id = r.receiverTeamId"
-      )
+      .innerJoin("teams", "t", "t.id = r.senderTeamId OR t.id = r.receiverTeamId")
       .innerJoin("teams_users", "tu", "tu.teamId = t.id")
       .innerJoin("users", "u", "u.id = tu.playerId")
       .where("r.eventId = :id", { id: request.params.id })
@@ -213,16 +198,7 @@ export class EventService {
 
   static async createAdminEvent(request: Request, response: Response) {
     const {
-      body: {
-        startDate,
-        endDate,
-        notes,
-        name,
-        locationId,
-        sport,
-        status,
-        isWeekly,
-      },
+      body: { startDate, endDate, notes, name, locationId, sport, status, isWeekly },
     } = request;
     if (new Date(startDate) < new Date()) {
       throw new Error("Ora e eventit nuk mund te jete ne te shkuaren!");
@@ -233,22 +209,16 @@ export class EventService {
     await queryRunner.startTransaction();
     try {
       let createdEvent: any = false;
-      let upgradedStartDate = startDate;
-      let upgradedEndDate = endDate;
       let eventsToBeInserted = [];
       for (let i = 0; i <= (isWeekly ? 11 : 0); i++) {
-        const incrementedStartDate = EventService.addDays(upgradedStartDate, i);
-        const incrementedEndDate = EventService.addDays(upgradedEndDate, i);
+        const incrementedStartDate = EventService.addDays(startDate, i);
+        const incrementedEndDate = EventService.addDays(endDate, i);
         const overlappingEvent = await queryRunner.manager
           .createQueryBuilder()
           .from("events", "e")
           .where(`e.locationId = '${locationId}'`)
           .andWhere("e.status NOT IN (:...statuses)", {
-            statuses: [
-              EventStatus.DRAFT,
-              EventStatus.CANCELED,
-              EventStatus.REFUSED,
-            ],
+            statuses: [EventStatus.DRAFT, EventStatus.CANCELED, EventStatus.REFUSED],
           })
           .andWhere(
             new Brackets((qb) => {
@@ -278,23 +248,15 @@ export class EventService {
           event.isWeekly = isWeekly ? true : false;
           eventsToBeInserted.push(event);
         }
-        if (
-          (isWeekly && eventsToBeInserted.length === 12) ||
-          (!isWeekly && eventsToBeInserted.length === 1)
-        ) {
+        if ((isWeekly && eventsToBeInserted.length === 12) || (!isWeekly && eventsToBeInserted.length === 1)) {
           createdEvent = queryRunner.manager.create(Event, eventsToBeInserted);
           if (isWeekly) {
             const weeklyEventGroup = new WeeklyEventGroup();
             weeklyEventGroup.startDate = eventsToBeInserted[0].startDate;
             weeklyEventGroup.endDate = eventsToBeInserted[11].endDate;
             weeklyEventGroup.status = eventsToBeInserted[0].status;
-            queryRunner.manager.create(
-              WeeklyEventGroup,
-              new WeeklyEventGroup()
-            );
-            const createdWeekly = await queryRunner.manager.save(
-              weeklyEventGroup
-            );
+            queryRunner.manager.create(WeeklyEventGroup, new WeeklyEventGroup());
+            const createdWeekly = await queryRunner.manager.save(weeklyEventGroup);
             for (const event of createdEvent) {
               event.weeklyGroupedId = createdWeekly.id;
             }
@@ -343,22 +305,16 @@ export class EventService {
     await queryRunner.startTransaction();
     try {
       let createdEvent: any = false;
-      let upgradedStartDate = startDate;
-      let upgradedEndDate = endDate;
       let eventsToBeInserted = [];
       for (let i = 0; i <= (isWeekly ? 11 : 0); i++) {
-        const incrementedStartDate = EventService.addDays(upgradedStartDate, i);
-        const incrementedEndDate = EventService.addDays(upgradedEndDate, i);
+        const incrementedStartDate = EventService.addDays(startDate, i);
+        const incrementedEndDate = EventService.addDays(endDate, i);
         const overlappingEvent = await queryRunner.manager
           .createQueryBuilder()
           .from("events", "e")
           .where(`e.locationId = '${locationId}'`)
           .andWhere("e.status NOT IN (:...statuses)", {
-            statuses: [
-              EventStatus.DRAFT,
-              EventStatus.CANCELED,
-              EventStatus.REFUSED,
-            ],
+            statuses: [EventStatus.DRAFT, EventStatus.CANCELED, EventStatus.REFUSED],
           })
           .andWhere(
             new Brackets((qb) => {
@@ -378,7 +334,7 @@ export class EventService {
           const event = new CreateEventDto();
           event.startDate = incrementedStartDate;
           event.endDate = incrementedEndDate;
-          event.isUserReservation = false;
+          event.isUserReservation = true;
           event.creatorId = response.locals.jwt.userId;
           event.notes = notes;
           event.name = name;
@@ -395,23 +351,15 @@ export class EventService {
           event.organiserTeamId = organiserTeamId ?? null;
           eventsToBeInserted.push(event);
         }
-        if (
-          (isWeekly && eventsToBeInserted.length === 12) ||
-          (!isWeekly && eventsToBeInserted.length === 1)
-        ) {
+        if ((isWeekly && eventsToBeInserted.length === 12) || (!isWeekly && eventsToBeInserted.length === 1)) {
           createdEvent = queryRunner.manager.create(Event, eventsToBeInserted);
           if (isWeekly) {
             const weeklyEventGroup = new WeeklyEventGroup();
             weeklyEventGroup.startDate = eventsToBeInserted[0].startDate;
             weeklyEventGroup.endDate = eventsToBeInserted[11].endDate;
             weeklyEventGroup.status = eventsToBeInserted[0].status;
-            queryRunner.manager.create(
-              WeeklyEventGroup,
-              new WeeklyEventGroup()
-            );
-            const createdWeekly = await queryRunner.manager.save(
-              weeklyEventGroup
-            );
+            queryRunner.manager.create(WeeklyEventGroup, new WeeklyEventGroup());
+            const createdWeekly = await queryRunner.manager.save(weeklyEventGroup);
             for (const event of createdEvent) {
               event.weeklyGroupedId = createdWeekly.id;
             }
@@ -441,11 +389,7 @@ export class EventService {
       payload.push(redTeam);
     }
 
-    const dummyTeams = await teamRepository
-      .createQueryBuilder("team")
-      .insert()
-      .values(payload)
-      .execute();
+    const dummyTeams = await teamRepository.createQueryBuilder("team").insert().values(payload).execute();
 
     for (let j = 0; j < events.length; j++) {
       events[j].organiserTeamId = dummyTeams.generatedMaps[j * 2].id;
@@ -467,11 +411,7 @@ export class EventService {
       };
       payload.push(element);
     }
-    await requestRepository
-      .createQueryBuilder("request")
-      .insert()
-      .values(payload)
-      .execute();
+    await requestRepository.createQueryBuilder("request").insert().values(payload).execute();
   };
 
   static getById = async (eventId: number) => {
@@ -483,16 +423,8 @@ export class EventService {
       .leftJoinAndSelect("location.complex", "complex")
       .leftJoinAndSelect("event.organiserTeam", "organiserTeam")
       .leftJoinAndSelect("event.receiverTeam", "receiverTeam")
-      .leftJoinAndSelect(
-        "organiserTeam.players",
-        "organiserPlayers",
-        `organiserPlayers.status = 'confirmed'`
-      )
-      .leftJoinAndSelect(
-        "receiverTeam.players",
-        "receiverPlayers",
-        `receiverPlayers.status = 'confirmed'`
-      )
+      .leftJoinAndSelect("organiserTeam.players", "organiserPlayers", `organiserPlayers.status = 'confirmed'`)
+      .leftJoinAndSelect("receiverTeam.players", "receiverPlayers", `receiverPlayers.status = 'confirmed'`)
       .leftJoinAndSelect("organiserPlayers.player", "op")
       .leftJoinAndSelect("receiverPlayers.player", "rp")
       .where("event.id = :id", { id: eventId })
@@ -504,23 +436,14 @@ export class EventService {
   static findById = async (eventId: number) => {
     const eventRepository = getCustomRepository(EventRepository);
 
-    const event = await eventRepository
-      .createQueryBuilder("event")
-      .where("event.id = :id", { id: eventId })
-      .getOne();
+    const event = await eventRepository.createQueryBuilder("event").where("event.id = :id", { id: eventId }).getOne();
 
     return event;
   };
 
-  static patch = async (
-    eventPayload,
-    currentEvent: Event,
-    request: Request
-  ) => {
+  static patch = async (eventPayload, currentEvent: Event, request: Request) => {
     const eventRepository = getCustomRepository(EventRepository);
-    const eventTeamsUsersRepository = getCustomRepository(
-      EventTeamUsersRepository
-    );
+    const eventWeeklyRepository = getCustomRepository(WeeklyEventGroupRepository);
     const {
       body: {
         startDate,
@@ -536,13 +459,10 @@ export class EventService {
         playersNumber,
         isWeekly,
         level,
-        isUserReservation,
-        organiserTeamId,
-        weeklyGroupedId,
       },
     } = request;
     if (new Date(startDate) < new Date()) {
-      throw new Error("Ora e eventit nuk mund te jete ne te shkuaren!");
+      throw new Error("Ora e eventit nuk mund te jete  ne te shkuaren!");
     }
 
     let eventForConfirmation = false;
@@ -559,10 +479,8 @@ export class EventService {
     await queryRunner.startTransaction();
     try {
       let updatedEvent: any = false;
-      let upgradedStartDate = startDate;
-      let upgradedEndDate = endDate;
       let eventsToBeUpdated = [];
-      const events = [];
+
       if (currentEvent.isWeekly) {
         const remainedEvents = await eventRepository
           .createQueryBuilder("e")
@@ -571,74 +489,89 @@ export class EventService {
           })
           .andWhere("e.startDate >= :now", { now: new Date().toISOString() })
           .getMany();
-        events.push(remainedEvents);
+
+        if (startDate !== currentEvent.startDate.toISOString()) {
+          console.log("different date");
+
+          for (const [i, event] of remainedEvents.entries()) {
+            const incrementedStartDate = EventService.addDays(startDate, i);
+            const incrementedEndDate = EventService.addDays(endDate, i);
+            const overlappingEvent = await queryRunner.manager
+              .createQueryBuilder()
+              .from("events", "e")
+              .where(`e.locationId = '${locationId}'`)
+              .andWhere("e.status NOT IN (:...statuses)", {
+                statuses: [EventStatus.DRAFT, EventStatus.CANCELED, EventStatus.REFUSED],
+              })
+              .andWhere(
+                new Brackets((qb) => {
+                  qb.where(
+                    `(e.startDate < '${incrementedEndDate.toISOString()}' AND e.endDate > '${incrementedStartDate.toISOString()}')`
+                  );
+                  qb.orWhere(
+                    `(e.startDate = '${incrementedStartDate.toISOString()}' AND e.endDate = '${incrementedEndDate.toISOString()}')`
+                  );
+                })
+              )
+              .andWhere("e.ts_deleted IS NULL")
+              .setLock("pessimistic_read")
+              .getRawOne();
+
+            if (!overlappingEvent) {
+              event.startDate = incrementedStartDate;
+              event.endDate = incrementedEndDate;
+              event.name = name;
+              // event.notes = notes;
+              // event.locationId = locationId;
+              // event.sport = sport;
+              // event.status = status;
+              // event.isWeekly = isWeekly ? true : false;
+              // event.isUserReservation = isUserReservation;
+              // event.isPublic = isPublic;
+              // event.isTeam = isTeam;
+              // event.playersAge = playersAge;
+              // event.playersNumber = playersNumber;
+              // event.level = level;
+              // event.organiserTeamId = organiserTeamId ?? null;
+              // event.receiverTeamId = receiverTeamId ?? null;
+              eventsToBeUpdated.push(event);
+            }
+          }
+        } else {
+          console.log("same date");
+
+          for (const event of remainedEvents) {
+            event.name = name;
+            // event.notes = notes;
+            // event.locationId = locationId;
+            // event.sport = sport;
+            // event.status = status;
+            // event.isWeekly = isWeekly ? true : false;
+            // event.isPublic = isPublic;
+            // event.isTeam = isTeam;
+            // event.playersAge = playersAge;
+            // event.playersNumber = playersNumber;
+            // event.level = level;
+            eventsToBeUpdated.push(event);
+          }
+        }
+
+        updatedEvent = await queryRunner.manager.save(eventsToBeUpdated);
+
+        // const weeklyEventGroup = await eventWeeklyRepository
+        //   .createQueryBuilder()
+        //   .where("id = :weeklyGroupId", { weeklyGroupId: currentEvent.weeklyGroupedId })
+        //   .getOne();
+        // weeklyEventGroup.startDate = eventsToBeUpdated[0].startDate;
+        // weeklyEventGroup.endDate = eventsToBeUpdated[eventsToBeUpdated.length - 1].endDate;
+        // queryRunner.manager.save(weeklyEventGroup);
       }
-      // for (let i = 0; i < events.length; i++) {
-      //   const incrementedStartDate = EventService.addDays(upgradedStartDate, i);
-      //   const incrementedEndDate = EventService.addDays(upgradedEndDate, i);
-      //   const overlappingEvent = await queryRunner.manager
-      //     .createQueryBuilder()
-      //     .from("events", "e")
-      //     .where(`e.locationId = '${locationId}'`)
-      //     .andWhere("e.status NOT IN (:...statuses)", {
-      //       statuses: [EventStatus.DRAFT, EventStatus.CANCELED, EventStatus.REFUSED],
-      //     })
-      //     .andWhere(
-      //       new Brackets((qb) => {
-      //         qb.where(
-      //           `(e.startDate < '${incrementedEndDate.toISOString()}' AND e.endDate > '${incrementedStartDate.toISOString()}')`
-      //         );
-      //         qb.orWhere(
-      //           `(e.startDate = '${incrementedStartDate.toISOString()}' AND e.endDate = '${incrementedEndDate.toISOString()}')`
-      //         );
-      //       })
-      //     )
-      //     .andWhere("e.ts_deleted IS NULL")
-      //     .setLock("pessimistic_read")
-      //     .getRawOne();
-
-      //   if (!overlappingEvent) {
-      //     const event = new UpdateEventDto();
-      //     // event.id =
-      //     currentEvent.startDate = incrementedStartDate;
-      //     currentEvent.endDate = incrementedEndDate;
-      //     currentEvent.isUserReservation = false;
-      //     currentEvent.notes = notes;
-      //     currentEvent.name = name;
-      //     currentEvent.locationId = locationId;
-      //     currentEvent.sport = sport;
-      //     currentEvent.status = status;
-      //     currentEvent.isWeekly = isWeekly ? true : false;
-      //     currentEvent.isUserReservation = isUserReservation;
-      //     currentEvent.isPublic = isPublic;
-      //     currentEvent.isTeam = isTeam;
-      //     currentEvent.playersAge = playersAge;
-      //     currentEvent.playersNumber = playersNumber;
-      //     currentEvent.level = level;
-      //     currentEvent.organiserTeamId = organiserTeamId ?? null;
-      //     eventsToBeUpdated.push(currentEvent);
-      //   }
-      //   if ((isWeekly && eventsToBeUpdated.length === 12) || (!isWeekly && eventsToBeUpdated.length === 1)) {
-      //     updatedEvent = queryRunner.manager.create(Event, eventsToBeUpdated);
-      //     if (isWeekly) {
-      //       const weeklyEventGroup = new WeeklyEventGroup();
-      //       weeklyEventGroup.startDate = eventsToBeUpdated[0].startDate;
-      //       weeklyEventGroup.endDate = eventsToBeUpdated[11].endDate;
-      //       weeklyEventGroup.status = EventStatus.CONFIRMED;
-      //       queryRunner.manager.create(WeeklyEventGroup, new WeeklyEventGroup());
-      //       const createdWeekly = await queryRunner.manager.save(weeklyEventGroup);
-      //       for (const event of eventsToBeUpdated) {
-      //         event.weeklyGroupedId = createdWeekly.id;
-      //       }
-      //     }
-
-      //     updatedEvent = await queryRunner.manager.save(updatedEvent);
-      //   }
-      // }
 
       await queryRunner.commitTransaction();
       return updatedEvent;
     } catch (error) {
+      console.log(error);
+
       await queryRunner.rollbackTransaction();
     } finally {
       await queryRunner.release();
@@ -713,6 +646,41 @@ export class EventService {
 
     //   await NotificationService.storeNotification(notifications);
     // }
+
+    return updatedEvent;
+  };
+
+  static patchSingleEvent = async (eventPayload, currentEvent: Event, request: Request) => {
+    const eventRepository = getCustomRepository(EventRepository);
+
+    const mergedEvent = eventRepository.merge(currentEvent, eventPayload);
+    const updatedEvent = await eventRepository.save(mergedEvent);
+
+    // let notifications = [];
+    // let pushNotifications = [];
+    // const notificationBody = {
+    //   receiverId: originalRequest.receiverId,
+    //   type: NotificationType.REQUEST_CONFIRMED,
+    //   payload: {
+    //     eventName: updatedRequest.event.name,
+    //     playerName: updatedRequest.receiver.name,
+    //     requestId: updatedRequest.id,
+    //     exponentPushToken: invitedUser.pushToken,
+    //     title: `Krijuesi i eventit ${updatedRequest.event.name} pranoi kerkesen tuaj per t'u futur`,
+    //     body: "Futuni ne aplikacion dhe shikoni me shume",
+    //   },
+    // };
+    // const pushNotificationBody = {
+    //   to: invitedUser.pushToken,
+    //   title: `Krijuesi i eventit ${updatedRequest.event.name} pranoi kerkesen tuaj per t'u futur`,
+    //   body: "Futuni ne aplikacion dhe shikoni me shume",
+    //   data: { eventId: updatedRequest.event.id },
+    // };
+
+    // notifications.push(notificationBody);
+    // pushNotifications.push(pushNotificationBody);
+    // NotificationService.storeNotification(notifications);
+    // NotificationService.pushNotification(pushNotifications);
 
     return updatedEvent;
   };

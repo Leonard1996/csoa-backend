@@ -8,19 +8,19 @@ export class NotificationRouter {
   static configRoutes = (app: express.Application) => {
     app.get("/notifications", [
       AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([
-        UserRole.USER,
-        UserRole.ADMIN,
-      ]),
+      PermissionMiddleware.checkAllowedPermissions([UserRole.USER, UserRole.ADMIN]),
       NotificationController.listMyNotifications,
+    ]);
+
+    app.get("/notifications/complexes/:complexId", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.COMPNAY, UserRole.ADMIN]),
+      NotificationController.listMyComplexNotifications,
     ]);
 
     app.put("/notifications/:id", [
       AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([
-        UserRole.USER,
-        UserRole.ADMIN,
-      ]),
+      PermissionMiddleware.checkAllowedPermissions([UserRole.USER, UserRole.ADMIN]),
       NotificationController.updateNotification,
     ]);
   };

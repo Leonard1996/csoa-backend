@@ -32,6 +32,9 @@ export class CreateEventDto {
   organiserTeamId: number;
 
   @IsOptional()
+  receiverTeamId: number;
+
+  @IsOptional()
   isTeam: boolean;
 
   @IsOptional()
