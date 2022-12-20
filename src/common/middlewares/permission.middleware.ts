@@ -37,11 +37,7 @@ export class PermissionMiddleware {
     };
   };
 
-  static checkNotMe = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  static checkNotMe = async (req: Request, res: Response, next: NextFunction) => {
     const { userId } = res.locals.jwt;
 
     if (req.params && req.params.userId && req.params.userId === userId) {
@@ -51,11 +47,7 @@ export class PermissionMiddleware {
     next();
   };
 
-  static checkIfOwner = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  static checkIfOwner = async (req: Request, res: Response, next: NextFunction) => {
     const { userId, userRole } = res.locals.jwt;
     if (userRole === UserRole.ADMIN) {
       next();
@@ -75,11 +67,7 @@ export class PermissionMiddleware {
     }
   };
 
-  static checkIfEventCreatorOrCompany = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  static checkIfEventCreatorOrCompany = async (req: Request, res: Response, next: NextFunction) => {
     const { userId, userRole } = res.locals.jwt;
     if (userRole === UserRole.ADMIN) {
       next();
@@ -122,11 +110,7 @@ export class PermissionMiddleware {
     }
   };
 
-  static checkIfTeamCreator = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  static checkIfTeamCreator = async (req: Request, res: Response, next: NextFunction) => {
     const { userId } = res.locals.jwt;
     const teamId = req.params.teamId;
     console.log({ teamId });

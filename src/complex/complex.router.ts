@@ -9,20 +9,12 @@ export class ComplexRouter {
   static configRoutes = (app: express.Application) => {
     app.get("/complexes", [
       AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([
-        UserRole.ADMIN,
-        UserRole.COMPNAY,
-        UserRole.USER,
-      ]),
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN, UserRole.COMPNAY, UserRole.USER]),
       ComplexController.list,
     ]);
     app.get("/complexes/app", [
       AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([
-        UserRole.ADMIN,
-        UserRole.COMPNAY,
-        UserRole.USER,
-      ]),
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN, UserRole.COMPNAY, UserRole.USER]),
       ComplexController.listForApp,
     ]);
     app.get("/complexes-minified", [
@@ -47,44 +39,27 @@ export class ComplexRouter {
     ]);
     app.get("/complexes/:id", [
       AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([
-        UserRole.ADMIN,
-        UserRole.COMPNAY,
-        UserRole.USER,
-      ]),
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN, UserRole.COMPNAY, UserRole.USER]),
       ComplexController.getById,
     ]);
     app.get("/complexes/:id/events", [
       AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([
-        UserRole.ADMIN,
-        UserRole.COMPNAY,
-      ]),
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN, UserRole.COMPNAY]),
       ComplexController.getEvents,
     ]);
     app.post("/complexes/:id/events", [
       AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([
-        UserRole.ADMIN,
-        UserRole.COMPNAY,
-      ]),
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN, UserRole.COMPNAY]),
       ComplexController.getFilteredEvents,
     ]);
     app.post("/complexes/:id/locations/:locationId/events", [
       AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([
-        UserRole.ADMIN,
-        UserRole.COMPNAY,
-        UserRole.USER,
-      ]),
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN, UserRole.COMPNAY, UserRole.USER]),
       ComplexController.fetchEventsByLocationdId,
     ]);
     app.get("/complexes/:id/locations", [
       AuthenticationMiddleware.checkJwtToken,
-      PermissionMiddleware.checkAllowedPermissions([
-        UserRole.ADMIN,
-        UserRole.COMPNAY,
-      ]),
+      PermissionMiddleware.checkAllowedPermissions([UserRole.ADMIN, UserRole.COMPNAY]),
       PermissionMiddleware.checkIfOwner,
       ComplexController.getLocations,
     ]);
@@ -92,11 +67,7 @@ export class ComplexRouter {
     app.post("/v2/complexes", [
       AuthenticationMiddleware.checkJwtToken,
       PermissionMiddleware.checkAllowedPermissions([UserRole.COMPNAY]),
-      UploadMiddleware.validateFileUpload(
-        "files",
-        ["jpg", "jpeg", "png", "gif", "svg"],
-        10
-      ),
+      UploadMiddleware.validateFileUpload("files", ["jpg", "jpeg", "png", "gif", "svg"], 10),
       ComplexController.upsert,
     ]);
 
