@@ -26,6 +26,9 @@ export class CreateEventDto {
   notes: string;
 
   @IsOptional()
+  phoneNumber: string;
+
+  @IsOptional()
   weeklyGroupedId: number;
 
   @IsOptional()

@@ -199,7 +199,7 @@ export class EventService {
 
   static async createAdminEvent(request: Request, response: Response) {
     const {
-      body: { startDate, endDate, notes, name, locationId, sport, status, isWeekly },
+      body: { startDate, endDate, notes, name, locationId, sport, status, isWeekly, phoneNumber },
     } = request;
     if (new Date(startDate) < new Date()) {
       throw new Error("Ora e eventit nuk mund te jete ne te shkuaren!");
@@ -247,6 +247,7 @@ export class EventService {
           event.sport = sport;
           event.status = status ?? EventStatus.WAITING_FOR_CONFIRMATION;
           event.isWeekly = isWeekly ? true : false;
+          event.phoneNumber = phoneNumber;
           eventsToBeInserted.push(event);
         }
         if ((isWeekly && eventsToBeInserted.length === 12) || (!isWeekly && eventsToBeInserted.length === 1)) {
