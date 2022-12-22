@@ -654,6 +654,19 @@ export class EventService {
   static patchSingleEvent = async (eventPayload, currentEvent: Event, request: Request) => {
     const eventRepository = getCustomRepository(EventRepository);
 
+    let eventToBeConfirmed = false;
+    let eventToBeConfirmedByUser = false;
+    let eventToBeCompleted = false;
+    if (currentEvent.status === EventStatus.WAITING_FOR_CONFIRMATION) {
+      eventToBeConfirmed = true;
+    }
+    if (currentEvent.status === EventStatus.CONFIRMED && currentEvent.isConfirmedByUser === false) {
+      eventToBeConfirmedByUser = true;
+    }
+    if (currentEvent.status == EventStatus.CONFIRMED && currentEvent.isConfirmedByUser === true) {
+      eventToBeCompleted = true;
+    }
+
     const mergedEvent = eventRepository.merge(currentEvent, eventPayload);
     const updatedEvent = await eventRepository.save(mergedEvent);
 

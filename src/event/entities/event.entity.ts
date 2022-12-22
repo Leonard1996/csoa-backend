@@ -53,6 +53,9 @@ export class Event extends Common {
   @Column("tinyint", { nullable: true, name: "isTeam" })
   public isTeam: boolean;
 
+  @Column("tinyint", { nullable: true, name: "isConfirmedByUser", default: false })
+  public isConfirmedByUser: boolean;
+
   @Column("varchar", { nullable: true, name: "level" })
   public level: string;
 

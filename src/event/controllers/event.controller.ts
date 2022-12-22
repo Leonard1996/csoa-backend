@@ -243,10 +243,7 @@ export class EventController {
     }
   };
 
-  static deleteAfterCancelation = async (
-    request: Request,
-    response: Response
-  ) => {
+  static deleteAfterCancelation = async (request: Request, response: Response) => {
     const weeklyGroupedId = +request.query.weeklyGroupedId;
     try {
       await getRepository(Event).update(
@@ -264,9 +261,7 @@ export class EventController {
       return response.sendStatus(204);
     } catch (err) {
       console.log({ err });
-      return response
-        .status(404)
-        .send(new ErrorResponse("Could not delete my events"));
+      return response.status(404).send(new ErrorResponse("Could not delete my events"));
     }
   };
 }
