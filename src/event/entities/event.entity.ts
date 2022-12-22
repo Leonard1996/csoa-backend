@@ -166,6 +166,8 @@ export class Event extends Common {
       isDraw: this.isDraw,
       result: this.result,
       lineups: this.lineups,
+      isConfirmedByUser: this.isConfirmedByUser,
+      phoneNumber: this.phoneNumber,
     };
   }
 
