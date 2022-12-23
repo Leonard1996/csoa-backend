@@ -8,7 +8,10 @@ import { Mailer } from "../../common/utilities/Mailer";
 import { SuccessResponse } from "../../common/utilities/SuccessResponse";
 import { Complex } from "../../complex/entities/complex.entity";
 import { Location } from "../../complex/entities/location.entity";
+import { NotificationType } from "../../notifications/entities/notification.entity";
+import { NotificationService } from "../../notifications/services/notification.services";
 import { User } from "../../user/entities/user.entity";
+import { UserService } from "../../user/services/user.service";
 import { UserRole } from "../../user/utilities/UserRole";
 import { Event, EventStatus } from "../entities/event.entity";
 import { EventService } from "../services/event.services";
@@ -114,10 +117,38 @@ export class EventController {
       ...(!weeklyGroupedId && { id: +request.params.eventId }),
       ...(weeklyGroupedId && { weeklyGroupedId }),
     };
+    const foundEvent = await EventService.findById(+request.params.eventId);
     try {
       const event = await getRepository(Event).update(firstArgument, {
         status: EventStatus.CONFIRMED,
       });
+
+      let notifications = [];
+      let pushNotifications = [];
+
+      const creator = await getRepository(User).findOne({ where: { id: foundEvent.creatorId } });
+      const notificationBody = {
+        receiverId: creator.id,
+        payload: {
+          eventName: foundEvent.name,
+          eventId: foundEvent.id,
+          exponentPushToken: creator.pushToken ?? "123",
+          title: `Eventi ${foundEvent.name} eshte pranuar nga kompleksi`,
+          body: "Futuni ne aplikacion dhe shikoni me shume",
+        },
+      };
+      const pushNotificationBody = {
+        to: creator.pushToken,
+        title: `Eventi ${foundEvent.name} eshte pranuar nga kompleksi`,
+        body: "Futuni ne aplikacion dhe shikoni me shume",
+        data: { eventId: foundEvent.id },
+      };
+
+      notifications.push(notificationBody);
+      pushNotifications.push(pushNotificationBody);
+      NotificationService.storeNotification(notifications);
+      NotificationService.pushNotification(pushNotifications);
+
       return response.status(HttpStatusCode.OK).send(new SuccessResponse(event));
     } catch (err) {
       console.log({ err });
@@ -127,6 +158,7 @@ export class EventController {
 
   static delete = async (request: Request, response: Response) => {
     const weeklyGroupedId = +request.query.weeklyGroupedId;
+    const event = await EventService.getById(+request.params.eventId);
     try {
       await getRepository(Event).update(
         {
@@ -136,13 +168,66 @@ export class EventController {
         },
         {
           status:
-            response.locals.jwt.role === UserRole.USER
+            response.locals.jwt.userRole === UserRole.USER
               ? EventStatus.DELETED_BY_USER_BEFORE_CONFIRMATION
               : EventStatus.REFUSED,
           tsDeleted: new Date(),
           deletedById: response.locals.jwt.userId,
         }
       );
+
+      let notifications = [];
+      let pushNotifications = [];
+
+      if (response.locals.jwt.userRole === UserRole.USER) {
+        const complexAdmin = await getRepository(User).findOne({ where: { complexId: event.location.complex.id } });
+        const notificationBody = {
+          receiverId: complexAdmin.id,
+          payload: {
+            eventName: event.name,
+            eventId: event.id,
+            exponentPushToken: complexAdmin.pushToken,
+            title: `Eventi ${event.name} eshte anuluar nga perdoruesi`,
+            body: "Futuni ne aplikacion dhe shikoni me shume",
+          },
+        };
+        const pushNotificationBody = {
+          to: complexAdmin.pushToken ?? "123",
+          title: `Eventi ${event.name} eshte anuluar perdoruesi`,
+          body: "Futuni ne aplikacion dhe shikoni me shume",
+          data: { eventId: event.id },
+        };
+
+        notifications.push(notificationBody);
+        pushNotifications.push(pushNotificationBody);
+        NotificationService.storeNotification(notifications);
+        NotificationService.pushNotification(pushNotifications);
+      }
+      if (response.locals.jwt.userRole === UserRole.COMPNAY) {
+        const creator = await getRepository(User).findOne({ where: { id: event.creatorId } });
+        const notificationBody = {
+          receiverId: creator.id,
+          payload: {
+            eventName: event.name,
+            eventId: event.id,
+            exponentPushToken: creator.pushToken ?? "123",
+            title: `Eventi ${event.name} eshte anuluar nga kompleksi`,
+            body: "Futuni ne aplikacion dhe shikoni me shume",
+          },
+        };
+        const pushNotificationBody = {
+          to: creator.pushToken,
+          title: `Eventi ${event.name} eshte anuluar nga kompleksi`,
+          body: "Futuni ne aplikacion dhe shikoni me shume",
+          data: { eventId: event.id },
+        };
+
+        notifications.push(notificationBody);
+        pushNotifications.push(pushNotificationBody);
+        NotificationService.storeNotification(notifications);
+        NotificationService.pushNotification(pushNotifications);
+      }
+
       return response.sendStatus(204);
     } catch (err) {
       console.log({ err });
@@ -150,16 +235,96 @@ export class EventController {
     }
   };
 
-  // static insert = async (request: Request, response: Response) => {
-  //   try {
-  //     const teamPayload = JSON.parse(request.body.body);
-  //     const team = await TeamService.insert(teamPayload, request, response);
-  //     response.status(HttpStatusCode.OK).send(new SuccessResponse({ team }));
-  //   } catch (err) {
-  //     console.log(err);
-  //     return response.status(400).send(new ErrorResponse(err));
-  //   }
-  // };
+  static cancel = async (request: Request, response: Response) => {
+    const weeklyGroupedId = +request.query.weeklyGroupedId;
+    const eventId = +request.params.eventId;
+    const event = await EventService.getById(eventId);
+    try {
+      if (weeklyGroupedId) {
+        await getRepository(Event).update(
+          {
+            id: Not(LessThan(+request.params.eventId)),
+            status: EventStatus.CONFIRMED,
+            weeklyGroupedId: weeklyGroupedId,
+          },
+          {
+            status: EventStatus.CANCELED,
+            tsDeleted: new Date(),
+            deletedById: response.locals.jwt.userId,
+          }
+        );
+        return response.sendStatus(204);
+      }
+      await getRepository(Event).update(
+        {
+          id: +request.params.eventId,
+          status: EventStatus.CONFIRMED,
+        },
+        {
+          status: EventStatus.CANCELED,
+          tsDeleted: new Date(),
+          deletedById: response.locals.jwt.userId,
+        }
+      );
+
+      let notifications = [];
+      let pushNotifications = [];
+
+      if (response.locals.jwt.userRole === UserRole.USER) {
+        const complexAdmin = await getRepository(User).findOne({ where: { complexId: event.location.complex.id } });
+        const notificationBody = {
+          receiverId: complexAdmin.id,
+          payload: {
+            eventName: event.name,
+            eventId: event.id,
+            exponentPushToken: complexAdmin.pushToken,
+            title: `Eventi i konfirmuar ${event.name} eshte anuluar nga perdoruesi`,
+            body: "Futuni ne aplikacion dhe shikoni me shume",
+          },
+        };
+        const pushNotificationBody = {
+          to: complexAdmin.pushToken ?? "123",
+          title: `Eventi ${event.name} eshte anuluar perdoruesi`,
+          body: "Futuni ne aplikacion dhe shikoni me shume",
+          data: { eventId: event.id },
+        };
+
+        notifications.push(notificationBody);
+        pushNotifications.push(pushNotificationBody);
+        NotificationService.storeNotification(notifications);
+        NotificationService.pushNotification(pushNotifications);
+      }
+      if (response.locals.jwt.userRole === UserRole.COMPNAY) {
+        const creator = await getRepository(User).findOne({ where: { id: event.creatorId } });
+        const notificationBody = {
+          receiverId: creator.id,
+          payload: {
+            eventName: event.name,
+            eventId: event.id,
+            exponentPushToken: creator.pushToken ?? "123",
+            title: `Eventi i konfirmuar ${event.name} eshte anuluar nga kompleksi`,
+            body: "Futuni ne aplikacion dhe shikoni me shume",
+          },
+        };
+        const pushNotificationBody = {
+          to: creator.pushToken,
+          title: `Eventi ${event.name} eshte anuluar nga kompleksi`,
+          body: "Futuni ne aplikacion dhe shikoni me shume",
+          data: { eventId: event.id },
+        };
+
+        notifications.push(notificationBody);
+        pushNotifications.push(pushNotificationBody);
+        NotificationService.storeNotification(notifications);
+        NotificationService.pushNotification(pushNotifications);
+      }
+
+      return response.sendStatus(204);
+    } catch (err) {
+      console.log({ err });
+      return response.status(404).send(new ErrorResponse("Could not cancel event"));
+    }
+  };
 
   static getById = async (request: Request, response: Response) => {
     try {
@@ -204,42 +369,6 @@ export class EventController {
     } catch (err) {
       console.log(err);
       return response.status(400).send(new ErrorResponse(err));
-    }
-  };
-
-  static cancel = async (request: Request, response: Response) => {
-    const weeklyGroupedId = +request.query.weeklyGroupedId;
-    try {
-      if (weeklyGroupedId) {
-        await getRepository(Event).update(
-          {
-            id: Not(LessThan(+request.params.eventId)),
-            status: EventStatus.CONFIRMED,
-            weeklyGroupedId: weeklyGroupedId,
-          },
-          {
-            status: EventStatus.CANCELED,
-            tsDeleted: new Date(),
-            deletedById: response.locals.jwt.userId,
-          }
-        );
-        return response.sendStatus(204);
-      }
-      await getRepository(Event).update(
-        {
-          id: +request.params.eventId,
-          status: EventStatus.CONFIRMED,
-        },
-        {
-          status: EventStatus.CANCELED,
-          tsDeleted: new Date(),
-          deletedById: response.locals.jwt.userId,
-        }
-      );
-      return response.sendStatus(204);
-    } catch (err) {
-      console.log({ err });
-      return response.status(404).send(new ErrorResponse("Could not cancel event"));
     }
   };
 
