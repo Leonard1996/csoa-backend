@@ -72,7 +72,6 @@ export class EventRouter {
     app.get("/events/:eventId", [
       AuthenticationMiddleware.checkJwtToken,
       PermissionMiddleware.checkMeOrPermissionsAllowed([UserRole.USER, UserRole.COMPNAY, UserRole.ADMIN]),
-      PermissionMiddleware.checkIfEventCreatorOrCompany,
       EventController.getById,
     ]);
 
