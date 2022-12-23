@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { getCustomRepository, getRepository } from "typeorm";
 import { Attachment } from "../../attachment/entities/attachment.entity";
 import { AtachmentRepository } from "../../attachment/repositories/attachment.repository";
+import { UserService } from "../../user/services/user.service";
 import { CreateTeamUserDto } from "../dto/create-team-user.dto";
 import { CreateTeamDto } from "../dto/create-team.dto";
 import { UpdateTeamDto } from "../dto/update-team.dto";
@@ -14,6 +15,21 @@ import { StatisticsService } from "./statistics.services";
 export class TeamService {
   static listMyTeams = async (request: Request, response: Response) => {
     const teamUsersRepository = getRepository(TeamUsers);
+    const user = await UserService.findOne(+response.locals.jwt.userId);
+    const sportsMapped = {
+      football: "Futboll",
+      basketball: "Basketboll",
+      tenis: "Tenis",
+      voleyball: "Volejboll",
+    };
+    let sports = [];
+    for (const sport in user.sports as any) {
+      for (const key in user.sports[sport]) {
+        if (key === "picked" && user.sports[sport][key] === true) {
+          sports.push(sportsMapped[sport]);
+        }
+      }
+    }
 
     const myTeams = await teamUsersRepository.find({
       where: {
@@ -32,8 +48,9 @@ export class TeamService {
       .innerJoin("teams_users", "tu", "teams.id = tu.teamId")
       .where("tu.playerId != :id", { id: response.locals.jwt.userId })
       .andWhere("tu.teamId NOT IN (:...myTeamsIds)", { myTeamsIds: myTeamsIds.length ? myTeamsIds : [-1] })
-      .limit(5)
-      .offset(+request.query.page || 0 * 5)
+      .andWhere("teams.sport IN (:...sports)", { sports })
+      // .limit(5)
+      // .offset(+request.query.page || 0 * 5)
       .getMany();
 
     const similiarTeamsIds = similiarTeams.map((teams) => teams.id);
