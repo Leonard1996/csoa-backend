@@ -13,7 +13,6 @@ import { NotificationType } from "../../notifications/entities/notification.enti
 import { TeamUsersRepository } from "../../team/repositories/team.users.repository";
 import { NotificationService } from "../../notifications/services/notification.services";
 import { UserService } from "../../user/services/user.service";
-import { TeamService } from "../../team/services/team.services";
 
 export class RequestService {
   static listPossibleUsersForEvent = async (event: Event, request: Request, response: Response) => {
@@ -24,7 +23,7 @@ export class RequestService {
     const possibleUsers = usersRepository
       .createQueryBuilder("user")
       .leftJoinAndSelect("user.receivedReviews", "review")
-      .where(`user.sports LIKE '%"${sport}":{"picked":true%'`)
+      .where(`user.sports LIKE '%"${sport}": {"picked": true%'`)
       .andWhere(`user.id NOT IN (select receiverId from requests where eventId = ${event.id} )`);
 
     let userQb = `(user.sports `;
