@@ -173,6 +173,16 @@ export class UserController {
     return response.status(200).send(new SuccessResponse(result));
   };
 
+  public static checkAvailability = async (request: Request, response: Response) => {
+    try {
+      const isAvailable = await UserService.checkAvailability(request.body, request, response);
+      response.status(HttpStatusCode.OK).send(new SuccessResponse({ isAvailable }));
+    } catch (err) {
+      console.log(err);
+      return response.status(400).send(new ErrorResponse(err));
+    }
+  };
+
   public static async checkPhoneNumber(request: Request, response: Response) {
     UserService.checkPhoneNumber(
       request.body.phoneNumber,
