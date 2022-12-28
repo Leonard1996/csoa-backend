@@ -9,7 +9,7 @@ export class NotificationRouter {
     app.post("/chat-notifications", [
       AuthenticationMiddleware.checkJwtToken,
       PermissionMiddleware.checkAllowedPermissions([UserRole.USER, UserRole.ADMIN]),
-      NotificationController.listMyNotifications,
+      NotificationController.pushChatNotification,
     ]);
 
     app.get("/notifications", [

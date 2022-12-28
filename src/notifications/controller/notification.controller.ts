@@ -7,9 +7,9 @@ import { SuccessResponse } from "../../common/utilities/SuccessResponse";
 import { NotificationService } from "../services/notification.services";
 
 export class NotificationController {
-  static storeChatNotification = async (request: Request, response: Response) => {
+  static pushChatNotification = async (request: Request, response: Response) => {
     try {
-      const results = await NotificationService.listMyNotifications(request, response);
+      const results = await NotificationService.pushChatNotification(request, response);
       return response.status(HttpStatusCode.OK).send(new SuccessResponse({ results }));
     } catch (err) {
       console.log({ err });
