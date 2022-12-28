@@ -293,6 +293,7 @@ export class RequestService {
           receiverId: originalRequest.receiverId,
           type: NotificationType.REQUEST_CONFIRMED,
           payload: {
+            eventId: updatedRequest.event.id,
             eventName: updatedRequest.event.name,
             playerName: updatedRequest.receiver.name,
             requestId: updatedRequest.id,
@@ -320,6 +321,7 @@ export class RequestService {
           receiverId: originalRequest.event.creatorId,
           type: NotificationType.REQUEST_CONFIRMED,
           payload: {
+            eventId: updatedRequest.eventId,
             eventName: updatedRequest.event.name,
             playerName: updatedRequest.receiver.name,
             requestId: updatedRequest.id,
@@ -351,6 +353,7 @@ export class RequestService {
           receiverId: originalRequest.receiverId,
           type: NotificationType.REQUEST_REFUSED,
           payload: {
+            eventId: updatedRequest.eventId,
             eventName: updatedRequest.event.name,
             playerName: updatedRequest.receiver.name,
             requestId: updatedRequest.id,
@@ -378,6 +381,7 @@ export class RequestService {
           receiverId: originalRequest.event.creatorId,
           type: NotificationType.REQUEST_CONFIRMED,
           payload: {
+            eventId: updatedRequest.eventId,
             eventName: updatedRequest.event.name,
             playerName: updatedRequest.receiver.name,
             requestId: updatedRequest.id,

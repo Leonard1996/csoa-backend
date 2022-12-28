@@ -6,6 +6,12 @@ import { NotificationController } from "./controller/notification.controller";
 
 export class NotificationRouter {
   static configRoutes = (app: express.Application) => {
+    app.post("/chat-notifications", [
+      AuthenticationMiddleware.checkJwtToken,
+      PermissionMiddleware.checkAllowedPermissions([UserRole.USER, UserRole.ADMIN]),
+      NotificationController.listMyNotifications,
+    ]);
+
     app.get("/notifications", [
       AuthenticationMiddleware.checkJwtToken,
       PermissionMiddleware.checkAllowedPermissions([UserRole.USER, UserRole.ADMIN]),

@@ -7,6 +7,16 @@ import { SuccessResponse } from "../../common/utilities/SuccessResponse";
 import { NotificationService } from "../services/notification.services";
 
 export class NotificationController {
+  static storeChatNotification = async (request: Request, response: Response) => {
+    try {
+      const results = await NotificationService.listMyNotifications(request, response);
+      return response.status(HttpStatusCode.OK).send(new SuccessResponse({ results }));
+    } catch (err) {
+      console.log({ err });
+      return response.status(404).send(new ErrorResponse("Could not store chat notifications"));
+    }
+  };
+
   static listMyNotifications = async (request: Request, response: Response) => {
     try {
       const results = await NotificationService.listMyNotifications(request, response);

@@ -1,7 +1,7 @@
 import Axios from "axios";
 import { Request, Response } from "express";
 import { getCustomRepository, getRepository } from "typeorm";
-import { Notification } from "../entities/notification.entity";
+import { Notification, NotificationType } from "../entities/notification.entity";
 import { NotificationRepository } from "../repositories/notification.repository";
 
 export class NotificationService {
@@ -46,6 +46,14 @@ export class NotificationService {
     const updatedNotification = await notificationRepository.update(notification, { isRead: true });
 
     return updatedNotification;
+  };
+
+  static storeChatNotification = async (request: Request, response: Response) => {
+    const notificationRepository = getCustomRepository(NotificationRepository);
+    const payload = request.body;
+    await notificationRepository.createQueryBuilder("notification").insert().values(payload).execute();
+
+    // if (payload.type === NotificationType.ch) await notificationRepository.createQueryBuilder();
   };
 
   static storeNotification = async (payload) => {
