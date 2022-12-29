@@ -53,7 +53,11 @@ export class Event extends Common {
   @Column("tinyint", { nullable: true, name: "isTeam" })
   public isTeam: boolean;
 
-  @Column("tinyint", { nullable: true, name: "isConfirmedByUser", default: false })
+  @Column("tinyint", {
+    nullable: true,
+    name: "isConfirmedByUser",
+    default: false,
+  })
   public isConfirmedByUser: boolean;
 
   @Column("varchar", { nullable: true, name: "level" })
@@ -87,6 +91,9 @@ export class Event extends Common {
 
   @Column("json", { nullable: true, name: "lineups" })
   public lineups: string;
+
+  @Column("varchar", { nullable: true })
+  public organiserPhone: string;
 
   @ManyToOne(() => WeeklyEventGroup, (weeklyGroup) => weeklyGroup.events)
   public weeklyGrouped: WeeklyEventGroup;

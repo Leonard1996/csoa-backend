@@ -72,4 +72,7 @@ export class CreateEventDto {
 
   @IsOptional()
   isUserReservation: boolean;
+
+  @IsOptional()
+  organiserPhone: boolean;
 }

@@ -20,20 +20,28 @@ export class EventController {
   static listMyEvents = async (request: Request, response: Response) => {
     try {
       const results = await EventService.listMyEvents(request, response);
-      return response.status(HttpStatusCode.OK).send(new SuccessResponse({ results }));
+      return response
+        .status(HttpStatusCode.OK)
+        .send(new SuccessResponse({ results }));
     } catch (err) {
       console.log({ err });
-      return response.status(404).send(new ErrorResponse("Could not get my events list"));
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not get my events list"));
     }
   };
 
   static list = async (request: Request, response: Response) => {
     try {
       const { events, count } = await EventService.list(request, response);
-      return response.status(HttpStatusCode.OK).send(new SuccessResponse({ events, count }));
+      return response
+        .status(HttpStatusCode.OK)
+        .send(new SuccessResponse({ events, count }));
     } catch (err) {
       console.log({ err });
-      return response.status(404).send(new ErrorResponse("Could not get my events"));
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not get my events"));
     }
   };
 
@@ -52,17 +60,23 @@ export class EventController {
       return response.status(200).send(new SuccessResponse({ event }));
     } catch (err) {
       console.log({ err });
-      return response.status(404).send(new ErrorResponse("Could not update event status"));
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not update event status"));
     }
   }
 
   static getPlayers = async (request: Request, response: Response) => {
     try {
       const players = await EventService.getPlayers(request, response);
-      return response.status(HttpStatusCode.OK).send(new SuccessResponse({ players }));
+      return response
+        .status(HttpStatusCode.OK)
+        .send(new SuccessResponse({ players }));
     } catch (err) {
       console.log({ err });
-      return response.status(404).send(new ErrorResponse("Could not get my players"));
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not get my players"));
     }
   };
 
@@ -104,10 +118,14 @@ export class EventController {
       `
       );
       if (!event) throw Error();
-      return response.status(HttpStatusCode.OK).send(new SuccessResponse({ event }));
+      return response
+        .status(HttpStatusCode.OK)
+        .send(new SuccessResponse({ event }));
     } catch (err) {
       console.log(err);
-      return response.status(404).send(new ErrorResponse("Eventi nuk u krijua"));
+      return response
+        .status(404)
+        .send(new ErrorResponse("Eventi nuk u krijua"));
     }
   };
 
@@ -126,7 +144,9 @@ export class EventController {
       let notifications = [];
       let pushNotifications = [];
 
-      const creator = await getRepository(User).findOne({ where: { id: foundEvent.creatorId } });
+      const creator = await getRepository(User).findOne({
+        where: { id: foundEvent.creatorId },
+      });
       const notificationBody = {
         receiverId: creator.id,
         payload: {
@@ -149,10 +169,14 @@ export class EventController {
       NotificationService.storeNotification(notifications);
       NotificationService.pushNotification(pushNotifications);
 
-      return response.status(HttpStatusCode.OK).send(new SuccessResponse(event));
+      return response
+        .status(HttpStatusCode.OK)
+        .send(new SuccessResponse(event));
     } catch (err) {
       console.log({ err });
-      return response.status(404).send(new ErrorResponse("Could not get my events"));
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not get my events"));
     }
   };
 
@@ -180,7 +204,9 @@ export class EventController {
       let pushNotifications = [];
 
       if (response.locals.jwt.userRole === UserRole.USER) {
-        const complexAdmin = await getRepository(User).findOne({ where: { complexId: event.location.complex.id } });
+        const complexAdmin = await getRepository(User).findOne({
+          where: { complexId: event.location.complex.id },
+        });
         const notificationBody = {
           receiverId: complexAdmin.id,
           payload: {
@@ -204,7 +230,9 @@ export class EventController {
         NotificationService.pushNotification(pushNotifications);
       }
       if (response.locals.jwt.userRole === UserRole.COMPNAY) {
-        const creator = await getRepository(User).findOne({ where: { id: event.creatorId } });
+        const creator = await getRepository(User).findOne({
+          where: { id: event.creatorId },
+        });
         const notificationBody = {
           receiverId: creator.id,
           payload: {
@@ -231,7 +259,9 @@ export class EventController {
       return response.sendStatus(204);
     } catch (err) {
       console.log({ err });
-      return response.status(404).send(new ErrorResponse("Could not delete my events"));
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not delete my events"));
     }
   };
 
@@ -271,7 +301,9 @@ export class EventController {
       let pushNotifications = [];
 
       if (response.locals.jwt.userRole === UserRole.USER) {
-        const complexAdmin = await getRepository(User).findOne({ where: { complexId: event.location.complex.id } });
+        const complexAdmin = await getRepository(User).findOne({
+          where: { complexId: event.location.complex.id },
+        });
         const notificationBody = {
           receiverId: complexAdmin.id,
           payload: {
@@ -295,7 +327,9 @@ export class EventController {
         NotificationService.pushNotification(pushNotifications);
       }
       if (response.locals.jwt.userRole === UserRole.COMPNAY) {
-        const creator = await getRepository(User).findOne({ where: { id: event.creatorId } });
+        const creator = await getRepository(User).findOne({
+          where: { id: event.creatorId },
+        });
         const notificationBody = {
           receiverId: creator.id,
           payload: {
@@ -307,7 +341,7 @@ export class EventController {
           },
         };
         const pushNotificationBody = {
-          to: creator.pushToken,
+          to: creator.pushToken ?? "123",
           title: `Eventi ${event.name} eshte anuluar nga kompleksi`,
           body: "Futuni ne aplikacion dhe shikoni me shume",
           data: { eventId: event.id },
@@ -322,7 +356,9 @@ export class EventController {
       return response.sendStatus(204);
     } catch (err) {
       console.log({ err });
-      return response.status(404).send(new ErrorResponse("Could not cancel event"));
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not cancel event"));
     }
   };
 
@@ -332,11 +368,15 @@ export class EventController {
       if (Helper.isDefined(result)) {
         response.status(HttpStatusCode.OK).send(new SuccessResponse(result));
       } else {
-        response.status(HttpStatusCode.NOT_FOUND).send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+        response
+          .status(HttpStatusCode.NOT_FOUND)
+          .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
       }
     } catch (err) {
       console.log(err);
-      response.status(HttpStatusCode.NOT_FOUND).send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+      response
+        .status(HttpStatusCode.NOT_FOUND)
+        .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
     }
   };
 
@@ -344,10 +384,18 @@ export class EventController {
     try {
       const event = await EventService.findById(+request.params.eventId);
       if (Helper.isDefined(event)) {
-        const updatedTeam = await EventService.patch(request.body, event, request);
-        response.status(HttpStatusCode.OK).send(new SuccessResponse(updatedTeam));
+        const updatedTeam = await EventService.patch(
+          request.body,
+          event,
+          request
+        );
+        response
+          .status(HttpStatusCode.OK)
+          .send(new SuccessResponse(updatedTeam));
       } else {
-        return response.status(HttpStatusCode.NOT_FOUND).send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+        return response
+          .status(HttpStatusCode.NOT_FOUND)
+          .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
       }
       response.status(HttpStatusCode.OK).send();
     } catch (err) {
@@ -360,10 +408,18 @@ export class EventController {
     try {
       const event = await EventService.findById(+request.params.eventId);
       if (Helper.isDefined(event)) {
-        const updatedTeam = await EventService.patchSingleEvent(request.body, event, request);
-        response.status(HttpStatusCode.OK).send(new SuccessResponse(updatedTeam));
+        const updatedTeam = await EventService.patchSingleEvent(
+          request.body,
+          event,
+          request
+        );
+        response
+          .status(HttpStatusCode.OK)
+          .send(new SuccessResponse(updatedTeam));
       } else {
-        return response.status(HttpStatusCode.NOT_FOUND).send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
+        return response
+          .status(HttpStatusCode.NOT_FOUND)
+          .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
       }
       response.status(HttpStatusCode.OK).send();
     } catch (err) {
@@ -372,7 +428,10 @@ export class EventController {
     }
   };
 
-  static deleteAfterCancelation = async (request: Request, response: Response) => {
+  static deleteAfterCancelation = async (
+    request: Request,
+    response: Response
+  ) => {
     const weeklyGroupedId = +request.query.weeklyGroupedId;
     try {
       await getRepository(Event).update(
@@ -390,7 +449,9 @@ export class EventController {
       return response.sendStatus(204);
     } catch (err) {
       console.log({ err });
-      return response.status(404).send(new ErrorResponse("Could not delete my events"));
+      return response
+        .status(404)
+        .send(new ErrorResponse("Could not delete my events"));
     }
   };
 }

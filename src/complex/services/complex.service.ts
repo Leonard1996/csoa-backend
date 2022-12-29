@@ -1,7 +1,11 @@
 import { Request, Response } from "express";
 import { join } from "path";
 const fs = require("fs");
-import { ConnectionIsNotSetError, getCustomRepository, getRepository } from "typeorm";
+import {
+  ConnectionIsNotSetError,
+  getCustomRepository,
+  getRepository,
+} from "typeorm";
 import { Attachment } from "../../attachment/entities/attachment.entity";
 import { File } from "../../common/utilities/File";
 import { EventStatus } from "../../event/entities/event.entity";
@@ -54,7 +58,10 @@ export class ComplexService {
   }
   public static listMinified() {
     const complexRepository = getRepository(Complex);
-    return complexRepository.createQueryBuilder("c").select(["c.name", "c.id"]).getMany();
+    return complexRepository
+      .createQueryBuilder("c")
+      .select(["c.name", "c.id"])
+      .getMany();
   }
   public static create(payload) {
     const complexRepository = getRepository(Complex);
@@ -89,8 +96,10 @@ export class ComplexService {
   public static async update(payload) {
     const complexRepository = getRepository(Complex);
 
-    if (JSON.stringify(payload["latitude"]) === JSON.stringify([""])) payload["latitude"] = null;
-    if (JSON.stringify(payload["longitude"]) === JSON.stringify([""])) payload["longitude"] = null;
+    if (JSON.stringify(payload["latitude"]) === JSON.stringify([""]))
+      payload["latitude"] = null;
+    if (JSON.stringify(payload["longitude"]) === JSON.stringify([""]))
+      payload["longitude"] = null;
 
     return complexRepository.update({ id: payload.id }, payload);
   }
@@ -132,7 +141,9 @@ export class ComplexService {
       userReserved = `e.isUserReservation = 0`;
     }
 
-    const selectedStatus = Object.keys(body.status).filter((key) => body.status[key]);
+    const selectedStatus = Object.keys(body.status).filter(
+      (key) => body.status[key]
+    );
 
     let statusCondition = `e.status IN ('${selectedStatus.join("','")}')`;
 
@@ -166,7 +177,7 @@ export class ComplexService {
       .select(
         `e.id, e.name as name, e.startDate, e.endDate,l.id as locationId, l.name as locationName, 
         l.price, e.status, c.workingHours, e.sport, e.notes, e.isWeekly,
-        e.weeklyGroupedId, u.name as organiser, u.email as email, u.phoneNumber as phoneNumber `
+        e.weeklyGroupedId, u.name as organiser, u.email as email, u.phoneNumber as phoneNumber, e.organiserPhone `
       )
       .innerJoin("locations", "l", "l.id = e.locationId")
       .innerJoin("complexes", "c", "c.id = l.complexId")
@@ -201,22 +212,37 @@ export class ComplexService {
       }
       const newComplex = new Complex();
       ComplexService.getFields(newComplex, fields);
-      complex = await getRepository(Complex).update({ id: +fields.complexId }, { ...newComplex });
+      complex = await getRepository(Complex).update(
+        { id: +fields.complexId },
+        { ...newComplex }
+      );
     }
     if (!fields.complexId) {
       complex = new Complex();
       ComplexService.getFields(complex, fields);
       complex = await getRepository(Complex).save(complex);
-      await getRepository(User).update({ id: +response.locals.jwt.userId }, { complexId: complex.id });
+      await getRepository(User).update(
+        { id: +response.locals.jwt.userId },
+        { complexId: complex.id }
+      );
     }
 
     if (request.files) {
       let attachments: Attachment[] = [];
       for (const file of request.files as Express.Multer.File[]) {
-        attachments.push(ComplexService.createAttachmentForComplex(file, complex.id ?? +fields.complexId));
+        attachments.push(
+          ComplexService.createAttachmentForComplex(
+            file,
+            complex.id ?? +fields.complexId
+          )
+        );
       }
       if (attachments.length) {
-        await getRepository(Attachment).createQueryBuilder().insert().values(attachments).execute();
+        await getRepository(Attachment)
+          .createQueryBuilder()
+          .insert()
+          .values(attachments)
+          .execute();
       }
     }
 
@@ -237,13 +263,20 @@ export class ComplexService {
     }
 
     if (locations.length) {
-      await getRepository(Location).createQueryBuilder().insert().values(locations).execute();
+      await getRepository(Location)
+        .createQueryBuilder()
+        .insert()
+        .values(locations)
+        .execute();
     }
 
     return complex.id ?? +fields.complexId;
   }
 
-  static createAttachmentForComplex = (file: Express.Multer.File, complexId: number) => {
+  static createAttachmentForComplex = (
+    file: Express.Multer.File,
+    complexId: number
+  ) => {
     const attachment = new Attachment();
     attachment.name = file.filename;
     attachment.originalName = file.originalname;
@@ -271,7 +304,9 @@ export class ComplexService {
     return eventRepository
       .createQueryBuilder("e")
       .withDeleted()
-      .select("e.id, u.name, e.startDate, e.endDate, l.name as locationName, l.price, e.status, e.isUserReservation")
+      .select(
+        "e.id, u.name, e.startDate, e.endDate, l.name as locationName, l.price, e.status, e.isUserReservation"
+      )
       .innerJoin("locations", "l", "l.id = e.locationId")
       .innerJoin("complexes", "c", "c.id = l.complexId")
       .innerJoin("users", "u", "u.complexId = c.id")
