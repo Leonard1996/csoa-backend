@@ -12,10 +12,17 @@ export class NotificationService {
     const notificationRepository = getCustomRepository(NotificationRepository);
     const userId = response.locals.jwt.userId;
 
-    const myNotifications = await notificationRepository
+    const qb = notificationRepository
       .createQueryBuilder("notification")
-      .where("receiverId = :userId", { userId })
-      .getMany();
+      .where("notification.receiverId = :userId", { userId });
+
+    if (request.query.chats === "true") {
+      qb.andWhere("notification.type IN (:...types)", {
+        types: [NotificationType.CHAT_EVENT, NotificationType.CHAT_TEAM, NotificationType.CHAT_USER],
+      });
+    }
+
+    const myNotifications = await qb.getMany();
 
     return myNotifications;
   };
