@@ -56,7 +56,6 @@ export class UserController {
   static insert = async (request: Request, response: Response) => {
     try {
       const user = await UserService.insert(request.body, request, response);
-      response.status(HttpStatusCode.OK).send(new SuccessResponse({ user }));
     } catch (err) {
       console.log(err);
       return response.status(400).send(new ErrorResponse(err));

@@ -36,16 +36,18 @@ export class UserService {
   static insert = async (userPayload, request: Request, response: Response) => {
     const userRepository = getRepository(User);
 
-    if (userPayload.phoneNumber.slice(0, 3) === "355")
-      userPayload.phoneNumber = userPayload.phoneNumber.slice(3, userPayload.phoneNumber.length);
-    if (userPayload.phoneNumber[0] === "0")
-      userPayload.phoneNumber = userPayload.phoneNumber.slice(1, userPayload.phoneNumber.length);
-    userPayload.phoneNumber = "355" + userPayload.phoneNumber;
+    if (userPayload.phoneNumber) {
+      if (userPayload.phoneNumber.slice(0, 3) === "355")
+        userPayload.phoneNumber = userPayload.phoneNumber.slice(3, userPayload.phoneNumber.length);
+      if (userPayload.phoneNumber[0] === "0")
+        userPayload.phoneNumber = userPayload.phoneNumber.slice(1, userPayload.phoneNumber.length);
+      userPayload.phoneNumber = "355" + userPayload.phoneNumber;
 
-    const isExisting = await userRepository.findOne({
-      where: { phoneNumber: userPayload.phoneNumber },
-    });
-    if (isExisting) throw "User with this number already exists";
+      const isExisting = await userRepository.findOne({
+        where: { phoneNumber: userPayload.phoneNumber },
+      });
+      if (isExisting) throw "User with this number already exists";
+    }
 
     if (userPayload.email) {
       const isExistingEmail = await userRepository.findOne({
