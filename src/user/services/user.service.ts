@@ -89,28 +89,30 @@ export class UserService {
 
   static checkAvailability = async (userPayload, request: Request, response: Response) => {
     const userRepository = getRepository(User);
+    const parameters = {
+      email: true,
+      phoneNumber: true,
+    };
 
-    if (userPayload.phoneNumber) {
-      if (userPayload.phoneNumber.slice(0, 3) === "355")
-        userPayload.phoneNumber = userPayload.phoneNumber.slice(3, userPayload.phoneNumber.length);
-      if (userPayload.phoneNumber[0] === "0")
-        userPayload.phoneNumber = userPayload.phoneNumber.slice(1, userPayload.phoneNumber.length);
-      userPayload.phoneNumber = "355" + userPayload.phoneNumber;
+    if (userPayload.phoneNumber.slice(0, 3) === "355")
+      userPayload.phoneNumber = userPayload.phoneNumber.slice(3, userPayload.phoneNumber.length);
+    if (userPayload.phoneNumber[0] === "0")
+      userPayload.phoneNumber = userPayload.phoneNumber.slice(1, userPayload.phoneNumber.length);
+    userPayload.phoneNumber = "355" + userPayload.phoneNumber;
 
-      const isExistingPhoneNumber = await userRepository.findOne({
-        where: { phoneNumber: userPayload.phoneNumber },
-      });
-      if (isExistingPhoneNumber) return "false";
-    }
+    const isExistingPhoneNumber = await userRepository.findOne({
+      where: { phoneNumber: userPayload.phoneNumber },
+    });
+    if (isExistingPhoneNumber) parameters.phoneNumber = false;
 
     if (userPayload.email) {
       const isExistingEmail = await userRepository.findOne({
         where: { email: userPayload.email },
       });
-      if (isExistingEmail) return "false";
+      if (isExistingEmail) parameters.email = false;
     }
 
-    return "true";
+    return parameters;
   };
 
   static findOne = async (userId: number) => {
