@@ -135,39 +135,39 @@ export class EventController {
       ...(!weeklyGroupedId && { id: +request.params.eventId }),
       ...(weeklyGroupedId && { weeklyGroupedId }),
     };
-    const foundEvent = await EventService.findById(+request.params.eventId);
+    // const foundEvent = await EventService.findById(+request.params.eventId);
     try {
       const event = await getRepository(Event).update(firstArgument, {
         status: EventStatus.CONFIRMED,
       });
 
-      let notifications = [];
-      let pushNotifications = [];
+      // let notifications = [];
+      // let pushNotifications = [];
 
-      const creator = await getRepository(User).findOne({
-        where: { id: foundEvent.creatorId },
-      });
-      const notificationBody = {
-        receiverId: creator.id,
-        payload: {
-          eventName: foundEvent.name,
-          eventId: foundEvent.id,
-          exponentPushToken: creator.pushToken ?? "123",
-          title: `Eventi ${foundEvent.name} eshte pranuar nga kompleksi`,
-          body: "Futuni ne aplikacion dhe shikoni me shume",
-        },
-      };
-      const pushNotificationBody = {
-        to: creator.pushToken,
-        title: `Eventi ${foundEvent.name} eshte pranuar nga kompleksi`,
-        body: "Futuni ne aplikacion dhe shikoni me shume",
-        data: { eventId: foundEvent.id },
-      };
+      // const creator = await getRepository(User).findOne({
+      //   where: { id: foundEvent.creatorId },
+      // });
+      // const notificationBody = {
+      //   receiverId: creator.id,
+      //   payload: {
+      //     eventName: foundEvent.name,
+      //     eventId: foundEvent.id,
+      //     exponentPushToken: creator.pushToken ?? "123",
+      //     title: `Eventi ${foundEvent.name} eshte pranuar nga kompleksi`,
+      //     body: "Futuni ne aplikacion dhe shikoni me shume",
+      //   },
+      // };
+      // const pushNotificationBody = {
+      //   to: creator.pushToken,
+      //   title: `Eventi ${foundEvent.name} eshte pranuar nga kompleksi`,
+      //   body: "Futuni ne aplikacion dhe shikoni me shume",
+      //   data: { eventId: foundEvent.id },
+      // };
 
-      notifications.push(notificationBody);
-      pushNotifications.push(pushNotificationBody);
-      NotificationService.storeNotification(notifications);
-      NotificationService.pushNotification(pushNotifications);
+      // notifications.push(notificationBody);
+      // pushNotifications.push(pushNotificationBody);
+      // NotificationService.storeNotification(notifications);
+      // NotificationService.pushNotification(pushNotifications);
 
       return response
         .status(HttpStatusCode.OK)
@@ -200,61 +200,61 @@ export class EventController {
         }
       );
 
-      let notifications = [];
-      let pushNotifications = [];
+      // let notifications = [];
+      // let pushNotifications = [];
 
-      if (response.locals.jwt.userRole === UserRole.USER) {
-        const complexAdmin = await getRepository(User).findOne({
-          where: { complexId: event.location.complex.id },
-        });
-        const notificationBody = {
-          receiverId: complexAdmin.id,
-          payload: {
-            eventName: event.name,
-            eventId: event.id,
-            exponentPushToken: complexAdmin.pushToken,
-            title: `Eventi ${event.name} eshte anuluar nga perdoruesi`,
-            body: "Futuni ne aplikacion dhe shikoni me shume",
-          },
-        };
-        const pushNotificationBody = {
-          to: complexAdmin.pushToken ?? "123",
-          title: `Eventi ${event.name} eshte anuluar perdoruesi`,
-          body: "Futuni ne aplikacion dhe shikoni me shume",
-          data: { eventId: event.id },
-        };
+      // if (response.locals.jwt.userRole === UserRole.USER) {
+      //   const complexAdmin = await getRepository(User).findOne({
+      //     where: { complexId: event.location.complex.id },
+      //   });
+      //   const notificationBody = {
+      //     receiverId: complexAdmin.id,
+      //     payload: {
+      //       eventName: event.name,
+      //       eventId: event.id,
+      //       exponentPushToken: complexAdmin.pushToken,
+      //       title: `Eventi ${event.name} eshte anuluar nga perdoruesi`,
+      //       body: "Futuni ne aplikacion dhe shikoni me shume",
+      //     },
+      //   };
+      //   const pushNotificationBody = {
+      //     to: complexAdmin.pushToken ?? "123",
+      //     title: `Eventi ${event.name} eshte anuluar perdoruesi`,
+      //     body: "Futuni ne aplikacion dhe shikoni me shume",
+      //     data: { eventId: event.id },
+      //   };
 
-        notifications.push(notificationBody);
-        pushNotifications.push(pushNotificationBody);
-        NotificationService.storeNotification(notifications);
-        NotificationService.pushNotification(pushNotifications);
-      }
-      if (response.locals.jwt.userRole === UserRole.COMPNAY) {
-        const creator = await getRepository(User).findOne({
-          where: { id: event.creatorId },
-        });
-        const notificationBody = {
-          receiverId: creator.id,
-          payload: {
-            eventName: event.name,
-            eventId: event.id,
-            exponentPushToken: creator.pushToken ?? "123",
-            title: `Eventi ${event.name} eshte anuluar nga kompleksi`,
-            body: "Futuni ne aplikacion dhe shikoni me shume",
-          },
-        };
-        const pushNotificationBody = {
-          to: creator.pushToken,
-          title: `Eventi ${event.name} eshte anuluar nga kompleksi`,
-          body: "Futuni ne aplikacion dhe shikoni me shume",
-          data: { eventId: event.id },
-        };
+      //   notifications.push(notificationBody);
+      //   pushNotifications.push(pushNotificationBody);
+      //   NotificationService.storeNotification(notifications);
+      //   NotificationService.pushNotification(pushNotifications);
+      // }
+      // if (response.locals.jwt.userRole === UserRole.COMPNAY) {
+      //   const creator = await getRepository(User).findOne({
+      //     where: { id: event.creatorId },
+      //   });
+      //   const notificationBody = {
+      //     receiverId: creator.id,
+      //     payload: {
+      //       eventName: event.name,
+      //       eventId: event.id,
+      //       exponentPushToken: creator.pushToken ?? "123",
+      //       title: `Eventi ${event.name} eshte anuluar nga kompleksi`,
+      //       body: "Futuni ne aplikacion dhe shikoni me shume",
+      //     },
+      //   };
+      // const pushNotificationBody = {
+      //   to: creator.pushToken,
+      //   title: `Eventi ${event.name} eshte anuluar nga kompleksi`,
+      //   body: "Futuni ne aplikacion dhe shikoni me shume",
+      //   data: { eventId: event.id },
+      // };
 
-        notifications.push(notificationBody);
-        pushNotifications.push(pushNotificationBody);
-        NotificationService.storeNotification(notifications);
-        NotificationService.pushNotification(pushNotifications);
-      }
+      // notifications.push(notificationBody);
+      // pushNotifications.push(pushNotificationBody);
+      // NotificationService.storeNotification(notifications);
+      // NotificationService.pushNotification(pushNotifications);
+      // }
 
       return response.sendStatus(204);
     } catch (err) {
@@ -297,61 +297,61 @@ export class EventController {
         }
       );
 
-      let notifications = [];
-      let pushNotifications = [];
+      // let notifications = [];
+      // let pushNotifications = [];
 
-      if (response.locals.jwt.userRole === UserRole.USER) {
-        const complexAdmin = await getRepository(User).findOne({
-          where: { complexId: event.location.complex.id },
-        });
-        const notificationBody = {
-          receiverId: complexAdmin.id,
-          payload: {
-            eventName: event.name,
-            eventId: event.id,
-            exponentPushToken: complexAdmin.pushToken,
-            title: `Eventi i konfirmuar ${event.name} eshte anuluar nga perdoruesi`,
-            body: "Futuni ne aplikacion dhe shikoni me shume",
-          },
-        };
-        const pushNotificationBody = {
-          to: complexAdmin.pushToken ?? "123",
-          title: `Eventi ${event.name} eshte anuluar perdoruesi`,
-          body: "Futuni ne aplikacion dhe shikoni me shume",
-          data: { eventId: event.id },
-        };
+      // if (response.locals.jwt.userRole === UserRole.USER) {
+      //   const complexAdmin = await getRepository(User).findOne({
+      //     where: { complexId: event.location.complex.id },
+      //   });
+      //   const notificationBody = {
+      //     receiverId: complexAdmin.id,
+      //     payload: {
+      //       eventName: event.name,
+      //       eventId: event.id,
+      //       exponentPushToken: complexAdmin.pushToken,
+      //       title: `Eventi i konfirmuar ${event.name} eshte anuluar nga perdoruesi`,
+      //       body: "Futuni ne aplikacion dhe shikoni me shume",
+      //     },
+      //   };
+      //   const pushNotificationBody = {
+      //     to: complexAdmin.pushToken ?? "123",
+      //     title: `Eventi ${event.name} eshte anuluar perdoruesi`,
+      //     body: "Futuni ne aplikacion dhe shikoni me shume",
+      //     data: { eventId: event.id },
+      //   };
 
-        notifications.push(notificationBody);
-        pushNotifications.push(pushNotificationBody);
-        NotificationService.storeNotification(notifications);
-        NotificationService.pushNotification(pushNotifications);
-      }
-      if (response.locals.jwt.userRole === UserRole.COMPNAY) {
-        const creator = await getRepository(User).findOne({
-          where: { id: event.creatorId },
-        });
-        const notificationBody = {
-          receiverId: creator.id,
-          payload: {
-            eventName: event.name,
-            eventId: event.id,
-            exponentPushToken: creator.pushToken ?? "123",
-            title: `Eventi i konfirmuar ${event.name} eshte anuluar nga kompleksi`,
-            body: "Futuni ne aplikacion dhe shikoni me shume",
-          },
-        };
-        const pushNotificationBody = {
-          to: creator.pushToken ?? "123",
-          title: `Eventi ${event.name} eshte anuluar nga kompleksi`,
-          body: "Futuni ne aplikacion dhe shikoni me shume",
-          data: { eventId: event.id },
-        };
+      //   notifications.push(notificationBody);
+      //   pushNotifications.push(pushNotificationBody);
+      //   NotificationService.storeNotification(notifications);
+      //   NotificationService.pushNotification(pushNotifications);
+      // }
+      // if (response.locals.jwt.userRole === UserRole.COMPNAY) {
+      //   const creator = await getRepository(User).findOne({
+      //     where: { id: event.creatorId },
+      //   });
+      // const notificationBody = {
+      //   receiverId: creator.id,
+      //   payload: {
+      //     eventName: event.name,
+      //     eventId: event.id,
+      //     exponentPushToken: creator.pushToken ?? "123",
+      //     title: `Eventi i konfirmuar ${event.name} eshte anuluar nga kompleksi`,
+      //     body: "Futuni ne aplikacion dhe shikoni me shume",
+      //   },
+      // };
+      // const pushNotificationBody = {
+      //   to: creator.pushToken ?? "123",
+      //   title: `Eventi ${event.name} eshte anuluar nga kompleksi`,
+      //   body: "Futuni ne aplikacion dhe shikoni me shume",
+      //   data: { eventId: event.id },
+      // };
 
-        notifications.push(notificationBody);
-        pushNotifications.push(pushNotificationBody);
-        NotificationService.storeNotification(notifications);
-        NotificationService.pushNotification(pushNotifications);
-      }
+      //   notifications.push(notificationBody);
+      //   pushNotifications.push(pushNotificationBody);
+      //   NotificationService.storeNotification(notifications);
+      //   NotificationService.pushNotification(pushNotifications);
+      // }
 
       return response.sendStatus(204);
     } catch (err) {
