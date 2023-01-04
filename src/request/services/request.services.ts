@@ -118,7 +118,7 @@ export class RequestService {
       },
     };
     const pushNotificationBody = {
-      to: user.pushToken,
+      to: user.pushToken ?? "123",
       title: `Ju jeni ftuar tek eventi: ${event.name}`,
       body: "Futuni ne aplikacion dhe shikoni ftesen",
       data: { eventId: event.id },
@@ -162,7 +162,7 @@ export class RequestService {
       },
     };
     const pushNotificationBody = {
-      to: creator.pushToken,
+      to: creator.pushToken ?? "123",
       title: `Ju keni nje kerkese te re per t'u futur tek eventi: ${event.name}`,
       body: "Futuni ne aplikacion dhe shikoni kerkesen",
       data: { eventId: event.id },
@@ -211,7 +211,7 @@ export class RequestService {
       },
     };
     const pushNotificationBody = {
-      to: creatorTeam.user.pushToken,
+      to: creatorTeam.user.pushToken ?? "123",
       title: `Ekipi ${team.name} ka kerkuar te luaje me ju ne eventin ${event.name}`,
       body: "Futuni ne aplikacion dhe shikoni ftesen",
       data: { eventId: event.id },
@@ -253,7 +253,7 @@ export class RequestService {
       },
     };
     const pushNotificationBody = {
-      to: request.receiver.pushToken,
+      to: request.receiver.pushToken ?? "123",
       title: `Ftesa tek eventi ${request.event.name} eshte anuluar!`,
       body: "Futuni ne aplikacion dhe shikoni me shume",
       data: { eventId: request.event.id },
@@ -303,7 +303,7 @@ export class RequestService {
           },
         };
         const pushNotificationBody = {
-          to: invitedUser.pushToken,
+          to: invitedUser.pushToken ?? "123",
           title: `Krijuesi i eventit ${updatedRequest.event.name} pranoi kerkesen tuaj per t'u futur`,
           body: "Futuni ne aplikacion dhe shikoni me shume",
           data: { eventId: updatedRequest.event.id },
@@ -363,7 +363,7 @@ export class RequestService {
           },
         };
         const pushNotificationBody = {
-          to: invitedUser.pushToken,
+          to: invitedUser.pushToken ?? "123",
           title: `Krijuesi i eventit ${updatedRequest.event.name} refuzoi kerkesen tuaj per t'u futur`,
           body: "Futuni ne aplikacion dhe shikoni me shume",
           data: { eventId: updatedRequest.event.id },
@@ -612,7 +612,7 @@ export class RequestService {
       },
     };
     const pushNotificationBody = {
-      to: invitedTeam.user.pushToken,
+      to: invitedTeam.user.pushToken ?? "123",
       title: `Ju jeni ftuar te luani tek eventi ${event.name}`,
       body: "Futuni ne aplikacion dhe shikoni ftesen",
       data: { eventId: event.id },

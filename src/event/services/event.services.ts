@@ -425,10 +425,12 @@ export class EventService {
       .leftJoinAndSelect("location.complex", "complex")
       .leftJoinAndSelect("event.organiserTeam", "organiserTeam")
       .leftJoinAndSelect("event.receiverTeam", "receiverTeam")
-      .leftJoinAndSelect("organiserTeam.players", "organiserPlayers", `organiserPlayers.status = 'confirmed'`)
-      .leftJoinAndSelect("receiverTeam.players", "receiverPlayers", `receiverPlayers.status = 'confirmed'`)
-      .leftJoinAndSelect("organiserPlayers.player", "op")
-      .leftJoinAndSelect("receiverPlayers.player", "rp")
+      .leftJoinAndSelect("organiserTeam.players", "organiserPlayers")
+      .leftJoinAndSelect("receiverTeam.players", "receiverPlayers")
+      .leftJoinAndSelect("organiserPlayers.player", "organiserPlayer")
+      .leftJoinAndSelect("receiverPlayers.player", "receiverPlayer")
+      .leftJoinAndSelect("event.eventRequests", "eventRequests", `eventRequests.status = 'confirmed'`)
+      .leftJoinAndSelect("eventRequests.receiver", "eventPlayer")
       .where("event.id = :id", { id: eventId })
       .getOne();
 

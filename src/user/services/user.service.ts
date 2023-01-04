@@ -193,7 +193,7 @@ export class UserService {
           if (key === "rating") {
             const reviewRepository = getRepository(Review);
             await reviewRepository.update(
-              { receiverId: user.id, senderId: user.id },
+              { receiverId: user.id, senderId: user.id, sport },
               { value: sportsPayload[sport][key] }
             );
           }
@@ -210,12 +210,12 @@ export class UserService {
     return userRepository.save(user);
   };
 
-  static writeReview = async (user: User, sport: string, value: string) => {
+  static writeReview = async (user: User, sport: string, value: number) => {
     const reviewCustomRepository = getCustomRepository(ReviewRepository);
     await reviewCustomRepository
       .createQueryBuilder("r")
       .insert()
-      .values([{ sport: sport, value: +value, senderId: user.id, receiverId: user.id }])
+      .values([{ sport: sport, value: value, senderId: user.id, receiverId: user.id }])
       .execute();
   };
 
