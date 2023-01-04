@@ -8,7 +8,6 @@ import { EventRepository } from "../repositories/event.repository";
 import { TeamUsers } from "../../team/entities/team.users.entity";
 import { RequestRepository } from "../../request/repositories/request.repository";
 import { TeamRepository } from "../../team/repositories/team.repository";
-import { EventTeamUsersRepository } from "../repositories/event.team.users.repository";
 import { CreateEventDto } from "../dto/create-event.dto";
 import { WeeklyEventGroup } from "../entities/weekly.event.group.entity";
 import { WeeklyEventGroupRepository } from "../repositories/weekly.event.group.repository";
@@ -19,6 +18,7 @@ export class EventService {
     const eventsRepository = getCustomRepository(EventRepository);
     const teamUsersRepository = getRepository(TeamUsers);
     let todayDate = Functions.formatCurrentDate(new Date());
+    let hours = Functions.formatHours(new Date());
     const userId = +response.locals.jwt.userId;
     const user = await UserService.findOne(userId);
     let mySports = [];
@@ -53,7 +53,7 @@ export class EventService {
         ],
       })
       .andWhere("event.startDate > :todayStart", {
-        todayStart: todayDate + " 00:00:00",
+        todayStart: todayDate + " " + hours,
       })
       .andWhere(
         new Brackets((qb) => {
@@ -90,7 +90,7 @@ export class EventService {
         statuses: [EventStatus.CONFIRMED, EventStatus.WAITING_FOR_CONFIRMATION],
       })
       .andWhere("event.startDate > :todayStart", {
-        todayStart: todayDate + " 00:00:00",
+        todayStart: todayDate + " " + hours,
       })
       .andWhere(
         new Brackets((qb) => {
