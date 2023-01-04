@@ -188,7 +188,7 @@ export class Event extends Common {
       organiserTeam: this.organiserTeam?.toResponseWithPlayers,
       receiverTeam: this.receiverTeam?.toResponseWithPlayers,
       creatorId: this.creatorId,
-      eventRequests: this.eventRequests?.map((request) => request.toResponseWithPlayers),
+      playersConfirmed: this.eventRequests?.length,
     };
   }
 }
