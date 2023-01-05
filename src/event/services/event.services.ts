@@ -134,8 +134,6 @@ export class EventService {
 
     const publicEvents = await qb.getMany();
 
-    console.log({ a: publicEvents[0].location });
-
     const responseData = {
       myEvents: myEvents.map((event) => event.toResponse),
       publicEvents: publicEvents.map((event) => event.toResponse),
