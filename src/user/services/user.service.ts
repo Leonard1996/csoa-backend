@@ -27,10 +27,7 @@ const authToken = "225cb1eacac6ea2abc6ad799ec9f4280";
 const client = require("twilio")(accountSid, authToken);
 
 export class UserService {
-  static list = async (
-    queryStringProcessor: QueryStringProcessor,
-    filter: any
-  ) => {
+  static list = async (queryStringProcessor: QueryStringProcessor, filter: any) => {
     const userRepository = getCustomRepository(UserRepository);
 
     return await userRepository.list(queryStringProcessor, filter);
@@ -39,22 +36,25 @@ export class UserService {
   static insert = async (userPayload, request: Request, response: Response) => {
     const userRepository = getRepository(User);
 
-    if (userPayload.phoneNumber.slice(0, 3) === "355")
-      userPayload.phoneNumber = userPayload.phoneNumber.slice(
-        3,
-        userPayload.phoneNumber.length
-      );
-    if (userPayload.phoneNumber[0] === "0")
-      userPayload.phoneNumber = userPayload.phoneNumber.slice(
-        1,
-        userPayload.phoneNumber.length
-      );
-    userPayload.phoneNumber = "355" + userPayload.phoneNumber;
+    if (userPayload.phoneNumber) {
+      if (userPayload.phoneNumber.slice(0, 3) === "355")
+        userPayload.phoneNumber = userPayload.phoneNumber.slice(3, userPayload.phoneNumber.length);
+      if (userPayload.phoneNumber[0] === "0")
+        userPayload.phoneNumber = userPayload.phoneNumber.slice(1, userPayload.phoneNumber.length);
+      userPayload.phoneNumber = "355" + userPayload.phoneNumber;
 
-    const isExisting = await userRepository.findOne({
-      where: { phoneNumber: userPayload.phoneNumber },
-    });
-    if (isExisting) throw "User with this number already exists";
+      const isExisting = await userRepository.findOne({
+        where: { phoneNumber: userPayload.phoneNumber },
+      });
+      if (isExisting) throw "User with this number already exists";
+    }
+
+    if (userPayload.email) {
+      const isExistingEmail = await userRepository.findOne({
+        where: { email: userPayload.email },
+      });
+      if (isExistingEmail) throw "User with this email already exists";
+    }
 
     // const codeRepository = getRepository(Code);
 
@@ -102,6 +102,34 @@ export class UserService {
     await AuthenticationController.login(request, response);
   };
 
+  static checkAvailability = async (userPayload, request: Request, response: Response) => {
+    const userRepository = getRepository(User);
+    const parameters = {
+      email: true,
+      phoneNumber: true,
+    };
+
+    if (userPayload.phoneNumber.slice(0, 3) === "355")
+      userPayload.phoneNumber = userPayload.phoneNumber.slice(3, userPayload.phoneNumber.length);
+    if (userPayload.phoneNumber[0] === "0")
+      userPayload.phoneNumber = userPayload.phoneNumber.slice(1, userPayload.phoneNumber.length);
+    userPayload.phoneNumber = "355" + userPayload.phoneNumber;
+
+    const isExistingPhoneNumber = await userRepository.findOne({
+      where: { phoneNumber: userPayload.phoneNumber },
+    });
+    if (isExistingPhoneNumber) parameters.phoneNumber = false;
+
+    if (userPayload.email) {
+      const isExistingEmail = await userRepository.findOne({
+        where: { email: userPayload.email },
+      });
+      if (isExistingEmail) parameters.email = false;
+    }
+
+    return parameters;
+  };
+
   static findOne = async (userId: number) => {
     const userRepository = getCustomRepository(UserRepository);
     const user = await userRepository.findById(userId);
@@ -115,10 +143,7 @@ export class UserService {
 
     const user = await userRepository.findById(userId);
     const stars = await reviewRepository.getStars([userId], sport);
-    const statistics = await StatisticsService.getUserStatistics(
-      user.id,
-      sport
-    );
+    const statistics = await StatisticsService.getUserStatistics(user.id, sport);
     const teams = await teamUsersRepository
       .createQueryBuilder("tu")
       .leftJoinAndSelect("tu.team", "t")
@@ -149,21 +174,11 @@ export class UserService {
       userPayload.password = Md5.init(userPayload.newPassword);
     }
 
-    if (
-      userPayload.phoneNumber &&
-      userPayload.phoneNumber.slice(0, 3) === "355"
-    )
-      userPayload.phoneNumber = userPayload.phoneNumber.slice(
-        3,
-        userPayload.phoneNumber.length
-      );
+    if (userPayload.phoneNumber && userPayload.phoneNumber.slice(0, 3) === "355")
+      userPayload.phoneNumber = userPayload.phoneNumber.slice(3, userPayload.phoneNumber.length);
     if (userPayload.phoneNumber && userPayload.phoneNumber[0] === "0")
-      userPayload.phoneNumber = userPayload.phoneNumber.slice(
-        1,
-        userPayload.phoneNumber.length
-      );
-    if (userPayload.phoneNumber)
-      userPayload.phoneNumber = "355" + userPayload.phoneNumber;
+      userPayload.phoneNumber = userPayload.phoneNumber.slice(1, userPayload.phoneNumber.length);
+    if (userPayload.phoneNumber) userPayload.phoneNumber = "355" + userPayload.phoneNumber;
 
     const isExisting = await userRepository.findOne({
       where: { phoneNumber: userPayload.phoneNumber },
@@ -193,7 +208,7 @@ export class UserService {
           if (key === "rating") {
             const reviewRepository = getRepository(Review);
             await reviewRepository.update(
-              { receiverId: user.id, senderId: user.id },
+              { receiverId: user.id, senderId: user.id, sport },
               { value: sportsPayload[sport][key] }
             );
           }
@@ -201,11 +216,7 @@ export class UserService {
             if (sportsPayload[sport][key] === false) {
               await UserService.deleteReviewsAndTeams(user, sport);
             } else {
-              await UserService.writeReview(
-                user,
-                sport,
-                sportsPayload[sport]["rating"]
-              );
+              await UserService.writeReview(user, sport, sportsPayload[sport]["rating"]);
             }
           }
         }
@@ -214,14 +225,12 @@ export class UserService {
     return userRepository.save(user);
   };
 
-  static writeReview = async (user: User, sport: string, value: string) => {
+  static writeReview = async (user: User, sport: string, value: number) => {
     const reviewCustomRepository = getCustomRepository(ReviewRepository);
     await reviewCustomRepository
       .createQueryBuilder("r")
       .insert()
-      .values([
-        { sport: sport, value: +value, senderId: user.id, receiverId: user.id },
-      ])
+      .values([{ sport: sport, value: +value, senderId: user.id, receiverId: user.id }])
       .execute();
   };
 
@@ -294,10 +303,7 @@ export class UserService {
   //     .execute();
   // };
 
-  static updatePassword = async (
-    passwordPayload: string,
-    currentUser: User
-  ) => {
+  static updatePassword = async (passwordPayload: string, currentUser: User) => {
     const userRepository = getCustomRepository(UserRepository);
 
     if (Helper.isDefined(passwordPayload)) {
@@ -345,10 +351,8 @@ export class UserService {
     errCallback: Function,
     codeExisting?: string
   ) {
-    if (phoneNumber.slice(0, 3) === "355")
-      phoneNumber = phoneNumber.slice(3, phoneNumber.length);
-    if (phoneNumber[0] === "0")
-      phoneNumber = phoneNumber.slice(1, phoneNumber.length);
+    if (phoneNumber.slice(0, 3) === "355") phoneNumber = phoneNumber.slice(3, phoneNumber.length);
+    if (phoneNumber[0] === "0") phoneNumber = phoneNumber.slice(1, phoneNumber.length);
 
     let code;
     if (!codeExisting) {

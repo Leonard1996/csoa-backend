@@ -63,7 +63,6 @@ export class UserController {
   static insert = async (request: Request, response: Response) => {
     try {
       const user = await UserService.insert(request.body, request, response);
-      response.status(HttpStatusCode.OK).send(new SuccessResponse({ user }));
     } catch (err) {
       console.log(err);
       return response.status(400).send(new ErrorResponse(err));
@@ -210,6 +209,16 @@ export class UserController {
         .send(new ErrorResponse(ERROR_MESSAGES.RECORD_NOT_FOUND));
     }
     return response.status(200).send(new SuccessResponse(result));
+  };
+
+  public static checkAvailability = async (request: Request, response: Response) => {
+    try {
+      const isAvailable = await UserService.checkAvailability(request.body, request, response);
+      response.status(HttpStatusCode.OK).send(new SuccessResponse({ isAvailable }));
+    } catch (err) {
+      console.log(err);
+      return response.status(400).send(new ErrorResponse(err));
+    }
   };
 
   public static async checkPhoneNumber(request: Request, response: Response) {

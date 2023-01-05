@@ -18,6 +18,9 @@ export enum NotificationType {
   INVITATION_TO_TEAM_CONFIRMED = "user confirmed invitation to team",
   INVITATION_TO_TEAM_REFUSED = "user refused invitation to team",
   USER_EXITED_TEAM = "user exited team",
+  CHAT_USER = "chat user",
+  CHAT_EVENT = "chat event",
+  CHAT_TEAM = "chat team",
 }
 
 @Entity("notifications")
