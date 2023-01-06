@@ -201,4 +201,94 @@ export class NotificationService {
       const response = await Axios.post(PUSH_TOKEN_BASE_API, body, { headers });
     }
   };
+
+  static createTeamUserNotification = async (
+    receiverId: number,
+    notificationType: NotificationType,
+    teamName: string,
+    teamId: number,
+    userToken: string,
+    userName?: string
+  ) => {
+    let notifications = [];
+    let pushNotifications = [];
+
+    const titles = {
+      [NotificationType.INVITATION_TO_TEAM]: `Ju jeni ftuar tek ekipi: ${teamName}`,
+      [NotificationType.INVITATION_TO_TEAM_CONFIRMED]: `Lojtari ${userName} pranoi ftesen tek ekipi: ${teamName}`,
+      [NotificationType.INVITATION_TO_TEAM_REFUSED]: `Lojtari ${userName} refuzoi ftesen tek ekipi: ${teamName}`,
+      [NotificationType.USER_EXITED_TEAM]: `Lojtari ${userName} eshte larguar nga ekipi: ${teamName}`,
+    };
+
+    const notificationBody = {
+      receiverId,
+      type: notificationType,
+      payload: {
+        teamName: teamName,
+        teamId: teamId,
+        exponentPushToken: userToken,
+        title: titles[notificationType],
+        body: "Futuni ne aplikacion dhe shikoni me shume",
+      },
+    };
+    const pushNotificationBody = {
+      to: userToken ?? "123",
+      title: titles[notificationType],
+      body: "Futuni ne aplikacion dhe shikoni me shume",
+      data: { teamId },
+    };
+
+    notifications.push(notificationBody);
+    pushNotifications.push(pushNotificationBody);
+    NotificationService.storeNotification(notifications);
+    NotificationService.pushNotification(pushNotifications);
+  };
+
+  static createRequestNotification = async (
+    receiverId: number,
+    notificationType: NotificationType,
+    eventId: number,
+    eventName: string,
+    userToken: string,
+    teamName?: string,
+    receiverName?: string
+  ) => {
+    let notifications = [];
+    let pushNotifications = [];
+
+    const titles = {
+      [NotificationType.INVITATION_TO_EVENT]: `Ju jeni ftuar tek eventi: ${eventName}`,
+      [NotificationType.REQUEST_TO_EVENT]: `Ju keni nje kerkese te re per t'u futur tek eventi: ${eventName}`,
+      [NotificationType.TEAM_REQUEST_TO_EVENT]: `Ekipi ${teamName} ka kerkuar te luaje me ju ne eventin ${eventName}`,
+      [NotificationType.INVITATION_DELETED]: `Ftesa tek eventi ${eventName} eshte anuluar!`,
+      [NotificationType.CREATOR_CONFIRMED_REQUEST]: `Krijuesi i eventit ${eventName} pranoi kerkesen tuaj per t'u futur`,
+      [NotificationType.USER_CONFIRMED_REQUEST]: `${receiverName} pranoi ftesen tek eventi ${eventName}`,
+      [NotificationType.CREATOR_CONFIRMED_REQUEST]: `Krijuesi i eventit ${eventName} refuzoi kerkesen tuaj per t'u futur`,
+      [NotificationType.USER_REFUSED_REQUEST]: `${receiverName} refuzoi ftesen tek eventi ${eventName}`,
+      [NotificationType.TEAM_INVITED_TO_EVENT]: `Ju jeni ftuar te luani tek eventi ${eventName}`,
+    };
+
+    const notificationBody = {
+      receiverId: receiverId,
+      type: notificationType,
+      payload: {
+        eventId: eventId,
+        eventName: eventName,
+        exponentPushToken: userToken,
+        title: titles[notificationType],
+        body: "Futuni ne aplikacion dhe shikoni me shume",
+      },
+    };
+    const pushNotificationBody = {
+      to: userToken ?? "123",
+      title: titles[notificationType],
+      body: "Futuni ne aplikacion dhe shikoni me shume",
+      data: { eventId },
+    };
+
+    notifications.push(notificationBody);
+    pushNotifications.push(pushNotificationBody);
+    NotificationService.storeNotification(notifications);
+    NotificationService.pushNotification(pushNotifications);
+  };
 }
