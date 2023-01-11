@@ -32,6 +32,8 @@ export class UserRouter {
     // inc
     app.post("/register", [UserController.insert]);
 
+    app.post("/check-availability", [UserController.checkAvailability]);
+
     // inc
     app.get("/cities", [UserController.getCities]);
 

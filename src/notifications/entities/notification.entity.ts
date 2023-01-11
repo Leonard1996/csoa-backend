@@ -10,7 +10,10 @@ export enum NotificationType {
   REQUEST_TO_EVENT = "user requested to enter event",
   TEAM_REQUEST_TO_EVENT = "team requested to enter event",
   TEAM_INVITED_TO_EVENT = "team invited to enter event",
-  REQUEST_CONFIRMED = "request confirmed",
+  USER_CONFIRMED_REQUEST = "user confirmed request",
+  USER_REFUSED_REQUEST = "user refused request",
+  CREATOR_CONFIRMED_REQUEST = "creator confirmed request",
+  CREATOR_REFUSED_REQUEST = "creator refused request",
   REQUEST_REFUSED = "request refused",
   INVITATION_TO_EVENT = "user invited to event",
   INVITATION_DELETED = "invitation deleted",
@@ -18,6 +21,9 @@ export enum NotificationType {
   INVITATION_TO_TEAM_CONFIRMED = "user confirmed invitation to team",
   INVITATION_TO_TEAM_REFUSED = "user refused invitation to team",
   USER_EXITED_TEAM = "user exited team",
+  CHAT_USER = "chat user",
+  CHAT_EVENT = "chat event",
+  CHAT_TEAM = "chat team",
 }
 
 @Entity("notifications")

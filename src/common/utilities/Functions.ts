@@ -63,15 +63,29 @@ export class Functions {
     return datePart;
   }
 
+  static formatHours(currentDate): string {
+    let date = new Date(currentDate);
+    let hour = "" + date.getHours();
+    let minute = "" + date.getMinutes();
+    let second = "" + date.getSeconds();
+
+    if (hour.length < 2) {
+      hour = "0" + hour;
+    }
+    if (minute.length < 2) {
+      minute = "0" + minute;
+    }
+    if (second.length < 2) {
+      second = "0" + second;
+    }
+
+    let hourPart = [hour, minute, second].join(":");
+    return hourPart;
+  }
+
   public encrypt(userSessionId, userId) {
     // Convert text to bytes
-    let text =
-      userSessionId +
-      "_" +
-      userId +
-      "_" +
-      process.env.JWT_SECRET_KEY +
-      new Date().getTime();
+    let text = userSessionId + "_" + userId + "_" + process.env.JWT_SECRET_KEY + new Date().getTime();
     let textBytes = aesjs.utils.utf8.toBytes(text);
     // The counter is optional, and if omitted will begin at 1
     let aesCtr = new aesjs.ModeOfOperation.ctr(this.key, new aesjs.Counter(5));

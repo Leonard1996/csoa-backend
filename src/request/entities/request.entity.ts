@@ -48,4 +48,15 @@ export class Request extends Common {
     name: "isRequest",
   })
   public isRequest: boolean;
+
+  get toResponseWithPlayers() {
+    return {
+      id: this.id,
+      sport: this.sport,
+      status: this.status,
+      isRequest: this.isRequest,
+      senderId: this.senderId,
+      receiver: this.receiver.toResponseObject(),
+    };
+  }
 }

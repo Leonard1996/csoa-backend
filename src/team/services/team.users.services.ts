@@ -90,30 +90,13 @@ export class TeamUsersService {
     const createdInvitation = teamUsersRepository.create(payload);
     await teamUsersRepository.save(createdInvitation);
 
-    let notifications = [];
-    let pushNotifications = [];
-    const notificationBody = {
-      receiverId: user.id,
-      type: NotificationType.INVITATION_TO_TEAM,
-      payload: {
-        teamName: team.name,
-        teamId: team.id,
-        exponentPushToken: user.pushToken,
-        title: `Ju jeni ftuar tek ekipi: ${team.name}`,
-        body: "Futuni ne aplikacion dhe shikoni ftesen",
-      },
-    };
-    const pushNotificationBody = {
-      to: user.pushToken,
-      title: `Ju jeni ftuar tek ekipi: ${team.name}`,
-      body: "Futuni ne aplikacion dhe shikoni ftesen",
-      data: { teamId: team.id },
-    };
-
-    notifications.push(notificationBody);
-    pushNotifications.push(pushNotificationBody);
-    NotificationService.storeNotification(notifications);
-    NotificationService.pushNotification(pushNotifications);
+    await NotificationService.createTeamUserNotification(
+      user.id,
+      NotificationType.INVITATION_TO_TEAM,
+      team.name,
+      team.id,
+      user.pushToken
+    );
 
     return createdInvitation;
   };
@@ -175,57 +158,26 @@ export class TeamUsersService {
     }
     const mergedInvitation = teamUsersRepository.merge(teamUser, invitationPayload);
     const updatedInvitation = await teamUsersRepository.save(mergedInvitation);
+
     if (invitationToBeConfirmed === true && updatedInvitation.status === TeamUserStatus.CONFIRMED) {
-      const notifications = [];
-      const pushNotifications = [];
-      const notificationBody = {
-        receiverId: teamUser.team.userId,
-        type: NotificationType.INVITATION_TO_TEAM_CONFIRMED,
-        payload: {
-          teamId: teamUser.teamId,
-          teamName: teamUser.team.name,
-          playerId: teamUser.playerId,
-          playerName: teamUser.player.name,
-          title: `Lojtari ${teamUser.player.name} pranoi ftesen tek ekipi: ${teamUser.team.name}`,
-          body: "Futuni ne aplikacion dhe shikoni ftesen e pranuar",
-        },
-      };
-      const pushNotificationBody = {
-        to: teamUser.team.user.pushToken,
-        title: `Lojtari ${teamUser.player.name} pranoi ftesen tek ekipi: ${teamUser.team.name}`,
-        body: "Futuni ne aplikacion dhe shikoni ftesen e pranuar",
-        data: { teamId: teamUser.team.id },
-      };
-      notifications.push(notificationBody);
-      pushNotifications.push(pushNotificationBody);
-      NotificationService.storeNotification(notifications);
-      NotificationService.pushNotification(pushNotifications);
+      await NotificationService.createTeamUserNotification(
+        teamUser.team.userId,
+        NotificationType.INVITATION_TO_TEAM_CONFIRMED,
+        teamUser.team.name,
+        teamUser.teamId,
+        teamUser.team.user.pushToken,
+        teamUser.player.name
+      );
     }
     if (invitationToBeRefused === true && updatedInvitation.status === TeamUserStatus.REFUSED) {
-      const notifications = [];
-      const pushNotifications = [];
-      const notificationBody = {
-        receiverId: teamUser.team.userId,
-        type: NotificationType.INVITATION_TO_TEAM_REFUSED,
-        payload: {
-          teamId: teamUser.teamId,
-          teamName: teamUser.team.name,
-          playerId: teamUser.playerId,
-          playerName: teamUser.player.name,
-          title: `Lojtari ${teamUser.player.name} refuzoi ftesen tek ekipi: ${teamUser.team.name}`,
-          body: "Futuni ne aplikacion dhe shikoni ftesen e refuzuar",
-        },
-      };
-      const pushNotificationBody = {
-        to: teamUser.team.user.pushToken,
-        title: `Lojtari ${teamUser.player.name} refuzoi ftesen tek ekipi: ${teamUser.team.name}`,
-        body: "Futuni ne aplikacion dhe shikoni ftesen e refuzuar",
-        data: { teamId: teamUser.team.id },
-      };
-      notifications.push(notificationBody);
-      pushNotifications.push(pushNotificationBody);
-      NotificationService.storeNotification(notifications);
-      NotificationService.pushNotification(pushNotifications);
+      await NotificationService.createTeamUserNotification(
+        teamUser.team.userId,
+        NotificationType.INVITATION_TO_TEAM_REFUSED,
+        teamUser.team.name,
+        teamUser.teamId,
+        teamUser.team.user.pushToken,
+        teamUser.player.name
+      );
     }
     return "Request successfully updated!";
   };
@@ -235,30 +187,14 @@ export class TeamUsersService {
     await teamUserRepository.softDelete(teamUser.id);
 
     if (teamUser.status === TeamUserStatus.CONFIRMED) {
-      const notifications = [];
-      const pushNotifications = [];
-      const notificationBody = {
-        receiverId: teamUser.team.userId,
-        type: NotificationType.USER_EXITED_TEAM,
-        payload: {
-          teamId: teamUser.teamId,
-          teamName: teamUser.team.name,
-          playerId: teamUser.playerId,
-          playerName: teamUser.player.name,
-          title: `Lojtari ${teamUser.player.name} eshte larguar nga ekipi: ${teamUser.team.name}`,
-          body: "Futuni ne aplikacion dhe shikoni me shume",
-        },
-      };
-      const pushNotificationBody = {
-        to: teamUser.team.user.pushToken,
-        title: `Lojtari ${teamUser.player.name} eshte larguar nga ekipi: ${teamUser.team.name}`,
-        body: "Futuni ne aplikacion dhe shikoni me shume",
-        data: { teamId: teamUser.team.id },
-      };
-      notifications.push(notificationBody);
-      pushNotifications.push(pushNotificationBody);
-      NotificationService.storeNotification(notifications);
-      NotificationService.pushNotification(pushNotifications);
+      await NotificationService.createTeamUserNotification(
+        teamUser.team.userId,
+        NotificationType.USER_EXITED_TEAM,
+        teamUser.team.name,
+        teamUser.teamId,
+        teamUser.team.user.pushToken,
+        teamUser.player.name
+      );
     }
   };
 }

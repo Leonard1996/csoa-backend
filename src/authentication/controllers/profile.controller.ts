@@ -90,10 +90,8 @@ export class ProfileController {
     let searchValue = email;
 
     if (phoneNumber) {
-      if (phoneNumber.slice(0, 3) === "355")
-        phoneNumber = phoneNumber.slice(3, phoneNumber.length);
-      if (phoneNumber[0] === "0")
-        phoneNumber = phoneNumber.slice(1, phoneNumber.length);
+      if (phoneNumber.slice(0, 3) === "355") phoneNumber = phoneNumber.slice(3, phoneNumber.length);
+      if (phoneNumber[0] === "0") phoneNumber = phoneNumber.slice(1, phoneNumber.length);
       phoneNumber = "355" + phoneNumber;
       searchValue = phoneNumber;
     }
@@ -110,10 +108,7 @@ export class ProfileController {
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const userUpdate = {
         modifyPasswordToken: code,
-        tsModifyPasswordTokenExpiration: Functions.getDateAfter(
-          process.env.DURATION_MODIFY_PASSWORD_TOKEN_HOURS,
-          "h"
-        ),
+        tsModifyPasswordTokenExpiration: Functions.getDateAfter(process.env.DURATION_MODIFY_PASSWORD_TOKEN_HOURS, "h"),
       };
 
       const finalUser = userRepository.merge(userExist, userUpdate);
@@ -133,15 +128,11 @@ export class ProfileController {
           UserService.checkPhoneNumber(
             phoneNumber,
             () => {
-              return res
-                .status(200)
-                .send(new SuccessResponse("Verification code sent"));
+              return res.status(200).send(new SuccessResponse("Verification code sent"));
             },
             (err) => {
               console.log({ err });
-              return res
-                .status(404)
-                .send(new ErrorResponse("Phone number does not exist"));
+              return res.status(404).send(new ErrorResponse("Phone number does not exist"));
             },
             code
           );
@@ -173,7 +164,7 @@ export class ProfileController {
           password: Md5.init(password),
           modifyPasswordToken: null,
           tsModifyPasswordTokenExpiration: null,
-          tsLastModifiedPwd: Functions.formatDate(Date.now()),
+          tsLastModified: Functions.formatDate(Date.now()),
         };
 
         const finalUser = userRepository.merge(userExist, userUpdate);
